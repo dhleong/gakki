@@ -3,7 +3,7 @@ node_modules/
 .nrepl-port
 
 resources/public/js
-resources/main.js
+resources/cli.js
 target/
 
 .expo
