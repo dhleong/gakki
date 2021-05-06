@@ -1,0 +1,43 @@
+;; shadow-cljs configuration
+{:dev-http {8080 "resources/public/"}
+
+ :source-paths [; core (shared) cross-platform code (models, etc):
+                "src/core"
+
+                ; cli app:
+                "src/cli"
+
+                "src/test"]
+
+ :dependencies [; core:
+                [reagent "1.0.0"]
+                [re-frame "1.2.0"]
+                [net.dhleong/archetype "0.1.0-SNAPSHOT"]
+
+                ; ::inject/sub cofx (for subscriptions in event handlers)
+                [re-frame-utils "0.1.0"]
+
+                ; etc:
+                [alandipert/storage-atom "2.0.1"]
+                [applied-science/js-interop "0.2.7"]
+                [com.cemerick/url "0.1.1"]
+                [com.cognitect/transit-cljs "0.8.269"]
+                [com.rpl/specter "1.1.3"]
+                [funcool/promesa "6.0.0"]
+                [medley "1.3.0"]
+
+                ; dev tools:
+                [day8.re-frame/re-frame-10x "1.0.2"]
+                [day8.re-frame/tracing "0.6.2"]
+                [org.clojure/test.check "1.1.0"]
+                ]
+
+ :builds {:cli {:target :node-script
+                :output-to "resources/cli.js"
+                :main gakki.cli/init}
+
+          :ci-node {:target :node-test
+                    :output-to "target/ci-node.js"}
+          }}
+
+

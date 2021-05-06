@@ -9,4 +9,3 @@ target/
 .expo
 
 *.keystore
-*.edn
