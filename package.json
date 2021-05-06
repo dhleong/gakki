@@ -1,0 +1,43 @@
+{
+  "name": "gakki",
+  "version": "1.0.0",
+  "description": "gakki",
+  "main": "resources/cli.js",
+  "productName": "gakki",
+  "scripts": {
+    "dev": "shadow-cljs start && shadow-cljs watch :cli",
+    "cli": "node resources/cli.js",
+    "stop": "shadow-cljs stop",
+    "show": "yarn desktop",
+    "build:release": "shadow-cljs release :cli",
+    "old:clojure": "clojure -Sdeps '{:deps {antq/antq {:mvn/version \"RELEASE\"}}}' -m antq.core",
+    "old": "yarn old:clojure; yarn outdated",
+    "clean": "rm -rf resources/public/js/* && rm -rf target",
+    "test:node": "shadow-cljs compile ci-node && node target/ci-node.js",
+    "test": "yarn test:node"
+  },
+  "keywords": [
+    "shadow-cljs",
+    "reagent"
+  ],
+  "author": "Daniel Leong",
+  "license": "MIT",
+  "devDependencies": {
+    "shadow-cljs": "^2.11.23"
+  },
+  "dependencies": {
+    "buffer": "^6.0.1",
+    "create-react-class": "^15.6.3",
+    "date-fns": "^2.14.0",
+    "highlight.js": "9.18.1",
+    "ink": "^3.0.8",
+    "keytar": "^7.0.0",
+    "koa": "^2.13.0",
+    "mimetext": "^0.2.2",
+    "node-fetch": "^2.6.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-highlight.js": "1.0.7",
+    "uuid": "^8.3.0"
+  }
+}
