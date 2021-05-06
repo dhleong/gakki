@@ -1,14 +1,17 @@
 (ns gakki.views
-  (:require ["ink" :as k]
-            [archetype.util :refer [<sub]]))
+  (:require [archetype.util :refer [<sub]]
+            [gakki.views.auth :as auth]))
+
+(def ^:private pages
+  {; :home #'home/view
+   :auth #'auth/view
+   })
 
 (defn main []
-  (let [accounts (<sub [:accounts])]
-    [:> k/Box {:flex-direction :column
-               :border-style :round}
-     [:> k/Text {:color "red"}
-      "Accounts="
-      (or (when accounts
-            (str accounts))
-          "(none)")]
-     [:> k/Text {:color "blue"} "Hello World!"]]))
+  (let [accounts (<sub [:accounts])
+        [page args] (<sub [:page])
+        page-form [(get pages page) args]]
+    (if accounts
+      page-form
+
+      [auth/view {:forced? true}])))

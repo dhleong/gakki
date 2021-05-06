@@ -11,5 +11,17 @@
   (k/render (r/as-element [views/main])))
 
 (defn ^:export init []
+  ; stop re-frame loggers from trashing our cli UI
+  (re-frame/set-loggers!
+    (let [log (fn [& _]
+                ; this is a nop, for now
+                )]
+      {:log      (partial log :info)
+       :warn     (partial log :warn)
+       :error    (partial log :error)
+       :debug    (partial log :debug)
+       :group    (partial log :info)
+       :groupEnd  #()}))
+
   (re-frame/dispatch-sync [::events/initialize-db])
   (mount-root))

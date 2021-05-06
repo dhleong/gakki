@@ -1,5 +1,5 @@
 (ns gakki.db)
 
 (def default-db
-  {:page [:init]
+  {:page [:home]
    :accounts nil})
