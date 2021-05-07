@@ -26,6 +26,7 @@
     "shadow-cljs": "^2.11.23"
   },
   "dependencies": {
+    "@discordjs/opus": "^0.5.0",
     "buffer": "^6.0.1",
     "create-react-class": "^15.6.3",
     "date-fns": "^2.14.0",
@@ -35,9 +36,13 @@
     "koa": "^2.13.0",
     "mimetext": "^0.2.2",
     "node-fetch": "^2.6.1",
+    "pcm-volume": "^1.0.0",
+    "prism-media": "^1.2.9",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-highlight.js": "1.0.7",
-    "uuid": "^8.3.0"
+    "speaker": "^0.5.3",
+    "uuid": "^8.3.0",
+    "ytdl-core": "^4.7.0"
   }
 }
