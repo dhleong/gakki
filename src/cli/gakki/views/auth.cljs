@@ -39,7 +39,7 @@
     ; NOTE: providers is a list of [k, v]
     (first (nth providers next-idx))))
 
-(defn- view-with-input [selected-atom providers forced?]
+(defn- view-with-input [selected-atom providers]
   (let [selected-key @selected-atom
         rotate! (partial rotate-provider providers)]
     (k/useInput
@@ -58,7 +58,7 @@
     [:> k/Box {:flex-direction :column
                :border-color theme/text-color-on-background
                :border-style :round}
-     (when forced?
+     (when (empty? (<sub [:accounts]))
        [:> k/Text {:color theme/header-color-on-background}
         "Welcome to Gakki!"])
 
@@ -68,7 +68,7 @@
        ^{:key k}
        [provider-row selected-key k provider])]))
 
-(defn view [{:keys [forced?]}]
+(defn view []
   (r/with-let [selected-atom (r/atom :ytm)
                providers (->> accounts/providers (sort-by first))]
-    [:f> view-with-input selected-atom providers forced?]))
+    [:f> view-with-input selected-atom providers]))

@@ -14,4 +14,4 @@
     (if accounts
       page-form
 
-      [auth/view {:forced? true}])))
+      [auth/view])))
