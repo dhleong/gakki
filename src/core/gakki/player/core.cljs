@@ -1,5 +1,7 @@
 (ns gakki.player.core)
 
 (defprotocol IPlayable
-  (stop [this])
-  (set-volume [this level]))
+  (play [this])
+  (pause [this])
+  (set-volume [this level])
+  (close [this]))

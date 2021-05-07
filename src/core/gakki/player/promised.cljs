@@ -5,10 +5,20 @@
 
 (deftype PromisedStreamPlayable [state]
   IPlayable
-  (stop [this]
-    (swap! state assoc :stopped? true)
+  (play [this]
+    (swap! state assoc :playing? true)
     (when-let [delegate (:playable @state)]
-      (player/stop delegate)))
+      (player/play delegate)))
+
+  (pause [this]
+    (swap! state assoc :playing? false)
+    (when-let [delegate (:playable @state)]
+      (player/pause delegate)))
+
+  (close [this]
+    (swap! state assoc :closed? true)
+    (when-let [delegate (:playable @state)]
+      (player/close delegate)))
 
   (set-volume [this level]
     (swap! state assoc :volume-level level)
@@ -22,9 +32,15 @@
   [pending]
   (let [state (atom nil)]
     (p/let [{:keys [config stream]} pending]
-      (when-not (:stopped? @state)
+      (when-not (:closed? @state)
         (let [playable (pcm-stream->playable config stream)]
           (swap! state assoc :playable playable)
+
+          ; Transfer enqueued state:
           (when-let [volume-level (:volume-level @state)]
-            (player/set-volume playable volume-level)))))
+            (player/set-volume playable volume-level))
+
+          (when (:playing? @state)
+            (player/play playable)))))
+
     (->PromisedStreamPlayable state)))

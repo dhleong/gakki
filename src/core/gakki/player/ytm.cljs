@@ -36,4 +36,5 @@
 
 (comment
   (def playable
-    (youtube-id->playable "8FV4gcs-MNA")))
+    (doto (youtube-id->playable "8FV4gcs-MNA")
+      (gakki.player.core/play))))
