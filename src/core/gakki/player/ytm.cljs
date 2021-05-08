@@ -1,8 +1,6 @@
 (ns gakki.player.ytm
   (:require [applied-science.js-interop :as j]
             ["node-fetch" :as fetch]
-            ["prism-media" :as prism]
-            ["speaker" :as Speaker]
             ["ytdl-core" :as ytdl]
             [promesa.core :as p]
             [gakki.util.convert :refer [->int]]
@@ -14,27 +12,32 @@
                 (j/get info :formats)
                 #js {:quality "highestaudio"})
 
-          ; NOTE: You'd think these would be integers, but... they
-          ; might not be.
-          config {:sample-rate (->int (j/get fmt :audioSampleRate))
+          config {:container (j/get fmt :container)
+                  :codec (j/get fmt :audioCodec)
+
+                  ; NOTE: You'd think these would be integers, but...
+                  ; they might not be.
+                  :sample-rate (->int (j/get fmt :audioSampleRate))
                   :channels (->int (j/get fmt :audioChannels))}
 
           response (fetch (j/get fmt :url))
           ^js stream (j/get response :body)]
 
     {:config config
-     :stream (-> stream
-                 (.pipe (prism/opus.WebmDemuxer.))
-                 (.pipe (prism/opus.Decoder.
-                          #js {:rate (:sample-rate config)
-                               :channels (:channels config)
-                               :frameSize 960})))}))
+     :stream stream}))
 
 (defn youtube-id->playable [id]
   (promise->playable
     (youtube-id->stream id)))
 
 (comment
+  (p/let [id "8FV4gcs-MNA"
+          info (ytdl/getInfo id)
+          fmt (ytdl/chooseFormat
+                (j/get info :formats)
+                #js {:quality "highestaudio"})]
+    (println fmt))
+
   (def playable
     (doto (youtube-id->playable "8FV4gcs-MNA")
       (gakki.player.core/set-volume 0.5)
