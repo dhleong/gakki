@@ -11,7 +11,7 @@
        (reduce
          (j/fn [m ^:js {:keys [account password]}]
            (assoc m (keyword account) (-> (t/reader :json)
-                                (t/read password))))
+                                          (t/read password))))
          {})))
 
 (defn load-accounts []

@@ -42,6 +42,10 @@
           (.resume))
         (.on output "error" identity)))
 
+    ; NOTE: this delay is a hack to avoid SIGILL; Perhaps if we can wait
+    ; until the first bytes get transfered we can avoid this hack:
+    (p/delay 100)
+
     (open-stream tmp-path)))
 
 (defn caching [^String cache-key, promise-factory]

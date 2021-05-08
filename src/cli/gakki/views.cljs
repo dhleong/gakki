@@ -12,7 +12,7 @@
   (let [accounts (<sub [:accounts])
         [page args] (<sub [:page])
         page-form [:f> (get pages page) args]]
-    (if accounts
+    (if (seq accounts)
       page-form
 
       [:f> auth/view])))

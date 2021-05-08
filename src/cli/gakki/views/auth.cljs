@@ -66,16 +66,18 @@
 
     [:> k/Box {:flex-direction :column
                :border-color theme/text-color-on-background
-               :border-style :round}
+               :border-style :round
+               :padding-x 1}
      [:> k/Text {:color theme/header-color-on-background}
       (if (empty? accounts)
         "Welcome to Gakki!"
         "Gakki Auth Config")]
-     [:> k/Text " "]
 
      (when (empty? accounts)
        [:> k/Text {:color theme/text-color-on-background}
         "You will need to configure one or more services to continue"])
+
+     [:> k/Text " "]
 
      (for [[k provider] providers]
        ^{:key k}
