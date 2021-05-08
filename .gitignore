@@ -4,6 +4,7 @@ node_modules/
 
 resources/public/js
 resources/cli.js
+resources/player.js
 target/
 
 .expo

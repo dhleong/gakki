@@ -37,4 +37,5 @@
 (comment
   (def playable
     (doto (youtube-id->playable "8FV4gcs-MNA")
+      (gakki.player.core/set-volume 0.5)
       (gakki.player.core/play))))

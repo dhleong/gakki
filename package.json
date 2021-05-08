@@ -5,11 +5,11 @@
   "main": "resources/cli.js",
   "productName": "gakki",
   "scripts": {
-    "dev": "shadow-cljs start && shadow-cljs watch :cli",
+    "dev": "shadow-cljs start && shadow-cljs watch :cli :player",
     "cli": "node resources/cli.js",
     "stop": "shadow-cljs stop",
     "show": "yarn desktop",
-    "build:release": "shadow-cljs release :cli",
+    "build:release": "shadow-cljs release :cli :player",
     "old:clojure": "clojure -Sdeps '{:deps {antq/antq {:mvn/version \"RELEASE\"}}}' -m antq.core",
     "old": "yarn old:clojure; yarn outdated",
     "clean": "rm -rf resources/public/js/* && rm -rf target",

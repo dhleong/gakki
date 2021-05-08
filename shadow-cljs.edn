@@ -4,6 +4,9 @@
  :source-paths [; core (shared) cross-platform code (models, etc):
                 "src/core"
 
+                ; code for the child process player:
+                "src/player"
+
                 ; cli app:
                 "src/cli"
 
@@ -35,6 +38,10 @@
  :builds {:cli {:target :node-script
                 :output-to "resources/cli.js"
                 :main gakki.cli/init}
+
+          :player {:target :node-library
+                   :output-to "resources/player.js"
+                   :exports-var gakki.player/handle-message}
 
           :ci-node {:target :node-test
                     :output-to "target/ci-node.js"}
