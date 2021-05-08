@@ -30,6 +30,7 @@
     "buffer": "^6.0.1",
     "create-react-class": "^15.6.3",
     "date-fns": "^2.14.0",
+    "env-paths": "^2.2.1",
     "highlight.js": "9.18.1",
     "ink": "^3.0.8",
     "keytar": "^7.0.0",

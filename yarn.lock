@@ -625,6 +625,11 @@ end-of-stream@^1.1.0, end-of-stream@^1.4.1:
   dependencies:
     once "^1.4.0"
 
+env-paths@^2.2.1:
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/env-paths/-/env-paths-2.2.1.tgz#420399d416ce1fbe9bc0a07c62fa68d67fd0f8f2"
+  integrity sha512-+h1lkLKhZMTYjog1VEpJNG7NZJWcuc2DDk/qsqSTRRCOXiLjeQ1d1/udrUGhqMxUgAlwKNZ0cf2uqan5GLuS2A==
+
 escape-html@^1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/escape-html/-/escape-html-1.0.3.tgz#0258eae4d3d0c0974de1c169188ef0051d1d1988"
@@ -1288,13 +1293,6 @@ pbkdf2@^3.0.3:
     ripemd160 "^2.0.1"
     safe-buffer "^5.0.1"
     sha.js "^2.4.8"
-
-pcm-volume@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/pcm-volume/-/pcm-volume-1.0.0.tgz#eaa851c94968ab6e142ce2e12953708be4a7f0c0"
-  integrity sha1-6qhRyUloq24ULOLhKVNwi+Sn8MA=
-  dependencies:
-    inherits "^2.0.1"
 
 prebuild-install@^6.0.0:
   version "6.1.2"
