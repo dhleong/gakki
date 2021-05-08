@@ -1,6 +1,6 @@
 (ns gakki.player.pcm
   (:require ["speaker" :as Speaker]
-            ["pcm-volume" :as VolumeCtrl]
+            ["prism-media" :as prism]
             [gakki.player.core :as player :refer [IPlayable]]))
 
 (deftype PcmStreamPlayable [state, ^js stream, ^js volume-ctrl]
@@ -43,7 +43,7 @@
                                      :channels channels
                                      :bitDepth 16})
                           (.on "error" on-error))
-        volume-ctrl (VolumeCtrl.) ]
+        volume-ctrl (prism/VolumeTransformer. #js {:type "s16le"})]
 
     (.on stream "error" on-error)
 
