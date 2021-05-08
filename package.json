@@ -36,6 +36,7 @@
     "figures": "^3.2.0",
     "highlight.js": "9.18.1",
     "ink": "^3.0.8",
+    "ink-spinner": "^4.0.2",
     "keytar": "^7.0.0",
     "koa": "^2.13.0",
     "mimetext": "^0.2.2",

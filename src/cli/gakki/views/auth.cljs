@@ -70,7 +70,7 @@
      [:> k/Text {:color theme/header-color-on-background}
       (if (empty? accounts)
         "Welcome to Gakki!"
-        "Gakki Auth Config") ]
+        "Gakki Auth Config")]
      [:> k/Text " "]
 
      (when (empty? accounts)

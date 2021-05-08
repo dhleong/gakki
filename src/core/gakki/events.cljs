@@ -1,7 +1,6 @@
 (ns gakki.events
   (:require [re-frame.core :refer [reg-event-db
                                    reg-event-fx
-                                   ;; inject-cofx
                                    trim-v]]
             [gakki.db :as db]))
 
@@ -17,8 +16,22 @@
   (fn [db [new-page]]
     (assoc db :page new-page)))
 
-(reg-event-db
+(reg-event-fx
   :auth/set
   [trim-v]
-  (fn [db [accounts]]
-    (assoc db :accounts accounts)))
+  (fn [{:keys [db]} [accounts]]
+    {:db (assoc db :accounts accounts)
+     :providers/load! accounts}))
+
+(reg-event-db
+  :loading/update-count
+  [trim-v]
+  (fn [db [update-f]]
+    (update db :loading-count update-f)))
+
+(reg-event-fx
+  :providers/refresh!
+  [trim-v]
+  (fn [{:keys [db]} _]
+    (when-let [accounts (:accounts db)]
+      {:providers/load! accounts})))
