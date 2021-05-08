@@ -6,3 +6,4 @@
 (def text-color-disabled "#848897")
 
 (def accent-color "#46aad4")
+(def positive-color "#6ae64e")

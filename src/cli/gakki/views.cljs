@@ -11,7 +11,8 @@
   (let [accounts (<sub [:accounts])
         [page args] (<sub [:page])
         page-form [(get pages page) args]]
-    (if accounts
+    [auth/view]
+    #_(if accounts
       page-form
 
       [auth/view])))

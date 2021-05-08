@@ -1,7 +1,8 @@
 (ns gakki.views.auth
-  (:require [archetype.util :refer [<sub]]
+  (:require [archetype.util :refer [<sub >evt]]
             [reagent.core :as r]
             [applied-science.js-interop :as j]
+            ["figures" :as figures]
             ["ink" :as k]
             [gakki.accounts :as accounts]
             [gakki.accounts.core :as ap]
@@ -12,16 +13,20 @@
         selected? (= k selected-key)]
     [:> k/Box
      (if selected?
-       [:> k/Text {:color theme/accent-color} " -> "]
-       [:> k/Text "    "])
+       [:> k/Text {:color theme/accent-color}
+        " " figures/pointer " "]
+       [:> k/Text "   "])
 
      [:> k/Text {:color theme/header-color-on-background}
       (ap/get-name provider)
-      ": "]
+      " "]
 
      (if-let [info (get accounts k)]
-       [:> k/Text {:color theme/text-color-on-background} 
-        (str info)]
+       [:> k/Text {:color theme/positive-color}
+        (ap/describe-account provider info)
+        " "
+        figures/tick]
+
        [:> k/Text {:color theme/text-color-disabled}
         (if selected?
           "(Press Enter to configure)"
@@ -41,7 +46,8 @@
 
 (defn- view-with-input [selected-atom providers]
   (let [selected-key @selected-atom
-        rotate! (partial rotate-provider providers)]
+        rotate! (partial rotate-provider providers)
+        accounts (<sub [:accounts])]
     (k/useInput
       (fn [input k]
         (case input
@@ -49,24 +55,40 @@
           "j" (swap! selected-atom rotate! 1)
           "k" (swap! selected-atom rotate! -1)
 
-          (when (j/get k :return)
+          (cond
+            (j/get k :escape)
+            (>evt [:navigate! [:home]])
+
+            (j/get k :return)
             (swap! selected-atom #(if (= % :ytm)
                                     [input k]
-                                    :ytm))))
-        ))
+                                    :ytm))))))
 
     [:> k/Box {:flex-direction :column
                :border-color theme/text-color-on-background
                :border-style :round}
-     (when (empty? (<sub [:accounts]))
-       [:> k/Text {:color theme/header-color-on-background}
-        "Welcome to Gakki!"])
+     [:> k/Text {:color theme/header-color-on-background}
+      (if (empty? accounts)
+        "Welcome to Gakki!"
+        "Gakki Auth Config") ]
+     [:> k/Text " "]
 
-     [:> k/Text (str selected-key)]
+     (when (empty? accounts)
+       [:> k/Text {:color theme/text-color-on-background}
+        "You will need to configure one or more services to continue"])
 
      (for [[k provider] providers]
        ^{:key k}
-       [provider-row selected-key k provider])]))
+       [provider-row selected-key k provider])
+
+     (when (seq accounts)
+       [:<>
+        [:> k/Text " "]
+        [:> k/Text {:color theme/text-color-disabled}
+         "Press "
+         [:> k/Text {:color theme/text-color-on-background} "<esc>"]
+         " to return"]])
+     ]))
 
 (defn view []
   (r/with-let [selected-atom (r/atom :ytm)

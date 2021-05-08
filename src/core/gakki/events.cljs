@@ -1,14 +1,24 @@
 (ns gakki.events
-  (:require [re-frame.core :refer [;; reg-event-db
+  (:require [re-frame.core :refer [reg-event-db
                                    reg-event-fx
                                    ;; inject-cofx
-                                   ;; path trim-v
-                                   ]]
+                                   trim-v]]
             [gakki.db :as db]))
 
 (reg-event-fx
   ::initialize-db
   (fn [_ _]
     {:db db/default-db
-     ;; :auth/load! :! ; TODO
-     }))
+     :auth/load! :!}))
+
+(reg-event-db
+  :navigate!
+  [trim-v]
+  (fn [db [new-page]]
+    (assoc db :page new-page)))
+
+(reg-event-db
+  :auth/set
+  [trim-v]
+  (fn [db [accounts]]
+    (assoc db :accounts accounts)))

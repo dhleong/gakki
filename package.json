@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "gakki",
   "main": "resources/cli.js",
-  "productName": "gakki",
+  "bin": {
+    "gakki": "resources/cli.js"
+  },
   "scripts": {
     "dev": "shadow-cljs start && shadow-cljs watch :cli :player",
     "cli": "node resources/cli.js",
@@ -31,6 +33,7 @@
     "create-react-class": "^15.6.3",
     "date-fns": "^2.14.0",
     "env-paths": "^2.2.1",
+    "figures": "^3.2.0",
     "highlight.js": "9.18.1",
     "ink": "^3.0.8",
     "keytar": "^7.0.0",

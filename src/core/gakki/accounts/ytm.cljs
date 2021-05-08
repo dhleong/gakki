@@ -3,4 +3,6 @@
 
 (deftype YTMAccountProvider []
   IAccountProvider
-  (get-name [_this] "YouTube Music"))
+  (get-name [_this] "YouTube Music")
+  (describe-account [_ account]
+    (str (-> account :user :email))))

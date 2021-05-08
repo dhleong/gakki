@@ -3,6 +3,7 @@
             [re-frame.core :as re-frame]
             ["ink" :as k]
             [gakki.events :as events]
+            [gakki.fx]
             [gakki.subs]
             [gakki.views :as views]))
 
@@ -11,6 +12,8 @@
   (k/render (r/as-element [views/main])))
 
 (defn ^:export init []
+  (set! (.-title js/process) "gakki")
+
   ; stop re-frame loggers from trashing our cli UI
   (re-frame/set-loggers!
     (let [log (fn [& _]
