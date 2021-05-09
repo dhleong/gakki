@@ -10,8 +10,8 @@
               ; this is a nop, for now
               )
         console-error (atom js/console.error)
-        safe-error (fn console-error [& args]
-                     (when-not (and (seq args)
+        safe-error (fn safe-error [& args]
+                     (when-not (and (string? (first args))
                                     (str/includes?
                                       (first args)
                                       "unmounted component"))
@@ -32,4 +32,5 @@
       #js {:error #js {:get (constantly safe-error)
                        :enumerable true
                        :set (fn [replacement]
-                              (reset! console-error replacement))}})))
+                              (when replacement
+                                (reset! console-error replacement)))}})))

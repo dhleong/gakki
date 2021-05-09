@@ -21,7 +21,7 @@
                 (when-let [provider (get providers k)]
                   (-> (p/let [results (ap/fetch-home provider account)]
                         (when results
-                          (>evt [:load-home results])))
+                          (>evt [:home/replace k results])))
                       (p/catch (fn [e]
                                  ; TODO logging
                                  (println "[err: " k "] " e)))))))

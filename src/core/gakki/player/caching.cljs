@@ -5,8 +5,7 @@
                            createReadStream create-read-stream}]
             ["fs/promises" :as fs]
             ["path" :as path]
-            [promesa.core :as p]
-            ["stream" :as stream]))
+            [promesa.core :as p]))
 
 (def ^:private cache-dir
   (-> (env-paths "gakki", #js {:suffix ""})

@@ -1,7 +1,7 @@
 (ns gakki.events
   (:require [re-frame.core :refer [reg-event-db
                                    reg-event-fx
-                                   trim-v]]
+                                   path trim-v]]
             [gakki.db :as db]))
 
 (reg-event-fx
@@ -35,3 +35,9 @@
   (fn [{:keys [db]} _]
     (when-let [accounts (:accounts db)]
       {:providers/load! accounts})))
+
+(reg-event-db
+  :home/replace
+  [trim-v (path :home/categories)]
+  (fn [db [provider-id {:keys [categories]}]]
+    (assoc db provider-id categories)))
