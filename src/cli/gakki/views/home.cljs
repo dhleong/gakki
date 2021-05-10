@@ -4,6 +4,7 @@
             ["figures" :as figures]
             ["ink" :as k]
             ["ink-spinner" :default Spinner]
+            [gakki.components.player-mini :refer [player-mini]]
             [gakki.components.scrollable :refer [horizontal-list
                                                  vertical-list]]
             [gakki.theme :as theme]))
@@ -60,11 +61,14 @@
                :border-color theme/text-color-on-background
                :border-style :round
                :padding-x 1}
-     [:> k/Text {:color theme/header-color-on-background}
-      (if (<sub [:loading?])
-        [:> Spinner {:type "dots"}]
-        " ")
-      " Gakki Home"]
+     [:> k/Box {:flex-direction :row
+                :justify-content :space-between}
+      [:> k/Text {:color theme/header-color-on-background}
+       (if (<sub [:loading?])
+         [:> Spinner {:type "dots"}]
+         " ")
+       " Gakki Home"]
+      [player-mini]]
 
      [vertical-list
       :items categories

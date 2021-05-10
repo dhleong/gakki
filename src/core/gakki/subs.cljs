@@ -16,9 +16,27 @@
 ; ======= player ==========================================
 
 (reg-sub
-  :player/volume
+  :player/volume-percent
   (fn [db _]
-    (get-in db [:player :volume] max-volume-int)))
+    (/ (get-in db [:player :volume] max-volume-int)
+       max-volume-int)))
+
+(reg-sub
+  :player/adjusting-volume-percent
+  (fn [db _]
+    (when (> (get-in db [:player :adjusting-volume?]) 0)
+      (/ (get-in db [:player :volume] max-volume-int)
+         max-volume-int))))
+
+(reg-sub
+  :player/item
+  (fn [db _]
+    (get-in db [:player :current])))
+
+(reg-sub
+  :player/state
+  (fn [db _]
+    (get-in db [:player :state])))
 
 
 ; ======= home ============================================

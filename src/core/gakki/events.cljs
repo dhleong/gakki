@@ -116,13 +116,23 @@
 
 (reg-event-fx
   :player/volume-inc
-  [trim-v (path :player :volume)]
-  (fn [{current-volume :db} [delta]]
+  [trim-v (path :player)]
+  (fn [{player :db} [delta]]
     ; TODO persist volume preference
-    (let [current-volume (or current-volume
+    (let [current-volume (or (:volume player)
                              max-volume-int)
           new-volume (-> (+ current-volume delta)
                          (max 0)
                          (min max-volume-int))]
-      {:db new-volume
-       :player/set-volume! (/ new-volume max-volume-int)})))
+      {:db (-> player
+               (assoc :volume new-volume)
+               (update :adjusting-volume? inc))
+       :player/set-volume! (/ new-volume max-volume-int)
+       :dispatch-later {:ms 1500 :dispatch [::stop-adjusting-volume]}
+       })))
+
+(reg-event-db
+  ::stop-adjusting-volume
+  [trim-v (path :player :adjusting-volume?)]
+  (fn [adjust-volume-count _]
+    (dec adjust-volume-count)))
