@@ -4,7 +4,8 @@
             [promesa.core :as p]
             [gakki.auth :as auth]
             [gakki.accounts.core :as ap]
-            [gakki.accounts :refer [providers]]))
+            [gakki.accounts :refer [providers]]
+            [gakki.player.remote :as remote]))
 
 (reg-fx
   :auth/load!
@@ -28,3 +29,12 @@
          p/all
          (p/map (fn []
                   (>evt [:loading/update-count dec]))))))
+
+(reg-fx
+  :player/play!
+  (fn [item]
+    (remote/play! (:provider item) item)))
+
+(reg-fx :player/unpause!  remote/unpause!)
+(reg-fx :player/pause!  remote/pause!)
+(reg-fx :player/set-volume!  remote/set-volume!)

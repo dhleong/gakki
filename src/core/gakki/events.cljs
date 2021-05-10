@@ -1,5 +1,7 @@
 (ns gakki.events
-  (:require [re-frame.core :refer [reg-event-db
+  (:require [gakki.const :refer [max-volume-int 
+]]
+            [re-frame.core :refer [reg-event-db
                                    reg-event-fx
                                    inject-cofx
                                    path trim-v]]
@@ -54,12 +56,13 @@
                   :up -1
                   :down 1)
           idx (index-of categories :selected?)]
-      (when-let [next-id (when idx
-                           (category-id
-                             (nth categories
-                                  (mod (+ idx delta)
-                                       (count categories)))))]
-        {:db (assoc db :home/selection {:category next-id})}))))
+      (when-let [next-category (when idx
+                                 (nth categories
+                                      (mod (+ idx delta)
+                                           (count categories))))]
+        {:db (assoc db
+                    :home/selection {:category (category-id next-category)}
+                    :home/selected (first (:items next-category)))}))))
 
 (reg-event-fx
   :home/navigate-row
@@ -76,8 +79,50 @@
                   :left -1
                   :right 1)
           idx (index-of items :selected?)]
-      (when-let [next-id (when idx
-                           (:id (nth items
-                                     (mod (+ idx delta)
-                                          (count items)))))]
-        {:db (assoc-in db [:home/selection :item] next-id)}))))
+      (when-let [next-item (when idx
+                             (nth items
+                                  (mod (+ idx delta)
+                                       (count items))))]
+        {:db (-> db
+                 (assoc-in [:home/selection :item] (:id next-item))
+                 (assoc :home/selected next-item))}))))
+
+(reg-event-fx
+  :home/open-selected
+  [trim-v]
+  (fn [{:keys [db]} _]
+    ; TODO play with currently-set volume level
+    (when-let [item (:home/selected db)]
+      (case (:kind item)
+        :song {:db (-> db
+                       (assoc-in [:player :current] item)
+                       (assoc-in [:player :state] :playing))
+               :player/play! item}
+        (println "TODO:" item)))))
+
+(reg-event-fx
+  :player/play-pause
+  [trim-v (path :player :state)]
+  (fn [{current-state :db} _]
+    (when-let [new-state (case current-state
+                           :playing :paused
+                           :paused :playing
+                           nil nil)]
+      (assoc {:db new-state}
+             (case new-state
+               :playing :player/unpause!
+               :paused :player/pause!)
+             :!))))
+
+(reg-event-fx
+  :player/volume-inc
+  [trim-v (path :player :volume)]
+  (fn [{current-volume :db} [delta]]
+    ; TODO persist volume preference
+    (let [current-volume (or current-volume
+                             max-volume-int)
+          new-volume (-> (+ current-volume delta)
+                         (max 0)
+                         (min max-volume-int))]
+      {:db new-volume
+       :player/set-volume! (/ new-volume max-volume-int)})))

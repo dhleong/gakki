@@ -1,5 +1,7 @@
 (ns gakki.subs
-  (:require [re-frame.core :refer [reg-sub]]
+  (:require [gakki.const :refer [max-volume-int 
+]]
+            [re-frame.core :refer [reg-sub]]
             [gakki.util.media :refer [category-id]]))
 
 (reg-sub :page :page)
@@ -9,6 +11,14 @@
   :loading?
   (fn [db _]
     (> (:loading-count db) 0)))
+
+
+; ======= player ==========================================
+
+(reg-sub
+  :player/volume
+  (fn [db _]
+    (get-in db [:player :volume] max-volume-int)))
 
 
 ; ======= home ============================================

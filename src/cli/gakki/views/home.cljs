@@ -1,5 +1,6 @@
 (ns gakki.views.home
-  (:require [archetype.util :refer [<sub >evt]]
+  (:require [applied-science.js-interop :as j]
+            [archetype.util :refer [<sub >evt]]
             ["figures" :as figures]
             ["ink" :as k]
             ["ink-spinner" :default Spinner]
@@ -7,7 +8,7 @@
                                                  vertical-list]]
             [gakki.theme :as theme]))
 
-(defn- handle-input [input _k]
+(defn- handle-input [input k]
   (case input
     "r" (>evt [:providers/refresh!])
 
@@ -16,8 +17,16 @@
     "h" (>evt [:home/navigate-row :left])
     "l" (>evt [:home/navigate-row :right])
 
-    nil ; ignore, for now
-    ))
+    ; TODO: these should probably be global...
+    "p" (>evt [:player/play-pause])
+    "[" (>evt [:player/volume-inc -1])
+    "]" (>evt [:player/volume-inc 1])
+
+    (cond
+      (j/get k :return) (>evt [:home/open-selected])
+
+      :else (when goog.DEBUG
+              (println input k)))))
 
 (defn- category-item [{:keys [title selected?]}]
   [:> k/Box {:width :20%
