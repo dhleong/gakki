@@ -27,6 +27,10 @@
                                    playable)
                    (send! {:type :playable-end}))))))
 
+(defn- apply-config [playable config]
+  (when-let [volume (:volume-percent config)]
+    (player/set-volume playable volume)))
+
 
 ; ======= Event handlers ==================================
 
@@ -34,7 +38,7 @@
   (when-let [playable (:playable @state)]
     (player/pause playable)))
 
-(defn play [{:keys [provider info]}]
+(defn play [{:keys [provider info config]}]
   (swap! state update :playable
 
          (fn [old]
@@ -42,9 +46,9 @@
              (player/close old))
 
            (if-let [provider-obj (get providers provider)]
-             ; TODO: delegate by provider (keyword ID))
              (doto (ap/create-playable provider-obj info)
                (listen-for-events)
+               (apply-config config)
                (player/play))
 
              (throw (ex-info "No such provider" {:id provider}))))))

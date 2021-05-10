@@ -1,6 +1,5 @@
 (ns gakki.subs
-  (:require [gakki.const :refer [max-volume-int 
-]]
+  (:require [gakki.const :refer [max-volume-int]]
             [re-frame.core :refer [reg-sub]]
             [gakki.util.media :refer [category-id]]))
 

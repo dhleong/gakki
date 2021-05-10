@@ -32,8 +32,8 @@
 
 (reg-fx
   :player/play!
-  (fn [item]
-    (remote/play! (:provider item) item)))
+  (fn [{:keys [item config]}]
+    (remote/play! (:provider item) item config)))
 
 (reg-fx :player/unpause!  remote/unpause!)
 (reg-fx :player/pause!  remote/pause!)

@@ -39,11 +39,14 @@
   (send! (ensure-launched!)
          {:type :pause}))
 
-(defn play! [provider-id info]
-  (send! (ensure-launched!)
-         {:type :play
-          :provider provider-id
-          :info info}))
+(defn play!
+  ([provider-id info] (play! provider-id info nil))
+  ([provider-id info config]
+   (send! (ensure-launched!)
+          {:type :play
+           :provider provider-id
+           :config config
+           :info info})))
 
 (defn set-volume! [volume-level]
   (send! (ensure-launched!)

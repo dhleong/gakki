@@ -96,16 +96,17 @@
 
 (reg-event-fx
   :home/open-selected
-  [trim-v]
-  (fn [{:keys [db]} _]
-    ; TODO play with currently-set volume level
+  [trim-v (inject-cofx ::inject/sub [:player/volume-percent])]
+  (fn [{:keys [db] volume-percent :player/volume-percent} _]
     (when-let [item (:home/selected db)]
       (case (:kind item)
         :song {:db (-> db
                        (assoc-in [:player :current] item)
                        (assoc-in [:player :state] :playing))
-               :player/play! item}
-        (println "TODO:" item)))))
+               :player/play! {:item item
+                              :config {:volume-percent volume-percent}}}
+
+        (println "TODO support opening: " item)))))
 
 
 ; ======= Player control ==================================
