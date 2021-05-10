@@ -76,22 +76,23 @@
    (inject-cofx ::inject/sub [:home/selection])
    (inject-cofx ::inject/sub [:home/categories])]
   (fn [{db :db categories :home/categories selections :home/selection} [direction]]
-    (let [{:keys [items]} (or (when-let [id (:category selections)]
-                                (->> categories
-                                     (filter #(= id (category-id %)))
-                                     first))
-                              (first categories))
+    (let [{:keys [items] :as category} (or (when-let [id (:category selections)]
+                                             (->> categories
+                                                  (filter #(= id (category-id %)))
+                                                  first))
+                                           (first categories))
           delta (case direction
                   :left -1
                   :right 1)
-          idx (index-of items :selected?)]
-      (when-let [next-item (when idx
+          idx (or (index-of items :selected?) 0)]
+      (when-let [next-item (when (seq items)
                              (nth items
                                   (mod (+ idx delta)
                                        (count items))))]
-        {:db (-> db
-                 (assoc-in [:home/selection :item] (:id next-item))
-                 (assoc :home/selected next-item))}))))
+        {:db (assoc db
+                    :home/selection {:category (category-id category)
+                                     :item (:id next-item)}
+                    :home/selected next-item)}))))
 
 (reg-event-fx
   :home/open-selected
