@@ -38,6 +38,7 @@
     [:> k/Text {:color theme/text-color-disabled}
      " (" (count items) ")"]]
    [horizontal-list
+    :follow-selected? selected?
     :items items
     :render category-item]
    ])
@@ -58,6 +59,7 @@
 
      [vertical-list
       :items categories
+      :follow-selected? true
       :key-fn :title
       :render category-row]
      ]))

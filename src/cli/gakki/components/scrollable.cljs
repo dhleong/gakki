@@ -1,32 +1,39 @@
 (ns gakki.components.scrollable
   (:require ["ink" :as k]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [gakki.util.coll :refer [index-of]]))
 
-(defn scrollable-list [& {:keys [flex-direction
-                                 key-fn
-                                 items
-                                 render]}]
-  ; TODO support persisting scroll position via re-frame
+(defn scrollable-list [{:keys [flex-direction
+                               follow-selected?
+                               key-fn
+                               per-page
+                               items
+                               render]
+                        :or {per-page 5}}]
   (r/with-let [scroll (r/atom 0)
+               last-selected (atom nil) ; NOT r/atom, to avoid re-render
                key-fn (or key-fn :id)]
-    (let [items (->> items
-                     (drop @scroll)
-                     (take 5))]
+
+    (let [scroll (or (when follow-selected?
+                       (when-let [selected-idx (index-of items :selected?)]
+                         (when-not (= @last-selected selected-idx)
+                           (reset! last-selected selected-idx)
+                           (* (js/Math.floor (/ selected-idx per-page))
+                              per-page))))
+
+                     @scroll)
+          items (->> items
+                     (drop scroll)
+                     (take per-page))]
       [:> k/Box {:flex-direction flex-direction}
        (for [item items]
          ^{:key (key-fn item)}
          [render item])])))
 
-(defn vertical-list [& {:keys [key-fn items render]}]
+(defn vertical-list [& {:as args}]
   [scrollable-list
-   :flex-direction :column
-   :key-fn key-fn
-   :items items
-   :render render])
+   (assoc args :flex-direction :column)])
 
-(defn horizontal-list [& {:keys [key-fn items render]}]
+(defn horizontal-list [& {:as args}]
   [scrollable-list
-   :flex-direction :row
-   :key-fn key-fn
-   :items items
-   :render render])
+   (assoc args :flex-direction :row)])
