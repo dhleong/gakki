@@ -53,6 +53,16 @@
     :render category-item]
    ])
 
+(defn- header []
+  [:> k/Box {:flex-direction :row
+             :justify-content :space-between}
+   [:> k/Text {:color theme/header-color-on-background}
+    (if (<sub [:loading?])
+      [:> Spinner {:type "dots"}]
+      " ")
+    " Gakki Home"]
+   [player-mini]])
+
 (defn view []
   (k/useInput handle-input)
 
@@ -61,14 +71,7 @@
                :border-color theme/text-color-on-background
                :border-style :round
                :padding-x 1}
-     [:> k/Box {:flex-direction :row
-                :justify-content :space-between}
-      [:> k/Text {:color theme/header-color-on-background}
-       (if (<sub [:loading?])
-         [:> Spinner {:type "dots"}]
-         " ")
-       " Gakki Home"]
-      [player-mini]]
+     [header]
 
      [vertical-list
       :items categories
