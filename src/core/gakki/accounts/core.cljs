@@ -6,6 +6,11 @@
     [this account]
     "Get the name/identifier of the account")
 
+  (create-playable
+    [this playable-info]
+    "Given a playable info object (as returned from fetch-home), return
+     an IPlayable instance for object.")
+
   (fetch-home
     [this account]
     "Return a promise resolving to a map of information about things

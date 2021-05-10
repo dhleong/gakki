@@ -3,7 +3,8 @@
             [promesa.core :as p]
             ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
-            [gakki.accounts.core :refer [IAccountProvider]]))
+            [gakki.accounts.core :refer [IAccountProvider]]
+            [gakki.player.ytm :refer [youtube-id->playable]]))
 
 (def ^:private account->creds
   (memoize
@@ -57,13 +58,10 @@
   (describe-account [_ account]
     (str (-> account :user :email)))
 
+  (create-playable
+    [_this info]
+    (youtube-id->playable (:id info)))
+
   (fetch-home [_ account]
     ; NOTE: this is pulled out to a separate fn to facilitate hot-reload dev
     (do-fetch-home account)))
-
-(comment
-
-  (p/let [account (:ytm @(re-frame.core/subscribe [:accounts]))
-          home (do-fetch-home account)]
-    (println home))
-  )

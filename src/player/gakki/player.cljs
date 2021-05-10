@@ -4,8 +4,9 @@
    corrupting the main CLI UI, audio playback is delegated to a
    separate, child process that is communicated with over IPC"
   (:require [cognitect.transit :as t]
-            [gakki.player.core :as player]
-            [gakki.player.ytm :refer [youtube-id->playable]]))
+            [gakki.accounts.core :as ap]
+            [gakki.accounts :refer [providers]]
+            [gakki.player.core :as player]))
 
 (defonce ^:private state (atom nil))
 
@@ -40,10 +41,13 @@
            (when old
              (player/close old))
 
-           ; TODO: delegate by provider (keyword ID)
-           (doto (youtube-id->playable (:id info))
-             (listen-for-events)
-             (player/play)))))
+           (if-let [provider-obj (get providers provider)]
+             ; TODO: delegate by provider (keyword ID))
+             (doto (ap/create-playable provider-obj info)
+               (listen-for-events)
+               (player/play))
+
+             (throw (ex-info "No such provider" {:id provider}))))))
 
 (defn set-volume [{:keys [level]}]
   (when-let [playable (:playable @state)]
