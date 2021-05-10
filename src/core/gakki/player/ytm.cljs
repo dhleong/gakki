@@ -1,10 +1,10 @@
 (ns gakki.player.ytm
   (:require [applied-science.js-interop :as j]
-            ["fs" :as fs]
             ["node-fetch" :as fetch]
             ["ytdl-core" :as ytdl]
             [promesa.core :as p]
             [gakki.util.convert :refer [->int]]
+            [gakki.player.core :as gp]
             [gakki.player.caching :refer [caching]]
             [gakki.player.promised :refer [promise->playable]]))
 
@@ -48,25 +48,12 @@
                  (assoc :s "<s>")
                  str)))
 
-  (p/let [{:keys [stream config]} (youtube-id->stream "8FV4gcs-MNA")]
-    (println config)
-    (-> stream
-        (.on "end" (fn []
-                     (println "done!")))
-        (.on "error" (fn [e]
-                       (println "ERR" e)))
-        (.pipe (fs/createWriteStream "/Users/daniel/Library/Caches/gakki/ycm.cache"))
-        (.on "error" (fn [e]
-                       (println "ERR" e)))
-        )
-    (.resume stream))
-
   (def playable
     (doto (youtube-id->playable "8FV4gcs-MNA")
-      (gakki.player.core/set-volume 0.25)
-      (gakki.player.core/play)))
+      (gp/set-volume 0.25)
+      (gp/play)))
 
-  (gakki.player.core/set-volume playable 0.05)
-  (gakki.player.core/play playable)
-  (gakki.player.core/pause playable)
+  (gp/set-volume playable 0.05)
+  (gp/play playable)
+  (gp/pause playable)
   )

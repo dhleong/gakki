@@ -3,7 +3,7 @@
             [promesa.core :as p]
             ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
-            [gakki.accounts.core :as ap :refer [IAccountProvider]]))
+            [gakki.accounts.core :refer [IAccountProvider]]))
 
 (def ^:private account->creds
   (memoize
@@ -14,7 +14,7 @@
           #js {:persistCredentials
                (fn [_creds]
                  (p/do!
-                   (println "Persist creds")))})))))
+                   (println "TODO: Persist creds")))})))))
 
 (def ^:private ytm-kinds
   {"MUSIC_PAGE_TYPE_ARTIST" :artist
@@ -39,6 +39,18 @@
                                             :pageType])]
                (get ytm-kinds ytm-kind :unknown)))})
 
+(defn- do-fetch-home [account]
+  (p/let [creds (account->creds account)
+          cookies-obj (.get creds)
+          ^js ytm (YTMusic. (j/get cookies-obj :cookies))
+          home (.getHomePage ytm)]
+    (println home)
+    {:categories
+     (->> (j/get home :content)
+          (map (j/fn [^:js {:keys [title content]}]
+                 {:title title
+                  :items (map ->item content)})))}))
+
 (deftype YTMAccountProvider []
   IAccountProvider
   (get-name [_this] "YouTube Music")
@@ -46,20 +58,12 @@
     (str (-> account :user :email)))
 
   (fetch-home [_ account]
-    (p/let [creds (account->creds account)
-            cookies-obj (.get creds)
-            ^js ytm (YTMusic. (j/get cookies-obj :cookies))
-            home (.getHomePage ytm)]
-      {:categories
-       (->> (j/get home :content)
-            (map (j/fn [^:js {:keys [title content]}]
-                   {:title title
-                    :items (map ->item content)})))})))
+    ; NOTE: this is pulled out to a separate fn to facilitate hot-reload dev
+    (do-fetch-home account)))
 
 (comment
 
   (p/let [account (:ytm @(re-frame.core/subscribe [:accounts]))
-          provider (->YTMAccountProvider)
-          home (ap/fetch-home provider account)]
+          home (do-fetch-home account)]
     (println home))
   )

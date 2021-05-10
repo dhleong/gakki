@@ -9,8 +9,25 @@
 
 (defonce ^:private state (atom nil))
 
+(def ^:private writer (t/writer :json))
+
 (defn init []
   (println "Started"))
+
+(defn- send! [msg]
+  (->> msg
+       (t/write writer)
+       (js/process.send)))
+
+(defn- listen-for-events [playable]
+  (doto (player/events playable)
+    (.on "end" (fn on-end []
+                 (when (identical? (:playable @state)
+                                   playable)
+                   (send! {:type :playable-end}))))))
+
+
+; ======= Event handlers ==================================
 
 (defn pause [_]
   (when-let [playable (:playable @state)]
@@ -25,6 +42,7 @@
 
            ; TODO: delegate by provider (keyword ID)
            (doto (youtube-id->playable (:id info))
+             (listen-for-events)
              (player/play)))))
 
 (defn set-volume [{:keys [level]}]

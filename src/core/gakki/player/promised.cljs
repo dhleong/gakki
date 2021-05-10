@@ -1,28 +1,30 @@
 (ns gakki.player.promised
-  (:require [gakki.player.decode :refer [decode-stream 
-]]
+  (:require ["events" :refer [EventEmitter]]
+            [gakki.player.decode :refer [decode-stream]]
             [promesa.core :as p]
             [gakki.player.core :as player :refer [IPlayable]]
             [gakki.player.pcm :refer [pcm-stream->playable]]))
 
-(deftype PromisedStreamPlayable [state]
+(deftype PromisedStreamPlayable [state, events]
   IPlayable
-  (play [this]
+  (events [_this] events)
+
+  (play [_this]
     (swap! state assoc :playing? true)
     (when-let [delegate (:playable @state)]
       (player/play delegate)))
 
-  (pause [this]
+  (pause [_this]
     (swap! state assoc :playing? false)
     (when-let [delegate (:playable @state)]
       (player/pause delegate)))
 
-  (close [this]
+  (close [_this]
     (swap! state assoc :closed? true)
     (when-let [delegate (:playable @state)]
       (player/close delegate)))
 
-  (set-volume [this level]
+  (set-volume [_this level]
     (swap! state assoc :volume-level level)
     (when-let [delegate (:playable @state)]
       (player/set-volume delegate level)))
@@ -35,10 +37,12 @@
 
    See gakki.player.decode/decode-stream for the :config map format"
   ([pending]
-   (let [state (atom nil)]
+   (let [state (atom nil)
+         events (EventEmitter.)]
      (p/let [{:keys [config stream]} pending]
        (when-not (:closed? @state)
          (let [playable (pcm-stream->playable
+                          events
                           config
                           (decode-stream config stream))]
            (swap! state assoc :playable playable)
@@ -50,4 +54,4 @@
            (when (:playing? @state)
              (player/play playable)))))
 
-     (->PromisedStreamPlayable state))))
+     (->PromisedStreamPlayable state events))))

@@ -22,6 +22,9 @@
   (fn [db [new-page]]
     (assoc db :page new-page)))
 
+
+; ======= Auth/Providers ==================================
+
 (reg-event-fx
   :auth/set
   [trim-v]
@@ -41,6 +44,9 @@
   (fn [{:keys [db]} _]
     (when-let [accounts (:accounts db)]
       {:providers/load! accounts})))
+
+
+; ======= Home control ====================================
 
 (reg-event-db
   :home/replace
@@ -100,6 +106,9 @@
                :player/play! item}
         (println "TODO:" item)))))
 
+
+; ======= Player control ==================================
+
 (reg-event-fx
   :player/play-pause
   [trim-v (path :player :state)]
@@ -136,3 +145,15 @@
   [trim-v (path :player :adjusting-volume?)]
   (fn [adjust-volume-count _]
     (dec adjust-volume-count)))
+
+
+; ======= Player feedback =================================
+
+(reg-event-db
+  :player/event
+  [trim-v (path :player)]
+  (fn [db [{what :type}]]
+    (case what
+      :playable-end (assoc db :state :paused)
+
+      (println "WARN: Unexpected player event type: " what))))

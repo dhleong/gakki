@@ -1,9 +1,11 @@
 (ns gakki.player.remote
   "Remote-control for the player subprocess"
-  (:require ["child_process" :refer [fork]]
+  (:require [archetype.util :refer [>evt]]
+            ["child_process" :refer [fork]]
             [cognitect.transit :as t]))
 
 (def ^:private writer (t/writer :json))
+(def ^:private reader (t/reader :json))
 
 (defonce state (atom nil))
 
@@ -18,10 +20,17 @@
 
     (let [proc (fork "resources/player.js"
                      #js {:stdio "ignore"})
-          clear-state! #(reset! state nil)]
+          clear-state! (fn [e]
+                         (when e
+                           (println "Player Exit:" e))
+                         (reset! state nil))]
       (doto proc
         (.on "exit" clear-state!)
-        (.on "error" clear-state!))
+        (.on "error" clear-state!)
+        (.on "message" (fn [raw-msg]
+                         (let [msg (->> raw-msg
+                                        (t/read reader))]
+                           (>evt [:player/event msg])))))
 
       (doto (reset! state {:process proc})
         (send! {:type :init})))))
@@ -45,8 +54,13 @@
   (send! (ensure-launched!)
          {:type :unpause}))
 
+
+
 (comment
-  (.kill (:process @state))
+  (swap! state (fn [{:keys [process]}]
+                 (when process
+                   (.kill process))
+                 nil))
 
   (pause!)
   (unpause!)

@@ -1,11 +1,14 @@
 (ns gakki.player.pcm
-  (:require ["speaker" :as Speaker]
+  (:require ["events" :refer [EventEmitter]]
+            ["speaker" :as Speaker]
             ["prism-media" :as prism]
             [gakki.player.core :as player :refer [IPlayable]]))
 
-(deftype PcmStreamPlayable [state, ^js stream, ^js volume-ctrl]
+(deftype PcmStreamPlayable [state, events, ^js stream, ^js volume-ctrl]
   IPlayable
-  (play [this]
+  (events [_this] events)
+
+  (play [_this]
     (when-not (:speaker @state)
       (let [speaker ((:create-speaker @state))]
         (swap! state assoc :speaker speaker)
@@ -13,7 +16,7 @@
             (.pipe volume-ctrl)
             (.pipe speaker)))))
 
-  (pause [this]
+  (pause [_this]
     (when-let [speaker (:speaker @state)]
       (swap! state dissoc :speaker)
 
@@ -29,24 +32,28 @@
   (close [this]
     (player/pause this))
 
-  (set-volume [this level]
+  (set-volume [_this level]
     (.setVolume volume-ctrl level)))
 
 (defn pcm-stream->playable
   "Create a Playable from a config map and a PCM stream"
-  [{:keys [sample-rate channels]}, ^js stream]
-  (let [on-error (fn on-error [e]
-                   ; TODO log?
-                   )
-        create-speaker #(doto (Speaker.
-                                #js {:sampleRate sample-rate
-                                     :channels channels
-                                     :bitDepth 16})
-                          (.on "error" on-error))
-        volume-ctrl (prism/VolumeTransformer. #js {:type "s16le"})]
+  ([config, ^js stream] (pcm-stream->playable (EventEmitter.) config stream))
+  ([^EventEmitter events, {:keys [sample-rate channels]}, ^js stream]
+   (let [on-error (fn on-error [_e]
+                    ; TODO log?
+                    )
+         create-speaker #(doto (Speaker.
+                                 #js {:sampleRate sample-rate
+                                      :channels channels
+                                      :bitDepth 16})
+                           (.on "error" on-error))
+         volume-ctrl (prism/VolumeTransformer. #js {:type "s16le"})]
 
-    (.on stream "error" on-error)
+     (doto stream
+       (.on "end" #(.emit events "end"))
+       (.on "error" on-error))
 
-    (->PcmStreamPlayable
-      (atom {:create-speaker create-speaker})
-      stream volume-ctrl)))
+     (->PcmStreamPlayable
+       (atom {:create-speaker create-speaker})
+       events
+       stream volume-ctrl))))
