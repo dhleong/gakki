@@ -14,7 +14,7 @@
                  :flex-direction :row
                  :justify-content :flex-end}
 
-       (when volume
+       (when-not (nil? volume)
          [:> k/Text {:color theme/text-color-on-background}
           "Volume: " (int (* volume 100)) "% "])
 
