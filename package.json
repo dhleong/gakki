@@ -11,6 +11,7 @@
     "cli": "node resources/cli.js",
     "stop": "shadow-cljs stop",
     "show": "yarn desktop",
+    "build:macos": "(cd macos/gakki && xcodebuild)",
     "build:release": "shadow-cljs release :cli :player",
     "old:clojure": "clojure -Sdeps '{:deps {antq/antq {:mvn/version \"RELEASE\"}}}' -m antq.core",
     "old": "yarn old:clojure; yarn outdated",

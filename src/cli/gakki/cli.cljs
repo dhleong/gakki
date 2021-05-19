@@ -4,7 +4,9 @@
             ["ink" :as k]
             [gakki.events :as events]
             [gakki.fx]
+            [gakki.cli.fx]
             [gakki.subs]
+            [gakki.native :as native]
             [gakki.util.logging :as logging]
             [gakki.views :as views]))
 
@@ -16,6 +18,7 @@
   (set! (.-title js/process) "gakki")
 
   (logging/patch)
-
   (re-frame/dispatch-sync [::events/initialize-db])
+  (native/init)
+
   (mount-root))

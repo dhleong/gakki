@@ -103,6 +103,7 @@
         :song {:db (-> db
                        (assoc-in [:player :current] item)
                        (assoc-in [:player :state] :playing))
+               :native/set-now-playing! item
                :player/play! {:item item
                               :config {:volume-percent volume-percent}}}
 
@@ -119,7 +120,8 @@
                            :playing :paused
                            :paused :playing
                            nil nil)]
-      (assoc {:db new-state}
+      (assoc {:db new-state
+              :native/set-state! new-state}
              (case new-state
                :playing :player/unpause!
                :paused :player/pause!)
@@ -151,11 +153,12 @@
 
 ; ======= Player feedback =================================
 
-(reg-event-db
+(reg-event-fx
   :player/event
   [trim-v (path :player)]
-  (fn [db [{what :type}]]
+  (fn [{:keys [db]} [{what :type}]]
     (case what
-      :playable-end (assoc db :state :paused)
+      :playable-end {:db (assoc db :state :paused)
+                     :native/set-state! :paused}
 
       (println "WARN: Unexpected player event type: " what))))
