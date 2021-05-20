@@ -18,7 +18,8 @@
                    (println "TODO: Persist creds")))})))))
 
 (def ^:private ytm-kinds
-  {"MUSIC_PAGE_TYPE_ARTIST" :artist
+  {"MUSIC_PAGE_TYPE_ALBUM" :album
+   "MUSIC_PAGE_TYPE_ARTIST" :artist
    "MUSIC_PAGE_TYPE_PLAYLIST" :playlist})
 
 (j/defn ^:private ->item [^:js {:keys [title navigationEndpoint]}]
@@ -38,7 +39,9 @@
                                             :browseEndpointContextSupportedConfigs
                                             :browseEndpointContextMusicConfig
                                             :pageType])]
-               (get ytm-kinds ytm-kind :unknown)))})
+               (get ytm-kinds ytm-kind (keyword "unknown"
+                                                ytm-kind))))})
+
 
 (defn- do-fetch-home [account]
   (p/let [creds (account->creds account)
