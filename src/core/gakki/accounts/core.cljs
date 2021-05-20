@@ -18,4 +18,8 @@
      {:recent []
       :categories
       [{:name \"Category Name\"
-        :items []}]}"))
+        :items []}]}")
+
+  (resolve-playlist
+    [this account playlist-id]
+    "Return a promise..."))

@@ -1,5 +1,6 @@
 (ns gakki.accounts.ytm
   (:require [applied-science.js-interop :as j]
+            [clojure.string :as str]
             [promesa.core :as p]
             ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
@@ -22,12 +23,38 @@
    "MUSIC_PAGE_TYPE_ARTIST" :artist
    "MUSIC_PAGE_TYPE_PLAYLIST" :playlist})
 
-(j/defn ^:private ->item [^:js {:keys [title navigationEndpoint]}]
-  {:title (or (when (string? title)
-                title)
-              (when-let [text (j/get title :text)]
-                text)
-              (str title))
+(defn- ->text [obj]
+  (or (when (string? obj)
+        obj)
+      (when-let [text (j/get obj :text)]
+        text)
+
+      (when (js/Array.isArray obj)
+        (->> obj
+             (map ->text)
+             (str/join "; ")))
+
+      (str obj)))
+
+(defn- ->thumbnail [obj]
+  (when (js/Array.isArray obj)
+    (when-let [entry (first obj)]
+      (j/get entry :url))))
+
+(defn- ->seconds [s]
+  (let [parts (->> (str/split s ":")
+                   (map #(js/parseInt % 10)))
+        [h m s] (case (count parts)
+                  0 [0 0 0]
+                  1 [0 0 (first parts)]
+                  2 (cons 0 parts)
+                  3 parts)]
+    (+ (* h 3600)
+       (* m 60)
+       s)))
+
+(j/defn ^:private ->home-item [^:js {:keys [title navigationEndpoint]}]
+  {:title (->text title)
    :provider :ytm
    :id (or (j/get-in navigationEndpoint [:watchEndpoint :videoId])
            (j/get-in navigationEndpoint [:browseEndpoint :browseId]))
@@ -42,18 +69,41 @@
                (get ytm-kinds ytm-kind (keyword "unknown"
                                                 ytm-kind))))})
 
+(defn- account->client [account]
+  (p/let [creds (account->creds account)
+          cookies-obj (.get creds)]
+    (YTMusic. (j/get cookies-obj :cookies))))
 
 (defn- do-fetch-home [account]
-  (p/let [creds (account->creds account)
-          cookies-obj (.get creds)
-          ^js ytm (YTMusic. (j/get cookies-obj :cookies))
+  (p/let [^YTMusic ytm (account->client account)
           home (.getHomePage ytm)]
     (println home)
     {:categories
      (->> (j/get home :content)
           (map (j/fn [^:js {:keys [title content]}]
                  {:title title
-                  :items (map ->item content)})))}))
+                  :items (map ->home-item content)})))}))
+
+(j/defn ^:private ->playlist-item [^:js {:keys [id duration thumbnail title
+                                                author album]}]
+  {:id id
+   :duration (->seconds duration)
+   :image-url (->thumbnail thumbnail)
+   :title (->text title)
+   :artist (->text author)
+   :album (->text album)})
+
+(defn- do-resolve-playlist [account playlist-id]
+  (p/let [^YTMusic ytm (account->client account)
+          data (.getPlaylist ytm playlist-id)]
+    ; TODO lazily continue loading the playlist?
+    (println data)
+    {:id (j/get data :playlistId)
+     :title (->text (j/get data :title))
+     :image-url (->thumbnail (j/get data :thumbnail))
+     :items
+     (->> (j/get data :content)
+          (map ->playlist-item))}))
 
 (deftype YTMAccountProvider []
   IAccountProvider
@@ -67,4 +117,8 @@
 
   (fetch-home [_ account]
     ; NOTE: this is pulled out to a separate fn to facilitate hot-reload dev
-    (do-fetch-home account)))
+    (do-fetch-home account))
+
+  (resolve-playlist [_ account playlist-id]
+    (do-resolve-playlist account playlist-id))
+  )
