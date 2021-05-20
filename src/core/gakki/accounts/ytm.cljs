@@ -87,6 +87,8 @@
 (j/defn ^:private ->playlist-item [^:js {:keys [id duration thumbnail title
                                                 author album]}]
   {:id id
+   :provider :ytm
+   :kind :song  ; an assumption...
    :duration (->seconds duration)
    :image-url (->thumbnail thumbnail)
    :title (->text title)
@@ -99,6 +101,7 @@
     ; TODO lazily continue loading the playlist?
     (println data)
     {:id (j/get data :playlistId)
+     :provider :ytm
      :title (->text (j/get data :title))
      :image-url (->thumbnail (j/get data :thumbnail))
      :items

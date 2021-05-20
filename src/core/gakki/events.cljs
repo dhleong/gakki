@@ -96,21 +96,41 @@
 
 (reg-event-fx
   :home/open-selected
-  [trim-v (inject-cofx ::inject/sub [:player/volume-percent])]
-  (fn [{:keys [db] volume-percent :player/volume-percent} _]
+  [trim-v]
+  (fn [{:keys [db]} _]
     (when-let [item (:home/selected db)]
-      (case (:kind item)
-        :song {:db (-> db
-                       (assoc-in [:player :current] item)
-                       (assoc-in [:player :state] :playing))
-               :native/set-now-playing! item
-               :player/play! {:item item
-                              :config {:volume-percent volume-percent}}}
-
-        (println "TODO support opening: " item)))))
+      {:dispatch [:player/open item]})))
 
 
 ; ======= Player control ==================================
+
+(reg-event-fx
+  :player/open
+  [trim-v]
+  (fn [{:keys [db]} [item]]
+    (case (:kind item)
+      :song {:dispatch [::set-current-playable item]}
+
+      :playlist (if-let [items (seq (:items item))]
+                  {:db (-> db
+                           (assoc-in [:player :queue] items))
+                   :dispatch [::set-current-playable (first items)]}
+
+                  ; Unresolved playlist; fetch and resolve now:
+                  {:providers/resolve-and-open-playlist [(:accounts db) item]})
+
+      (println "TODO support opening: " item))))
+
+(reg-event-fx
+  ::set-current-playable
+  [trim-v (inject-cofx ::inject/sub [:player/volume-percent])]
+  (fn [{:keys [db] volume-percent :player/volume-percent} [playable]]
+    {:db (-> db
+             (assoc-in [:player :current] playable)
+             (assoc-in [:player :state] :playing))
+     :native/set-now-playing! playable
+     :player/play! {:item playable
+                    :config {:volume-percent volume-percent}}}))
 
 (reg-event-fx
   :player/play-pause
@@ -153,12 +173,19 @@
 
 ; ======= Player feedback =================================
 
+(defn- handle-playable-end [player-state]
+  (if-let [next-item (first (:queue player-state))]
+    {:db (update player-state :queue next)
+     ::set-current-playable next-item}
+
+    {:db (assoc player-state :state :paused)
+     :native/set-state! :paused}))
+
 (reg-event-fx
   :player/event
   [trim-v (path :player)]
   (fn [{:keys [db]} [{what :type}]]
     (case what
-      :playable-end {:db (assoc db :state :paused)
-                     :native/set-state! :paused}
+      :playable-end (handle-playable-end db)
 
       (println "WARN: Unexpected player event type: " what))))

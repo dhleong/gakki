@@ -31,6 +31,27 @@
                   (>evt [:loading/update-count dec]))))))
 
 (reg-fx
+  :providers/resolve-and-open-playlist
+  (fn [[accounts playlist]]
+    (let [k (:provider playlist)
+          provider (get providers k)
+          account (get accounts k)]
+      (if (and provider account)
+        (-> (p/let [result (ap/resolve-playlist
+                             provider
+                             account
+                             (:id playlist))]
+              (if (seq (:items result))
+                (>evt [:player/open result])
+                (println "[err: " k "] Empty playlist: " result)))
+
+            (p/catch (fn [e]
+                       ; TODO logging...
+                       (println "[err: " k "] " e))))
+
+        (println "[err: " k "] Invalid provider or no account")))))
+
+(reg-fx
   :player/play!
   (fn [{:keys [item config]}]
     (remote/play! (:provider item) item config)))
