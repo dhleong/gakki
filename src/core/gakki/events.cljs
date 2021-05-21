@@ -1,6 +1,5 @@
 (ns gakki.events
-  (:require [gakki.const :refer [max-volume-int 
-]]
+  (:require [gakki.const :refer [max-volume-int]]
             [re-frame.core :refer [reg-event-db
                                    reg-event-fx
                                    inject-cofx
