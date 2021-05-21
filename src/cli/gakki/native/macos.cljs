@@ -35,6 +35,7 @@
 (defn- handle-media-event [{:keys [event]}]
   (case event
     :toggle (>evt [:player/play-pause])
+    :next-track (>evt [:player/next-in-queue])
 
     (println "TODO: handle media event: " event)))
 

@@ -21,8 +21,7 @@
     (let [proc (fork "resources/player.js"
                      #js {:stdio "ignore"})
           clear-state! (fn [e]
-                         (when e
-                           (println "Player Exit:" e))
+                         (println "Player Exit:" e)
                          (reset! state nil))]
       (doto proc
         (.on "exit" clear-state!)

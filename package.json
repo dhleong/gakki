@@ -50,6 +50,6 @@
     "uuid": "^8.3.0",
     "youtubish": "^1.4.0",
     "ytdl-core": "^4.7.0",
-    "ytmusic": "^0.0.5"
+    "ytmusic": "^0.0.6"
   }
 }

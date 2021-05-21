@@ -899,9 +899,9 @@ find-up@^4.0.0:
     path-exists "^4.0.0"
 
 follow-redirects@^1.10.0:
-  version "1.14.0"
-  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.14.0.tgz#f5d260f95c5f8c105894491feee5dc8993b402fe"
-  integrity sha512-0vRwd7RKQBTt+mgu87mtYeofLFZpTas2S9zY+jIeuLJMNvudIgF52nr19q40HOwH5RrhWIPuj9puybzSJiRrVg==
+  version "1.14.1"
+  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.14.1.tgz#d9114ded0a1cfdd334e164e6662ad02bfd91ff43"
+  integrity sha512-HWqDgT7ZEkqRzBvc2s64vSZ/hfOceEol3ac/7tKwzuvEyWx3/4UegXh5oBOIotkGsObyk3xznnSRVADBgWSQVg==
 
 for-in@^0.1.3:
   version "0.1.8"
@@ -2605,10 +2605,10 @@ ytdl-core@^4.7.0:
     miniget "^4.0.0"
     sax "^1.1.3"
 
-ytmusic@^0.0.5:
-  version "0.0.5"
-  resolved "https://registry.yarnpkg.com/ytmusic/-/ytmusic-0.0.5.tgz#983ee524c8f476060ea359e3f3717798c92f20ff"
-  integrity sha512-QN3o1drrNVroWah9hnJnC48eviVUyRmMxQazkCKPaXErnYWG0EVOPLpJzoEOO75Iwu2PSoWt1+gXRv5j1CyY1g==
+ytmusic@^0.0.6:
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/ytmusic/-/ytmusic-0.0.6.tgz#ebf20c85a98af744e878eb3412b3a6ab55c01074"
+  integrity sha512-E8HgiOM0z5E8YXS+IBivyLj3NRR3MNVoN+xD+5kEdNKSG3eJS+2GzDGxVIZER6F9i7eWgxBaYfr3d7tKGxi76g==
   dependencies:
     axios "^0.21.1"
     cookie "^0.4.1"
