@@ -127,13 +127,13 @@
   (fn [{:keys [db]} [entity-kind entity ?action]]
     {:db (assoc-in db [entity-kind (:id entity)] entity)
      :fx [(when (= :action/open ?action)
-            (println "Dispatch open: " (:title entity))
             [:dispatch [:player/open entity]])]}))
 
 (reg-event-fx
   ::set-current-playable
   [trim-v (inject-cofx ::inject/sub [:player/volume-percent])]
   (fn [{:keys [db] volume-percent :player/volume-percent} [playable]]
+    (println "set playable <- " playable)
     {:db (-> db
              (assoc-in [:player :current] playable)
              (assoc-in [:player :state] :playing))
@@ -155,6 +155,18 @@
                :playing :player/unpause!
                :paused :player/pause!)
              :!))))
+
+(reg-event-fx
+  :player/next-in-queue
+  [trim-v (path :player)]
+  (fn [{player-state :db} _]
+    (if-let [next-item (first (next (:queue player-state)))]
+      {:db (update player-state :queue next)
+       :dispatch [::set-current-playable next-item]}
+
+      ; nothing more in the queue
+      {:db (assoc player-state :state :paused)
+       :native/set-state! :paused})))
 
 (reg-event-fx
   :player/volume-inc
@@ -182,19 +194,18 @@
 
 ; ======= Player feedback =================================
 
-(defn- handle-playable-end [player-state]
-  (if-let [next-item (first (:queue player-state))]
-    {:db (update player-state :queue next)
-     ::set-current-playable next-item}
+(defmulti ^:private handle-player-event (fn [_ {what :type}] what))
 
-    {:db (assoc player-state :state :paused)
-     :native/set-state! :paused}))
+(defmethod handle-player-event :playable-end [_ _]
+  (println "playable end")
+  {:dispatch [:player/next-in-queue]})
+
+(defmethod handle-player-event :default [_ {what :type}]
+  (println "WARN: Unexpected player event type: " what))
 
 (reg-event-fx
   :player/event
   [trim-v (path :player)]
-  (fn [{:keys [db]} [{what :type}]]
-    (case what
-      :playable-end (handle-playable-end db)
-
-      (println "WARN: Unexpected player event type: " what))))
+  (fn [{:keys [db]} [event]]
+    (println "player event: " event)
+    (handle-player-event db event)))
