@@ -98,10 +98,14 @@
 (defn- do-resolve-playlist [account playlist-id]
   (p/let [^YTMusic ytm (account->client account)
           data (.getPlaylist ytm playlist-id)]
-    ; TODO lazily continue loading the playlist?
+    ; TODO lazily continue loading the playlist? We can use:
+    ;   (>evt [:player/on-resolved :playlist result])
+    ; to replace the resolved playlist; if we concat new items with old,
+    ; it should "just work"
     (println data)
     {:id (j/get data :playlistId)
      :provider :ytm
+     :kind :playlist
      :title (->text (j/get data :title))
      :image-url (->thumbnail (j/get data :thumbnail))
      :items

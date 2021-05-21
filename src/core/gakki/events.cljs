@@ -110,7 +110,8 @@
     (case (:kind item)
       :song {:dispatch [::set-current-playable item]}
 
-      :playlist (if-let [items (seq (:items item))]
+      :playlist (if-let [items (or (seq (:items item))
+                                   (seq (:items (-> db :playlists (get (:id item))))))]
                   {:db (-> db
                            (assoc-in [:player :queue] items))
                    :dispatch [::set-current-playable (first items)]}
@@ -119,6 +120,15 @@
                   {:providers/resolve-and-open-playlist [(:accounts db) item]})
 
       (println "TODO support opening: " item))))
+
+(reg-event-fx
+  :player/on-resolved
+  [trim-v]
+  (fn [{:keys [db]} [entity-kind entity ?action]]
+    {:db (assoc-in db [entity-kind (:id entity)] entity)
+     :fx [(when (= :action/open ?action)
+            (println "Dispatch open: " (:title entity))
+            [:dispatch [:player/open entity]])]}))
 
 (reg-event-fx
   ::set-current-playable

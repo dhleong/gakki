@@ -42,7 +42,7 @@
                              account
                              (:id playlist))]
               (if (seq (:items result))
-                (>evt [:player/open result])
+                (>evt [:player/on-resolved :playlist result :action/open])
                 (println "[err: " k "] Empty playlist: " result)))
 
             (p/catch (fn [e]
