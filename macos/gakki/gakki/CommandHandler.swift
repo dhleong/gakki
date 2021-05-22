@@ -39,11 +39,9 @@ struct CommandHandler {
         switch command.type {
         case .setNowPlaying:
             setNowPlaying(with: command)
-            break
 
         case .setState:
             setState(with: command)
-            break
         }
     }
 
@@ -84,8 +82,8 @@ struct CommandHandler {
         config.timeoutIntervalForResource = 3 // timeout, in seconds
 
         let session = URLSession(configuration: config)
-        session.dataTask(with: url) { data, response, error in
-            if let _ = error {
+        session.dataTask(with: url) { data, _, error in
+            if error != nil {
                 handler(nil)
             } else {
                 handler(data)

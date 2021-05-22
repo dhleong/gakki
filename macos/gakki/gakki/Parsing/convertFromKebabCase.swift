@@ -30,7 +30,6 @@ func convertFromKebabCase() -> JSONDecoder.KeyDecodingStrategy {
             key.append(contentsOf: part.capitalized)
         }
 
-        print("Parse \(keys) -> \(key)")
         let kind = AnyKey(stringValue: String(key))
         if let kind = kind {
             return kind
