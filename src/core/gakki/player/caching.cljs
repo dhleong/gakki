@@ -5,6 +5,7 @@
                            createReadStream create-read-stream}]
             ["fs/promises" :as fs]
             ["path" :as path]
+            ["stream" :refer [Writable Transform]]
             [promesa.core :as p]
             [gakki.player.analyze :refer [analyze-audio]]
             [gakki.util.logging :as log]))
@@ -29,27 +30,29 @@
 
 (defn- caching-transform [^js stream destination-path]
   (p/let [tmp-path (str destination-path ".progress")
-          ^js output (create-write-stream tmp-path)]
+          ^Writable to-disk (create-write-stream tmp-path)
+          transform (Transform.
+                      #js {:transform
+                           (fn transform [chnk encoding callback]
+                             (this-as this
+                                (.push this chnk))
+                             (.write to-disk chnk encoding callback))})]
 
-    ; TODO we should maybe use a PassThrough stream here instead
+    ; TODO can we cancel the download if the user skips past this song?
 
     (p/create
       (fn [p-resolve p-reject]
         (doto stream
-          (.pipe output)
+          (.pipe transform)
           (.on "error" p-reject)
           (.once "readable" p-resolve)
           (.on "end" (fn []
-                       (println "Completed download of " destination-path)
+                       (log/debug "Completed download of " destination-path)
                        (complete-download tmp-path destination-path)))
           (.resume))
-        (.on output "error" identity)))
+        (.on to-disk "error" identity)))
 
-    ; NOTE: this delay is a hack to avoid SIGILL; Perhaps if we can wait
-    ; until the first bytes get transfered we can avoid this hack:
-    (p/delay 100)
-
-    (open-stream tmp-path)))
+    transform))
 
 (defn caching [^String cache-key, promise-factory]
   (let [file-path (path/join cache-dir cache-key)]
