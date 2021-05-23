@@ -24,7 +24,7 @@ struct Command: Codable {
 
     var type: Kind
 
-    // .setAccount:
+    // .addAccount/.deleteAccount:
     var name: String?
     var value: String?
 

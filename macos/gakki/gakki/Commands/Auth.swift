@@ -43,7 +43,7 @@ struct AuthCommands {
         defer { lock.unlock() }
 
         // Delete any existing key before saving it
-        deleteNoLock(forKey: account)
+        return deleteNoLock(forKey: account)
     }
 
     func getAuth() -> [String: String] {
