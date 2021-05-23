@@ -55,6 +55,7 @@
           ; TODO extract config
           {:stream stream
            :config {:sample-rate 48000
+                    :frame-size 960
                     :channels 2
                     :codec "opus"
                     :container "webm"}})

@@ -2,7 +2,8 @@
   "Remote-control for the player subprocess"
   (:require [archetype.util :refer [>evt]]
             ["child_process" :refer [fork]]
-            [cognitect.transit :as t]))
+            [cognitect.transit :as t]
+            [gakki.const :as const]))
 
 (def ^:private writer (t/writer :json))
 (def ^:private reader (t/reader :json))
@@ -19,7 +20,9 @@
     existing
 
     (let [proc (fork "resources/player.js"
-                     #js {:stdio "ignore"})
+                     #js {:stdio (if const/debug?
+                                   "inherit"
+                                   "ignore")})
           clear-state! (fn [e]
                          (println "Player Exit:" e)
                          (reset! state nil))]
