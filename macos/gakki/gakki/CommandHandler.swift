@@ -32,7 +32,7 @@ struct CommandHandler {
                     IPC.log("Unexpected message: \(line)")
                 }
             } catch {
-                IPC.send(["type": "error", "error": error])
+                IPC.send(["type": "error", "error": String(describing: error)])
             }
         }
     }
