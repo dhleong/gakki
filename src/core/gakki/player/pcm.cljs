@@ -3,6 +3,7 @@
             ["audify" :refer [RtAudio RtAudioFormat]]
             ["events" :refer [EventEmitter]]
             ["stream" :refer [Readable Writable]]
+            [gakki.util.logging :as log]
             [gakki.player.core :as player :refer [IPlayable]]))
 
 (defn- ->writable-stream [^RtAudio speaker]
@@ -19,12 +20,10 @@
                              1000))
 
                         500))]
-    (println "Notifying end of file after " (/ timeout 1000) "s"
-             "(duration=" (:duration config) ")")
+    (log/debug "Notifying end of file after " (/ timeout 1000) "s"
+               "(duration=" (:duration config) ")")
     (js/setTimeout
-      #(do
-         (println "END!")
-         (.emit events "end"))
+      #(.emit events "end")
       timeout)))
 
 (deftype PcmStreamPlayable [state events config ^Readable stream]
@@ -37,13 +36,11 @@
 
     (if-let [output-stream (:output-stream @state)]
       (let [speaker (:speaker @state)]
-        (println "UNPAUSE")
         (swap! state assoc :timer (enqueue-end-notification events config speaker))
         (.pipe stream output-stream)
         (.start speaker))
 
       (let [speaker ((:create-speaker @state))]
-        (println "PLAY")
         (swap! state assoc
                :speaker speaker
                :timer (enqueue-end-notification events config speaker)
@@ -74,7 +71,7 @@
     ^Readable stream]
    (let [on-error (fn on-error [kind e]
                     ; TODO log?
-                    (println "PCM Stream Error [" kind "] " e))
+                    (log/debug "PCM Stream Error [" kind "] " e))
 
          create-speaker #(let [instance (RtAudio.)]
                            (doto instance

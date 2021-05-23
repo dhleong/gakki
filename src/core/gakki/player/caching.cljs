@@ -6,7 +6,8 @@
             ["fs/promises" :as fs]
             ["path" :as path]
             [promesa.core :as p]
-            [gakki.player.analyze :refer [analyze-audio]]))
+            [gakki.player.analyze :refer [analyze-audio]]
+            [gakki.util.logging :as log]))
 
 (def ^:private cache-dir
   (-> (env-paths "gakki", #js {:suffix ""})
@@ -53,12 +54,10 @@
     (-> (p/let [_ (fs/mkdir cache-dir #js {:recursive true})
                 stream (open-stream file-path)
                 info (analyze-audio file-path)]
-          (println "opened cached")
-          ; TODO extract codec/container
+          (log/debug "opened cached")
+          ; TODO extract codec/container. Also... frame-size?
           {:stream stream
-           :config (merge {:sample-rate 48000
-                           :frame-size 960
-                           :channels 2
+           :config (merge {:frame-size 960
                            :codec "opus"
                            :container "webm"}
                           info)})
