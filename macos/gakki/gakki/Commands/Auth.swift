@@ -38,6 +38,14 @@ struct AuthCommands {
         }
     }
 
+    func delete(account: String) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+
+        // Delete any existing key before saving it
+        deleteNoLock(forKey: account)
+    }
+
     func getAuth() -> [String: String] {
         var result: [String: String] = [:]
         for key in allKeys {

@@ -99,7 +99,17 @@
                      (.kill old))
                    (init-native))))
 
-(defn get-auth []
+(defn add-account [account auth]
+  (send! {:type :delete-account
+          :name account
+          :value (-> (t/writer :json)
+                     (t/write auth))}))
+
+(defn delete-account [account]
+  (send! {:type :delete-account
+          :name account}))
+
+(defn load-accounts []
   (p/create
     (fn auth [p-resolve]
       (swap! requests assoc :auth
@@ -135,7 +145,9 @@
 (def commands
   {:init init
 
-   :load-accounts get-auth
+   :add-account add-account
+   :load-accounts load-accounts
+   :delete-account delete-account
 
    :set-now-playing! set-now-playing!
    :set-state! set-state!})

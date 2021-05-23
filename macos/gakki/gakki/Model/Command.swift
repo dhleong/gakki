@@ -9,9 +9,10 @@ import Foundation
 
 struct Command: Codable {
     enum Kind: String, Codable, CodingKey {
-        case getAuth = "get-auth"
+        case addAccount = "add-account"
+        case deleteAccount = "delete-account"
+        case loadAccounts = "load-accounts"
 
-        case setAccount = "set-account"
         case setState = "set-state"
         case setNowPlaying = "set-now-playing"
     }

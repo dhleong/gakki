@@ -39,13 +39,7 @@ struct CommandHandler {
 
     func dispatch(command: Command) {
         switch command.type {
-        case .getAuth:
-            IPC.send([
-                "type": "auth-result",
-                "auth": auth.getAuth(),
-            ])
-
-        case .setAccount:
+        case .addAccount:
             guard let account = command.name,
             let value = command.value else {
                 return
@@ -53,6 +47,20 @@ struct CommandHandler {
             if !auth.setAccountAuth(account: account, value: value) {
                 IPC.log("Unable to persist account: \(account)")
             }
+
+        case .deleteAccount:
+            guard let account = command.name else {
+                return
+            }
+            if !auth.delete(account: account) {
+                IPC.log("Unable to delete account: \(account)")
+            }
+
+        case .loadAccounts:
+            IPC.send([
+                "type": "auth-result",
+                "auth": auth.getAuth(),
+            ])
 
         case .setNowPlaying:
             setNowPlaying(with: command)
