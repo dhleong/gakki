@@ -1,6 +1,11 @@
 (ns gakki.util.logging
   (:require [clojure.string :as str]
-            [re-frame.core :as re-frame]))
+            [re-frame.core :as re-frame]
+            [gakki.const :as const]))
+
+(defn debug [& args]
+  (when const/debug?
+    (apply println args)))
 
 (defn patch
   "Patch various logging methods to avoid messing up the CLI UI"
@@ -19,7 +24,7 @@
     (re-frame/set-loggers!
       {:log      (partial log :info)
        :warn     (partial log :warn)
-       :error    (partial log :error)
+       :error    (partial debug :error)
        :debug    (partial log :debug)
        :group    (partial log :info)
        :groupEnd  #()})

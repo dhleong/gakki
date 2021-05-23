@@ -5,7 +5,9 @@
                            createReadStream create-read-stream}]
             ["fs/promises" :as fs]
             ["path" :as path]
-            [promesa.core :as p]))
+            [promesa.core :as p]
+            [gakki.player.analyze :refer [analyze-audio]]
+            [gakki.util.logging :as log]))
 
 (def ^:private cache-dir
   (-> (env-paths "gakki", #js {:suffix ""})
@@ -29,6 +31,8 @@
   (p/let [tmp-path (str destination-path ".progress")
           ^js output (create-write-stream tmp-path)]
 
+    ; TODO we should maybe use a PassThrough stream here instead
+
     (p/create
       (fn [p-resolve p-reject]
         (doto stream
@@ -50,14 +54,15 @@
 (defn caching [^String cache-key, promise-factory]
   (let [file-path (path/join cache-dir cache-key)]
     (-> (p/let [_ (fs/mkdir cache-dir #js {:recursive true})
-                stream (open-stream file-path)]
-          (println "opened cached")
-          ; TODO extract config
+                stream (open-stream file-path)
+                info (analyze-audio file-path)]
+          (log/debug "opened cached")
+          ; TODO extract codec/container. Also... frame-size?
           {:stream stream
-           :config {:sample-rate 48000
-                    :channels 2
-                    :codec "opus"
-                    :container "webm"}})
+           :config (merge {:frame-size 960
+                           :codec "opus"
+                           :container "webm"}
+                          info)})
 
         (p/catch
           (fn [_]

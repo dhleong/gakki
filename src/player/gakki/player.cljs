@@ -22,10 +22,10 @@
 
 (defn- listen-for-events [playable]
   (doto (player/events playable)
-    (.on "end" (fn on-end []
-                 (when (identical? (:playable @state)
-                                   playable)
-                   (send! {:type :playable-end}))))))
+    (.once "ending" (fn on-ending []
+                      (send! {:type :playable-ending})))
+    (.once "end" (fn on-end []
+                   (send! {:type :playable-end})))))
 
 (defn- apply-config [playable config]
   (when-let [volume (:volume-percent config)]
@@ -38,20 +38,27 @@
   (when-let [playable (:playable @state)]
     (player/pause playable)))
 
-(defn play [{:keys [provider info config]}]
+(defn prepare! [{:keys [provider info]}]
+  ; NOTE: this may be side-effecting: the provider will probably
+  ; create a caching Playable which will begin to pre-fetch the file
+  (if-let [provider-obj (get providers provider)]
+    (ap/create-playable provider-obj info)
+
+    (throw (ex-info "No such provider" {:id provider}))))
+
+(defn play [{:keys [_provider _info config] :as args}]
   (swap! state update :playable
 
          (fn [old]
            (when old
+             (.removeAllListeners
+               (player/events old))
              (player/close old))
 
-           (if-let [provider-obj (get providers provider)]
-             (doto (ap/create-playable provider-obj info)
-               (listen-for-events)
-               (apply-config config)
-               (player/play))
-
-             (throw (ex-info "No such provider" {:id provider}))))))
+           (doto (prepare! args)
+             (listen-for-events)
+             (apply-config config)
+             (player/play)))))
 
 (defn set-volume [{:keys [level]}]
   (when-let [playable (:playable @state)]
@@ -65,6 +72,7 @@
   {:init #'init
    :pause #'pause
    :play #'play
+   :prepare #'prepare!
    :set-volume #'set-volume
    :unpause #'unpause})
 

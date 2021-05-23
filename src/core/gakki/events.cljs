@@ -1,12 +1,13 @@
 (ns gakki.events
-  (:require [gakki.const :refer [max-volume-int]]
-            [re-frame.core :refer [reg-event-db
+  (:require [re-frame.core :refer [reg-event-db
                                    reg-event-fx
                                    inject-cofx
                                    path trim-v]]
             [vimsical.re-frame.cofx.inject :as inject]
             [gakki.db :as db]
+            [gakki.const :refer [max-volume-int]]
             [gakki.util.coll :refer [index-of]]
+            [gakki.util.logging :as log]
             [gakki.util.media :refer [category-id]]))
 
 (reg-event-fx
@@ -197,8 +198,14 @@
 (defmulti ^:private handle-player-event (fn [_ {what :type}] what))
 
 (defmethod handle-player-event :playable-end [_ _]
-  (println "playable end")
+  (log/debug "playable end")
   {:dispatch [:player/next-in-queue]})
+
+(defmethod handle-player-event :playable-ending [player-state _]
+  (log/debug "playable ending")
+  (when-let [next-item (first (next (:queue player-state)))]
+    (log/debug "... prepare " next-item)
+    {:player/prepare! next-item}))
 
 (defmethod handle-player-event :default [_ {what :type}]
   (println "WARN: Unexpected player event type: " what))
