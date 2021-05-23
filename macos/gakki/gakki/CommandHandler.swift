@@ -53,19 +53,27 @@ struct CommandHandler {
 
         if let rawImageUrl = command.imageUrl,
         let imageUrl = URL(string: rawImageUrl) {
+
             withFetch(of: imageUrl) { data in
-                if let data = data,
-                let image = NSImage(data: data as Data) {
+                guard let data = data else {
+                    IPC.log("Failed to fetch data for \(imageUrl)")
+                    return
+                }
+
+                if let image = NSImage(data: data as Data) {
                     let size = image.size as CGSize
                     let artwork = MPMediaItemArtwork(boundsSize: size) { _ in
                         return image
                     }
                     info[MPMediaItemPropertyArtwork] = artwork
+                } else {
+                    IPC.log("Failed to decode image data for \(imageUrl)")
                 }
 
                 MPNowPlayingInfoCenter.default().nowPlayingInfo = info
             }
         } else {
+            IPC.log("No image provided for \(String(describing: command))")
             MPNowPlayingInfoCenter.default().nowPlayingInfo = info
         }
     }
@@ -84,6 +92,7 @@ struct CommandHandler {
         let session = URLSession(configuration: config)
         session.dataTask(with: url) { data, _, error in
             if error != nil {
+                IPC.log("Failed to fetch \(url): \(error)")
                 handler(nil)
             } else {
                 handler(data)
