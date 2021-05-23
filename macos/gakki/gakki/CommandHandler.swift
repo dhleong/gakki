@@ -15,6 +15,8 @@ private let commandToPlaybackState: [Command.State: MPNowPlayingPlaybackState] =
 ]
 
 struct CommandHandler {
+    let auth = AuthCommands()
+
     func processStdin() {
         while true {
             guard let line = readLine() else {
@@ -37,6 +39,29 @@ struct CommandHandler {
 
     func dispatch(command: Command) {
         switch command.type {
+        case .addAccount:
+            guard let account = command.name,
+            let value = command.value else {
+                return
+            }
+            if !auth.setAccountAuth(account: account, value: value) {
+                IPC.log("Unable to persist account: \(account)")
+            }
+
+        case .deleteAccount:
+            guard let account = command.name else {
+                return
+            }
+            if !auth.delete(account: account) {
+                IPC.log("Unable to delete account: \(account)")
+            }
+
+        case .loadAccounts:
+            IPC.send([
+                "type": "auth-result",
+                "auth": auth.getAuth(),
+            ])
+
         case .setNowPlaying:
             setNowPlaying(with: command)
 
@@ -92,7 +117,7 @@ struct CommandHandler {
         let session = URLSession(configuration: config)
         session.dataTask(with: url) { data, _, error in
             if error != nil {
-                IPC.log("Failed to fetch \(url): \(error)")
+                IPC.log("Failed to fetch \(url): \(String(describing: error))")
                 handler(nil)
             } else {
                 handler(data)

@@ -1,4 +1,4 @@
-(ns gakki.auth
+(ns gakki.native.default
   (:require [applied-science.js-interop :as j]
             [cognitect.transit :as t]
             ["keytar" :refer [deletePassword findCredentials setPassword]]
@@ -24,3 +24,9 @@
 
 (defn delete-account [kind]
   (deletePassword auth-service (name kind)))
+
+
+(def commands
+  {:load-accounts load-accounts
+   :add-account add-account
+   :delete-account delete-account})

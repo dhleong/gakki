@@ -9,6 +9,10 @@ import Foundation
 
 struct Command: Codable {
     enum Kind: String, Codable, CodingKey {
+        case addAccount = "add-account"
+        case deleteAccount = "delete-account"
+        case loadAccounts = "load-accounts"
+
         case setState = "set-state"
         case setNowPlaying = "set-now-playing"
     }
@@ -19,6 +23,10 @@ struct Command: Codable {
     }
 
     var type: Kind
+
+    // .addAccount/.deleteAccount:
+    var name: String?
+    var value: String?
 
     // .setState:
     var state: State?

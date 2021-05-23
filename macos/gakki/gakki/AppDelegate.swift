@@ -63,38 +63,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let commandCenter = MPRemoteCommandCenter.shared()
         let playPause = commandCenter.togglePlayPauseCommand
         playPause.isEnabled = true
-        playPause.addTarget(handler: { event in
+        playPause.addTarget(handler: { _ in
             IPC.send(["type": "media", "event": "toggle"])
             return .success
         })
 
         let play = commandCenter.playCommand
         play.isEnabled = true
-        play.addTarget(handler: { event in
+        play.addTarget(handler: { _ in
             IPC.send(["type": "media", "event": "play"])
             return .success
         })
 
         let pause = commandCenter.pauseCommand
         pause.isEnabled = true
-        pause.addTarget(handler: { event in
+        pause.addTarget(handler: { _ in
             IPC.send(["type": "media", "event": "pause"])
             return .success
         })
 
         let previous = commandCenter.previousTrackCommand
         previous.isEnabled = true
-        previous.addTarget(handler: { event in
+        previous.addTarget(handler: { _ in
             IPC.send(["type": "media", "event": "previous-track"])
             return .success
         })
 
         let nextTrack = commandCenter.nextTrackCommand
         nextTrack.isEnabled = true
-        nextTrack.addTarget(handler: { event in
+        nextTrack.addTarget(handler: { _ in
             IPC.send(["type": "media", "event": "next-track"])
             return .success
         })
     }
 }
-
