@@ -13,27 +13,29 @@ struct AuthCommands {
     private let lock = NSLock()
 
     var allKeys: [String] {
-        let query: [String: Any] = [
-            Keys.secClass: kSecClassGenericPassword,
-            Keys.service: serviceName,
+        let query = query(with: [
             Keys.returnData: false,
             Keys.returnAttributes: true,
             Keys.matchLimit: kSecMatchLimitAll,
-        ]
+        ])
 
         var result: AnyObject?
 
-        let lastResultCode = withUnsafeMutablePointer(to: &result) {
+        let resultCode = withUnsafeMutablePointer(to: &result) {
             SecItemCopyMatching(query as CFDictionary, UnsafeMutablePointer($0))
         }
 
-        if lastResultCode == noErr {
-            return (result as? [[String: Any]])?.compactMap {
-                $0[Keys.account] as? String
-            } ?? []
+        if resultCode != noErr {
+            return []
         }
 
-        return []
+        guard let listOfDictionaries = result as? [[String: Any]] else {
+            return []
+        }
+
+        return listOfDictionaries.compactMap {
+            $0[Keys.account] as? String
+        } // .filter { account in account.starts(with: serviceName) }
     }
 
     func getAuth() -> [String: String] {
@@ -60,25 +62,18 @@ struct AuthCommands {
         lock.lock()
         defer { lock.unlock() }
 
-        let query: [String: Any] = [
-            Keys.secClass: kSecClassGenericPassword,
-            Keys.service: serviceName,
-            Keys.account: prefixed(key),
+        let query: [String: Any] = query(forKey: key, [
             Keys.matchLimit: kSecMatchLimitOne,
             Keys.returnData: true,
-        ]
-
-        // query = addAccessGroupWhenPresent(query)
-        // query = addSynchronizableIfRequired(query, addingItems: false)
-        // lastQueryParameters = query
+        ])
 
         var result: AnyObject?
 
-        let lastResultCode = withUnsafeMutablePointer(to: &result) {
+        let resultCode = withUnsafeMutablePointer(to: &result) {
             SecItemCopyMatching(query as CFDictionary, UnsafeMutablePointer($0))
         }
 
-        if lastResultCode == noErr {
+        if resultCode == noErr {
             return result as? Data
         }
 
@@ -89,45 +84,42 @@ struct AuthCommands {
         lock.lock()
         defer { lock.unlock() }
 
-        deleteNoLock(forKey: key) // Delete any existing key before saving it
+        // Delete any existing key before saving it
+        deleteNoLock(forKey: key)
 
-        let query: [String: Any] = [
-            Keys.secClass: kSecClassGenericPassword,
-            Keys.service: serviceName,
-            Keys.account: prefixed(key),
+        let query: [String: Any] = query(forKey: key, [
             Keys.valueData: data,
             Keys.accessible: kSecAttrAccessibleWhenUnlocked,
-        ]
+        ])
 
-        // query = addAccessGroupWhenPresent(query)
-        // query = addSynchronizableIfRequired(query, addingItems: true)
-        // lastQueryParameters = query
-
-        let lastResultCode = SecItemAdd(query as CFDictionary, nil)
-
-        return lastResultCode == noErr
+        let resultCode = SecItemAdd(query as CFDictionary, nil)
+        return resultCode == noErr
     }
 
     @discardableResult
     private func deleteNoLock(forKey key: String) -> Bool {
-        let query: [String: Any] = [
-            Keys.secClass: kSecClassGenericPassword,
-            Keys.service: serviceName,
-            Keys.account: prefixed(key),
-        ]
-
-        // query = addAccessGroupWhenPresent(query)
-        // query = addSynchronizableIfRequired(query, addingItems: false)
-        // lastQueryParameters = query
-
-        let lastResultCode = SecItemDelete(query as CFDictionary)
-
-        return lastResultCode == noErr
+        let query = query(forKey: key)
+        let resultCode = SecItemDelete(query as CFDictionary)
+        return resultCode == noErr
     }
 
-    func prefixed(_ key: String) -> String {
-        // return "io.github.dhleong.gakki.\(key)"
-        return key
+    private func query(forKey key: String, _ extras: [String: Any] = [:]) -> [String: Any] {
+        var query = query(with: extras)
+        query[Keys.account] = key
+        return query
+    }
+
+    private func query(with extras: [String: Any] = [:]) -> [String: Any] {
+        var query = baseQuery()
+        query.merge(extras, uniquingKeysWith: { _, new in new })
+        return query
+    }
+
+    private func baseQuery() -> [String: Any] {
+        return [
+            Keys.secClass: kSecClassGenericPassword,
+            Keys.service: serviceName,
+        ]
     }
 
     struct Keys {
