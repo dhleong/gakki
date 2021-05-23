@@ -2,7 +2,7 @@
   (:require [archetype.util :refer [>evt]]
             [re-frame.core :refer [reg-fx]]
             [promesa.core :as p]
-            [gakki.auth :as auth]
+            [gakki.native :as native]
             [gakki.accounts.core :as ap]
             [gakki.accounts :refer [providers]]
             [gakki.player.remote :as remote]))
@@ -10,7 +10,7 @@
 (reg-fx
   :auth/load!
   (fn []
-    (p/let [accounts (auth/load-accounts)]
+    (p/let [accounts (native/load-accounts)]
       (>evt [:auth/set accounts]))))
 
 (reg-fx

@@ -2,14 +2,16 @@
   (:require [archetype.util :refer [>evt]]
             ["child_process" :refer [ChildProcess spawn]]
             [clojure.string :as str]
+            [cognitect.transit :as t]
             ["path" :rename {join path-join}]
+            [promesa.core :as p]
             ["stream" :refer [Readable]]))
 
 (def ^:private native-exe-path
   "./macos/gakki/build/Release/gakki.app/Contents/MacOS/gakki")
 
 (defonce ^:private process (atom nil))
-
+(defonce ^:private requests (atom nil))
 
 ; ======= incoming event handling =========================
 
@@ -45,6 +47,12 @@
     :log (println "[log:native]" (:message message))
     :media (handle-media-event message)
 
+    :auth-result (swap! requests update :auth
+                        (fn on-auth [handler]
+                          (when handler
+                            (handler (:auth message)))
+                          nil))
+
     (println "Unhandled native event: " message)))
 
 (defn- observe-events [^ChildProcess proc]
@@ -57,7 +65,7 @@
                (try
                  (handle-message message)
                  (catch :default e
-                   (println "[err:native] Failed to handle " message
+                   (println "[err:native] Failed to handle " (str message)
                             "\n" e)))))))))
 
 (defn- init-native []
@@ -85,11 +93,26 @@
 
 ; ======= public interface ================================
 
-(defn launch []
+(defn init []
   (swap! process (fn launch-native [^ChildProcess old]
                    (when old
                      (.kill old))
                    (init-native))))
+
+(defn get-auth []
+  (p/create
+    (fn auth [p-resolve]
+      (swap! requests assoc :auth
+             (fn on-auth [raw-map]
+               (p-resolve
+                 (->> raw-map
+                      (reduce-kv
+                        (fn [m account password]
+                          (assoc m (keyword account)
+                                 (-> (t/reader :json)
+                                     (t/read password))))
+                        {})))))
+      (send! {:type :get-auth}))))
 
 (defn set-state! [state]
   (send! {:type :set-state
@@ -106,8 +129,19 @@
                 :type :set-now-playing))
   (set-state! :playing))
 
+
+; ======= Map containing all optional actions =============
+
+(def commands
+  {:init init
+
+   :load-accounts get-auth
+
+   :set-now-playing! set-now-playing!
+   :set-state! set-state!})
+
 (comment
-  (launch)
+  (init)
 
   (swap! process (fn [^js old]
                    (.kill old "SIGKILL")
