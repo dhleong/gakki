@@ -42,7 +42,17 @@
   ; NOTE: this may be side-effecting: the provider will probably
   ; create a caching Playable which will begin to pre-fetch the file
   (if-let [provider-obj (get providers provider)]
-    (ap/create-playable provider-obj info)
+    (let [{existing-info :info existing-playable :playable} (:prepared @state)]
+      (if (= existing-info info)
+        ; Reuse the existing, prepared playable for this (it may be prefetching
+        ; and or have started prefetching)
+        existing-playable
+
+        ; New playable
+        (let [new-playable (ap/create-playable provider-obj info)]
+          (swap! state assoc :prepared {:info info
+                                        :playable new-playable})
+          new-playable)))
 
     (throw (ex-info "No such provider" {:id provider}))))
 
