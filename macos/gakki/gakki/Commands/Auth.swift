@@ -35,7 +35,7 @@ struct AuthCommands {
 
         return listOfDictionaries.compactMap {
             $0[Keys.account] as? String
-        } // .filter { account in account.starts(with: serviceName) }
+        }
     }
 
     func getAuth() -> [String: String] {
