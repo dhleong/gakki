@@ -12,45 +12,61 @@
                            (callback))}))
 
 (defn- enqueue-end-notification [^EventEmitter events config speaker]
-  (let [timeout (max 0
-                     (- (:duration config)
+  (let [end-timeout (max 0
+                         (- (:duration config)
 
-                        (when speaker
-                          (* (j/get speaker :streamTime)
-                             1000))
+                            (when speaker
+                              (* (j/get speaker :streamTime)
+                                 1000))
 
-                        500))]
-    (log/debug "Notifying end of file after " (/ timeout 1000) "s"
+                            500))
+
+        ending-timeout (max 0
+                            (- end-timeout 5000))
+
+        end-timer (js/setTimeout
+                    #(.emit events "end")
+                    end-timeout)
+        ending-timer (js/setTimeout
+                       #(.emit events "ending")
+                       ending-timeout) ]
+    (log/debug "Notifying end of file after " (/ end-timeout 1000) "s"
+               "; ending after " (/ ending-timeout 1000) "s"
                "(duration=" (:duration config) ")")
-    (js/setTimeout
-      #(.emit events "end")
-      timeout)))
+    (fn clear-timer []
+      (js/clearTimeout end-timer)
+      (js/clearTimeout ending-timer))))
 
 (deftype PcmStreamPlayable [state events config ^Readable stream]
   IPlayable
   (events [_this] events)
 
   (play [_this]
-    ; clear any existing timer... just in case
-    (swap! state update :timer js/clearTimeout)
+    ; clear any existing timers... just in case
+    (swap! state update :clear-timer #(when-let [clear! %]
+                                        (clear!)
+                                        nil))
 
     (if-let [output-stream (:output-stream @state)]
       (let [speaker (:speaker @state)]
-        (swap! state assoc :timer (enqueue-end-notification events config speaker))
+        (swap! state assoc
+               :clear-timer (enqueue-end-notification events config speaker))
         (.pipe stream output-stream)
         (.start speaker))
 
       (let [speaker ((:create-speaker @state))]
         (swap! state assoc
                :speaker speaker
-               :timer (enqueue-end-notification events config speaker)
+               :clear-timer (enqueue-end-notification events config speaker)
                :output-stream (let [output-stream (->writable-stream speaker)]
                                 (.pipe stream output-stream)
                                 output-stream)))))
 
   (pause [_this]
-    (let [{:keys [^RtAudio speaker, output-stream timer]} @state]
-      (js/clearTimeout timer)
+    (let [{:keys [^RtAudio speaker, output-stream clear-timer]} @state]
+      (clear-timer)
+      (swap! state dissoc :clear-timer)
+
       (when (and speaker output-stream)
         (.unpipe stream output-stream)
 

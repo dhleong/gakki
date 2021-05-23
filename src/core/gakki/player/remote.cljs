@@ -50,6 +50,12 @@
            :config config
            :info info})))
 
+(defn prepare! [provider-id info]
+  (send! (ensure-launched!)
+         {:type :prepare
+          :provider provider-id
+          :info info}))
+
 (defn set-volume! [volume-level]
   (send! (ensure-launched!)
          {:type :set-volume

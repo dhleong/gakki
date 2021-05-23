@@ -56,6 +56,11 @@
   (fn [{:keys [item config]}]
     (remote/play! (:provider item) item config)))
 
+(reg-fx
+  :player/prepare!
+  (fn [item]
+    (remote/prepare! (:provider item) item)))
+
 (reg-fx :player/unpause!  remote/unpause!)
 (reg-fx :player/pause!  remote/pause!)
 (reg-fx :player/set-volume!  remote/set-volume!)

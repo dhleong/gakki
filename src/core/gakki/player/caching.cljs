@@ -31,6 +31,8 @@
   (p/let [tmp-path (str destination-path ".progress")
           ^js output (create-write-stream tmp-path)]
 
+    ; TODO we should maybe use a PassThrough stream here instead
+
     (p/create
       (fn [p-resolve p-reject]
         (doto stream
