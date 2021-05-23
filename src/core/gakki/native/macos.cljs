@@ -122,7 +122,7 @@
                                  (-> (t/reader :json)
                                      (t/read password))))
                         {})))))
-      (send! {:type :get-auth}))))
+      (send! {:type :load-accounts}))))
 
 (defn set-state! [state]
   (send! {:type :set-state
