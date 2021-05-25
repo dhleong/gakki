@@ -4,7 +4,9 @@
             [promesa.core :as p]
             ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
+            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
             [gakki.accounts.core :refer [IAccountProvider]]
+            [gakki.accounts.ytm.album :as album]
             [gakki.player.ytm :refer [youtube-id->playable]]))
 
 (def ^:private account->creds
@@ -130,3 +132,34 @@
   (resolve-playlist [_ account playlist-id]
     (do-resolve-playlist account playlist-id))
   )
+
+(comment
+
+  (p/let [client (account->client
+                   (:ytm @(re-frame.core/subscribe [:accounts])))
+          result (-> client
+                     (.getArtist "UCvInFYiyeAJOGEjhqJnyaMA"))]
+    (println result))
+
+  (p/let [client (account->client
+                   (:ytm @(re-frame.core/subscribe [:accounts])))
+          ;; result (-> client
+          ;;            (.getPlaylist "MPREb_6zoi6tZGf72"))
+          result (send-request (.-cookie client)
+                               #js {:id "MPREb_6zoi6tZGf72"
+                                    :type "ALBUM"
+                                    :endpoint "browse"})
+          ]
+    (js/console.log (js/JSON.stringify result nil 2))
+    )
+
+  (p/let [client (account->client
+                   (:ytm @(re-frame.core/subscribe [:accounts])))
+          ;; result (-> client
+          ;;            (.getPlaylist "MPREb_6zoi6tZGf72"))
+          result (album/load client "MPREb_6zoi6tZGf72")
+          ]
+    (prn result)
+    )
+  )
+
