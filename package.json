@@ -11,7 +11,7 @@
     "cli": "node resources/cli.js",
     "stop": "shadow-cljs stop",
     "show": "yarn desktop",
-    "build:macos": "(cd macos/gakki && xcodebuild)",
+    "build:macos": "(cd macos/gakki && xcodebuild -allowProvisioningUpdates)",
     "build:release": "shadow-cljs release :cli :player",
     "check": "yarn lint && yarn test",
     "lint": "clojure -Sdeps '{:deps {clj-kondo {:mvn/version \"RELEASE\"}}}' -m clj-kondo.main --lint src --config .clj-kondo/config.edn",
