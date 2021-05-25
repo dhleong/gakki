@@ -12,6 +12,15 @@
     (> (:loading-count db) 0)))
 
 
+; ======= auth ============================================
+
+(reg-sub
+  :account
+  :<- [:accounts]
+  (fn [accounts [_ provider-id]]
+    (get accounts provider-id)))
+
+
 ; ======= player ==========================================
 
 (reg-sub
