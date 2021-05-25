@@ -13,7 +13,7 @@ struct AuthCommands {
     private let lock = NSLock()
 
     var allKeys: [String] {
-        let query = query(with: [
+        let q = query(with: [
             Keys.returnData: false,
             Keys.returnAttributes: true,
             Keys.matchLimit: kSecMatchLimitAll,
@@ -22,7 +22,7 @@ struct AuthCommands {
         var result: AnyObject?
 
         let resultCode = withUnsafeMutablePointer(to: &result) {
-            SecItemCopyMatching(query as CFDictionary, UnsafeMutablePointer($0))
+            SecItemCopyMatching(q as CFDictionary, UnsafeMutablePointer($0))
         }
 
         if resultCode != noErr {
@@ -70,7 +70,7 @@ struct AuthCommands {
         lock.lock()
         defer { lock.unlock() }
 
-        let query: [String: Any] = query(forKey: key, [
+        let q = query(forKey: key, [
             Keys.matchLimit: kSecMatchLimitOne,
             Keys.returnData: true,
         ])
@@ -78,7 +78,7 @@ struct AuthCommands {
         var result: AnyObject?
 
         let resultCode = withUnsafeMutablePointer(to: &result) {
-            SecItemCopyMatching(query as CFDictionary, UnsafeMutablePointer($0))
+            SecItemCopyMatching(q as CFDictionary, UnsafeMutablePointer($0))
         }
 
         if resultCode == noErr {
@@ -95,26 +95,26 @@ struct AuthCommands {
         // Delete any existing key before saving it
         deleteNoLock(forKey: key)
 
-        let query: [String: Any] = query(forKey: key, [
+        let q = query(forKey: key, [
             Keys.valueData: data,
             Keys.accessible: kSecAttrAccessibleWhenUnlocked,
         ])
 
-        let resultCode = SecItemAdd(query as CFDictionary, nil)
+        let resultCode = SecItemAdd(q as CFDictionary, nil)
         return resultCode == noErr
     }
 
     @discardableResult
     private func deleteNoLock(forKey key: String) -> Bool {
-        let query = query(forKey: key)
-        let resultCode = SecItemDelete(query as CFDictionary)
+        let q = query(forKey: key)
+        let resultCode = SecItemDelete(q as CFDictionary)
         return resultCode == noErr
     }
 
     private func query(forKey key: String, _ extras: [String: Any] = [:]) -> [String: Any] {
-        var query = query(with: extras)
-        query[Keys.account] = key
-        return query
+        var q = query(with: extras)
+        q[Keys.account] = key
+        return q
     }
 
     private func query(with extras: [String: Any] = [:]) -> [String: Any] {
