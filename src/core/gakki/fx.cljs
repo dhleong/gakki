@@ -36,19 +36,23 @@
                   (>evt [:loading/update-count dec]))))))
 
 (reg-fx
-  :providers/resolve-and-open-playlist
-  (fn [[accounts playlist]]
-    (let [k (:provider playlist)
+  :providers/resolve-and-open
+  (fn [[kind accounts entity]]
+    ; NOTE: kind must be eg: :playlist, :album
+    ; NOTE: entity must have :provider and :id keys
+    (let [k (:provider entity)
           provider (get providers k)
           account (get accounts k)]
       (if (and provider account)
-        (-> (p/let [result (ap/resolve-playlist
-                             provider
-                             account
-                             (:id playlist))]
+        (-> (p/let [f (case kind
+                        :album ap/resolve-album
+                        :playlist ap/resolve-playlist)
+                    result (f provider
+                              account
+                              (:id entity))]
               (if (seq (:items result))
-                (>evt [:player/on-resolved :playlist result :action/open])
-                (println "[err: " k "] Empty playlist: " result)))
+                (>evt [:player/on-resolved kind result :action/open])
+                (println "[err: " k "] Empty " kind result)))
 
             (p/catch (fn [e]
                        ; TODO logging...

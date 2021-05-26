@@ -52,8 +52,8 @@
      :description (j/get details-entity :description)
      :radio-playlist-id (j/get album-entity :radioAutomixPlaylistId)
      :image-url (pick-thumbnail album-entity)
-     :tracks (->> (j/get details-entity :tracks)
-                  (map (partial inflate-track state)))}))
+     :items (->> (j/get details-entity :tracks)
+                 (map (partial inflate-track state)))}))
 
 (defn load [^YTMusic client id]
   (p/let [response (send-request (.-cookie client)

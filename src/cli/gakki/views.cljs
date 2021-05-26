@@ -2,12 +2,14 @@
   (:require [archetype.util :refer [<sub]]
             [gakki.views.auth :as auth]
             [gakki.views.auth.ytm :as auth-ytm]
+            [gakki.views.album :as album]
             [gakki.views.home :as home]))
 
 (def ^:private pages
   {:home #'home/view
    :auth #'auth/view
    :auth/ytm #'auth-ytm/view
+   :album #'album/view
    })
 
 (defn main []

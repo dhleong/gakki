@@ -114,6 +114,10 @@
      (->> (j/get data :content)
           (map ->playlist-item))}))
 
+(defn- do-resolve-album [account album-id]
+  (p/let [^YTMusic ytm (account->client account)]
+    (album/load ytm album-id)))
+
 (deftype YTMAccountProvider []
   IAccountProvider
   (get-name [_this] "YouTube Music")
@@ -129,12 +133,14 @@
     ; NOTE: this is pulled out to a separate fn to facilitate hot-reload dev
     (do-fetch-home account))
 
+  (resolve-album [_ account album-id]
+    (do-resolve-album account album-id))
+
   (resolve-playlist [_ account playlist-id]
     (do-resolve-playlist account playlist-id))
   )
 
 (comment
-
   (p/let [client (account->client
                    (:ytm @(re-frame.core/subscribe [:accounts])))
           result (-> client
@@ -153,12 +159,9 @@
     (js/console.log (js/JSON.stringify result nil 2))
     )
 
-  (p/let [client (account->client
-                   (:ytm @(re-frame.core/subscribe [:accounts])))
-          ;; result (-> client
-          ;;            (.getPlaylist "MPREb_6zoi6tZGf72"))
-          result (album/load client "MPREb_6zoi6tZGf72")
-          ]
+  (p/let [result (do-resolve-album
+                   (:ytm @(re-frame.core/subscribe [:accounts]))
+                   "MPREb_6zoi6tZGf72") ]
     (prn result)
     )
   )
