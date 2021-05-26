@@ -32,6 +32,14 @@
     {:db (assoc db :accounts accounts)
      :providers/load! accounts}))
 
+(reg-event-fx
+  :auth/save
+  [trim-v]
+  (fn [{:keys [db]} [provider account]]
+    {:db (assoc-in db [:accounts provider] account)
+     :providers/load! {provider account}
+     :auth/save! [provider account]}))
+
 (reg-event-db
   :loading/update-count
   [trim-v]

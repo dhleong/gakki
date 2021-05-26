@@ -116,7 +116,9 @@
   IAccountProvider
   (get-name [_this] "YouTube Music")
   (describe-account [_ account]
-    (str (-> account :user :email)))
+    ; TODO we could fetch this...
+    (when-let [email (-> account :user :email)]
+      (str email)))
 
   (create-playable
     [_this info]

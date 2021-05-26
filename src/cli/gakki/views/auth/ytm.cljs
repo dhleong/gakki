@@ -1,6 +1,7 @@
 (ns gakki.views.auth.ytm
   (:require [archetype.util :refer [<sub >evt]]
             [applied-science.js-interop :as j]
+            ["node-fetch" :default fetch]
             ["ink" :as k]
             ["ink-spinner" :default Spinner]
             [promesa.core :as p]
@@ -18,13 +19,22 @@
                         (:ytm accounts/providers)
                         account)]])
 
+(defn- fetch-user-info [{{:keys [token]} :access}]
+  (p/let [response (->> (j/lit {:headers {:Authorization
+                                          (str "Bearer " token)}})
+                        (fetch (str "https://www.googleapis.com/oauth2/v2/userinfo")))
+          json (.json response)]
+    (js->clj json :keywordize-keys true)))
+
 (defn- perform-login [state]
   (-> (p/let [auth-code (request-auth-code)
               _ (reset! state :exchanging)
-              info (exchange-auth-code auth-code)]
-        ; TODO
-        (println info)
-        (reset! state nil))
+
+              js-info (exchange-auth-code auth-code)
+              auth (js->clj js-info :keywordize-keys true)
+              user (fetch-user-info auth)
+              account (assoc auth :user user)]
+        (>evt [:auth/save :ytm account]))
 
       (p/catch (fn [e]
                  (println e)

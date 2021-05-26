@@ -14,6 +14,11 @@
       (>evt [:auth/set accounts]))))
 
 (reg-fx
+  :auth/save!
+  (fn [[provider account]]
+    (native/add-account provider account)))
+
+(reg-fx
   :providers/load!
   (fn [accounts]
     (>evt [:loading/update-count inc])
