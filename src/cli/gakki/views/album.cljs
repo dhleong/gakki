@@ -20,10 +20,15 @@
                :border-color theme/text-color-on-background
                :border-style :round
                :padding-x 1}
-     [player-mini]
+     [:> k/Box {:flex-direction :row
+                :justify-content :space-between
+                :padding-bottom 1}
+      [:> k/Text {:color theme/text-color-disabled}
+       "Albums / "]
+      [:> k/Text {:color theme/header-color-on-background}
+       (:title album)]
+      [player-mini]]
 
-     [:> k/Text {:color theme/header-color-on-background}
-      (:title album)]
      [:> k/Text {:color theme/text-color-on-background}
       (:description album)]
 
