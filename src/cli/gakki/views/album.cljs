@@ -1,7 +1,7 @@
 (ns gakki.views.album
-  (:require [applied-science.js-interop :as j]
-            [archetype.util :refer [<sub >evt]]
+  (:require [archetype.util :refer [<sub >evt]]
             ["ink" :as k]
+            [gakki.cli.input :refer [use-input]]
             [gakki.components.player-mini :refer [player-mini]]
             [gakki.components.scrollable :refer [vertical-list]]
             [gakki.theme :as theme]))
@@ -10,10 +10,11 @@
   [:> k/Text (:title track)])
 
 (defn view [album-id]
-  (k/useInput
-    (fn [_input k]
-      (when (j/get k :escape)
-        (>evt [:navigate! [:home]]))))
+  (use-input
+    (fn [k]
+      (case k
+        :escape (>evt [:navigate! [:home]])
+        nil)))
 
   (let [album (<sub [:album album-id])]
     [:> k/Box {:flex-direction :column
