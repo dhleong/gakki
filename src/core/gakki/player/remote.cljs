@@ -7,6 +7,7 @@
 
 (def ^:private writer (t/writer :json))
 (def ^:private reader (t/reader :json))
+(def ^:private debug-io? false)
 
 (defonce state (atom nil))
 
@@ -20,7 +21,7 @@
     existing
 
     (let [proc (fork "resources/player.js"
-                     #js {:stdio (if const/debug?
+                     #js {:stdio (if (and debug-io? const/debug?)
                                    "inherit"
                                    "ignore")})
           clear-state! (fn [e]

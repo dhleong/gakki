@@ -51,7 +51,9 @@
      :title (j/get album-entity :title)
      :kind :album
      :provider :ytm
+     ::entity album-entity
      :description (j/get details-entity :description)
+     :artist (j/get album-entity :artistDisplayName)
      :radio-playlist-id (j/get album-entity :radioAutomixPlaylistId)
      :image-url (pick-thumbnail album-entity)
      :items (->> (j/get details-entity :tracks)

@@ -161,8 +161,9 @@
 
   (p/let [result (do-resolve-album
                    (:ytm @(re-frame.core/subscribe [:accounts]))
-                   "MPREb_6zoi6tZGf72") ]
+                   "MPREb_XSoe2FaWnVW") ]
     (prn result)
     )
+
   )
 

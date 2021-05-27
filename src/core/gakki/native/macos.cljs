@@ -63,7 +63,6 @@
                  messages (keep parse-message parts)]
              (doseq [message messages]
                (try
-                 (println "HANDLE" message)
                  (handle-message message)
                  (catch :default e
                    (println "[err:native] Failed to handle " (str message)

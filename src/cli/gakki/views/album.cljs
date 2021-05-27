@@ -25,10 +25,18 @@
      [:> k/Box {:flex-direction :row
                 :justify-content :space-between
                 :padding-bottom 1}
-      [:> k/Text {:color theme/text-color-disabled}
-       "Albums / "]
-      [:> k/Text {:color theme/header-color-on-background}
-       (:title album)]
+      [:> k/Box {:flex-direction :row}
+       [:> k/Text {:color theme/text-color-disabled}
+        "Albums / "]
+
+       [:> k/Text {:color theme/header-color-on-background}
+        (:title album)]
+
+       [:> k/Text {:color theme/text-color-disabled} " / "]
+
+       [:> k/Text {:color theme/text-color-on-background}
+        (:artist album)]]
+
       [player-mini]]
 
      [:> k/Text {:color theme/text-color-on-background}
