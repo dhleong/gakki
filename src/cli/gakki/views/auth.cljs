@@ -60,9 +60,7 @@
             (>evt [:navigate! [:home]])
 
             (j/get k :return)
-            (swap! selected-atom #(if (= % :ytm)
-                                    [input k]
-                                    :ytm))))))
+            (>evt [:navigate! [(keyword "auth" selected-key)]])))))
 
     [:> k/Box {:flex-direction :column
                :border-color theme/text-color-on-background

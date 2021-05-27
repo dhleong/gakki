@@ -21,6 +21,9 @@
 (defn init []
   ((handler :init)))
 
+(defn add-account [provider-id account]
+  ((handler :add-account) provider-id account))
+
 (defn load-accounts []
   ((handler :load-accounts)))
 

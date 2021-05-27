@@ -100,7 +100,7 @@
                    (init-native))))
 
 (defn add-account [account auth]
-  (send! {:type :delete-account
+  (send! {:type :add-account
           :name account
           :value (-> (t/writer :json)
                      (t/write auth))}))
