@@ -27,6 +27,36 @@
                 {:color theme/text-color-on-background})
     " " title]])
 
+(defn- header [album]
+  [:> k/Box {:flex-direction :row
+             :justify-content :space-between
+             :padding-bottom 1}
+   [:> k/Box {:flex-direction :row}
+    [:> k/Text {:color theme/text-color-disabled}
+     "Albums / "]
+
+    [:> k/Text {:color theme/header-color-on-background
+                :underline true}
+     (:title album)]
+
+    [:> k/Text {:color theme/text-color-disabled} " / "]
+
+    [:> k/Text {:color theme/text-color-on-background}
+     (:artist album)]]
+
+   [player-mini]])
+
+(defn- description [album]
+  (when-not (empty? (:description album))
+    [:<>
+     [:> k/Text {:color theme/text-color-on-background}
+      (let [desc (:description album)]
+        (if (<= (count desc) max-description-length)
+          desc
+          (str (subs desc 0 (dec max-description-length))
+               figures/ellipsis)))]
+     [:> k/Text " "]]))
+
 (defn view [album-id]
   (r/with-let [state (r/atom nil)]
     (let [album (<sub [:album album-id])
@@ -57,36 +87,13 @@
                  :border-color theme/text-color-on-background
                  :border-style :round
                  :padding-x 1}
-       [:> k/Box {:flex-direction :row
-                  :justify-content :space-between
-                  :padding-bottom 1}
-        [:> k/Box {:flex-direction :row}
-         [:> k/Text {:color theme/text-color-disabled}
-          "Albums / "]
+       [header album]
 
-         [:> k/Text {:color theme/header-color-on-background
-                     :underline true}
-          (:title album)]
-
-         [:> k/Text {:color theme/text-color-disabled} " / "]
-
-         [:> k/Text {:color theme/text-color-on-background}
-          (:artist album)]]
-
-        [player-mini]]
-
-       (when-not (empty? (:description album))
-         [:<>
-          [:> k/Text {:color theme/text-color-on-background}
-           (let [desc (:description album)]
-             (if (<= (count desc) max-description-length)
-               desc
-               (str (subs desc 0 (dec max-description-length))
-                    figures/ellipsis)))]
-          [:> k/Text " "]])
+       [description album]
 
        [vertical-list
         :items items
         :follow-selected? true
+        :per-page 10
         :render track-row]
        ])))
