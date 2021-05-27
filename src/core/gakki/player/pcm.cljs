@@ -64,7 +64,8 @@
 
   (pause [_this]
     (let [{:keys [^RtAudio speaker, output-stream clear-timer]} @state]
-      (clear-timer)
+      (when clear-timer
+        (clear-timer))
       (swap! state dissoc :clear-timer)
 
       (when (and speaker output-stream)

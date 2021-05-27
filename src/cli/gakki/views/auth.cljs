@@ -1,11 +1,11 @@
 (ns gakki.views.auth
   (:require [archetype.util :refer [<sub >evt]]
             [reagent.core :as r]
-            [applied-science.js-interop :as j]
             ["figures" :as figures]
             ["ink" :as k]
             [gakki.accounts :as accounts]
             [gakki.accounts.core :as ap]
+            [gakki.cli.input :refer [use-input]]
             [gakki.theme :as theme]))
 
 (defn- provider-row [selected-key k provider]
@@ -48,19 +48,17 @@
   (let [selected-key @selected-atom
         rotate! (partial rotate-provider providers)
         accounts (<sub [:accounts])]
-    (k/useInput
-      (fn [input k]
-        (case input
+    (use-input
+      (fn [k]
+        (case k
           ; Switch "selected" account:
           "j" (swap! selected-atom rotate! 1)
           "k" (swap! selected-atom rotate! -1)
 
-          (cond
-            (j/get k :escape)
-            (>evt [:navigate! [:home]])
+          :escape (>evt [:navigate! [:home]])
+          :return (>evt [:navigate! [(keyword "auth" selected-key)]])
 
-            (j/get k :return)
-            (>evt [:navigate! [(keyword "auth" selected-key)]])))))
+          nil)))
 
     [:> k/Box {:flex-direction :column
                :border-color theme/text-color-on-background

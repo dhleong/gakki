@@ -4,7 +4,9 @@
             [promesa.core :as p]
             ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
+            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
             [gakki.accounts.core :refer [IAccountProvider]]
+            [gakki.accounts.ytm.album :as album]
             [gakki.player.ytm :refer [youtube-id->playable]]))
 
 (def ^:private account->creds
@@ -112,6 +114,10 @@
      (->> (j/get data :content)
           (map ->playlist-item))}))
 
+(defn- do-resolve-album [account album-id]
+  (p/let [^YTMusic ytm (account->client account)]
+    (album/load ytm album-id)))
+
 (deftype YTMAccountProvider []
   IAccountProvider
   (get-name [_this] "YouTube Music")
@@ -127,6 +133,37 @@
     ; NOTE: this is pulled out to a separate fn to facilitate hot-reload dev
     (do-fetch-home account))
 
+  (resolve-album [_ account album-id]
+    (do-resolve-album account album-id))
+
   (resolve-playlist [_ account playlist-id]
     (do-resolve-playlist account playlist-id))
   )
+
+(comment
+  (p/let [client (account->client
+                   (:ytm @(re-frame.core/subscribe [:accounts])))
+          result (-> client
+                     (.getArtist "UCvInFYiyeAJOGEjhqJnyaMA"))]
+    (println result))
+
+  (p/let [client (account->client
+                   (:ytm @(re-frame.core/subscribe [:accounts])))
+          ;; result (-> client
+          ;;            (.getPlaylist "MPREb_6zoi6tZGf72"))
+          result (send-request (.-cookie client)
+                               #js {:id "MPREb_6zoi6tZGf72"
+                                    :type "ALBUM"
+                                    :endpoint "browse"})
+          ]
+    (js/console.log (js/JSON.stringify result nil 2))
+    )
+
+  (p/let [result (do-resolve-album
+                   (:ytm @(re-frame.core/subscribe [:accounts]))
+                   "MPREb_XSoe2FaWnVW") ]
+    (prn result)
+    )
+
+  )
+

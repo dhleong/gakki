@@ -1,16 +1,16 @@
 (ns gakki.views.home
-  (:require [applied-science.js-interop :as j]
-            [archetype.util :refer [<sub >evt]]
+  (:require [archetype.util :refer [<sub >evt]]
             ["figures" :as figures]
             ["ink" :as k]
             ["ink-spinner" :default Spinner]
+            [gakki.cli.input :refer [use-input]]
             [gakki.components.player-mini :refer [player-mini]]
             [gakki.components.scrollable :refer [horizontal-list
                                                  vertical-list]]
             [gakki.theme :as theme]))
 
-(defn- handle-input [input k]
-  (case input
+(defn- handle-input [k]
+  (case k
     "r" (>evt [:providers/refresh!])
 
     "j" (>evt [:home/navigate-categories :down])
@@ -23,11 +23,10 @@
     "[" (>evt [:player/volume-inc -1])
     "]" (>evt [:player/volume-inc 1])
 
-    (cond
-      (j/get k :return) (>evt [:home/open-selected])
+    :return (>evt [:home/open-selected])
 
-      :else (when goog.DEBUG
-              (println input k)))))
+    (when goog.DEBUG
+      (println k))))
 
 (defn- category-item [{:keys [title selected?]}]
   [:> k/Box {:width :20%
@@ -64,7 +63,7 @@
    [player-mini]])
 
 (defn view []
-  (k/useInput handle-input)
+  (use-input handle-input)
 
   (let [categories (<sub [:home/categories])]
     [:> k/Box {:flex-direction :column

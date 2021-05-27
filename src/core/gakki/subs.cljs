@@ -100,3 +100,11 @@
                                          selected-item)
                                     (assoc item :selected? true)
                                     item)))))))))))
+
+
+; ======= entities ========================================
+
+(reg-sub
+  :album
+  (fn [db [_ id]]
+    (get-in db [:album id])))

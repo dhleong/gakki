@@ -10,6 +10,7 @@
             ["youtubish/dist/login" :rename {requestAuthCode request-auth-code}]
             [gakki.accounts :as accounts]
             [gakki.accounts.core :as ap]
+            [gakki.cli.input :refer [use-input]]
             [gakki.theme :as theme]))
 
 (defn- logged-in [account]
@@ -42,14 +43,15 @@
 
 (defn- logged-out []
   (r/with-let [state (r/atom nil)]
-    (k/useInput
-      (fn [_input k]
-        (when (and (j/get k :return)
-                   (let [s @state]
-                     (or (nil? s)
-                         (= :error s))))
-          (reset! state :started)
-          (perform-login state))))
+    (use-input
+      (fn [k]
+        (case k
+          :return (when (let [s @state]
+                          (or (nil? s)
+                              (= :error s)))
+                    (reset! state :started)
+                    (perform-login state))
+          nil)))
 
     (case @state
       nil [:<>
@@ -83,10 +85,11 @@
       )))
 
 (defn view []
-  (k/useInput
-    (fn [_input k]
-      (when (j/get k :escape)
-        (>evt [:navigate! [:auth]]))))
+  (use-input
+    (fn [k]
+      (case k
+        :escape (>evt [:navigate! [:auth]])
+        nil)))
 
   (let [account (<sub [:account :ytm])]
     [:> k/Box {:flex-direction :column

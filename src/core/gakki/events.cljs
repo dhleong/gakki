@@ -112,23 +112,32 @@
 
 ; ======= Player control ==================================
 
+(defn- inflate-item [db {:keys [id kind] :as item}]
+  (or (get-in db [kind id])
+
+      item))
+
 (reg-event-fx
   :player/open
   [trim-v]
   (fn [{:keys [db]} [item]]
-    (case (:kind item)
-      :song {:dispatch [::set-current-playable item]}
+    (let [item (inflate-item db item)]
+      (case (:kind item)
+        :song {:dispatch [::set-current-playable item]}
 
-      :playlist (if-let [items (or (seq (:items item))
-                                   (seq (:items (-> db :playlists (get (:id item))))))]
-                  {:db (-> db
-                           (assoc-in [:player :queue] items))
-                   :dispatch [::set-current-playable (first items)]}
+        :playlist (if-let [items (seq (:items item))]
+                    {:dispatch [:player/play-items items]}
 
-                  ; Unresolved playlist; fetch and resolve now:
-                  {:providers/resolve-and-open-playlist [(:accounts db) item]})
+                    ; Unresolved playlist; fetch and resolve now:
+                    {:providers/resolve-and-open [:playlist (:accounts db) item]})
 
-      (println "TODO support opening: " item))))
+        :album (if (:items item)
+                 {:dispatch [:navigate! [:album (:id item)]]}
+
+                 ; Unresolved album; fetch and resolve now:
+                 {:providers/resolve-and-open [:album (:accounts db) item]})
+
+        (println "TODO support opening: " item)))))
 
 (reg-event-fx
   :player/on-resolved
@@ -137,6 +146,19 @@
     {:db (assoc-in db [entity-kind (:id entity)] entity)
      :fx [(when (= :action/open ?action)
             [:dispatch [:player/open entity]])]}))
+
+(reg-event-fx
+  :player/play-items
+  [trim-v (path :player :queue)]
+  (fn [_ [items ?selected-index]]
+    {:db (if (nil? ?selected-index)
+           items
+           (vec (concat
+                  (drop ?selected-index items)
+                  (take ?selected-index items))))
+     :dispatch [::set-current-playable (if (nil? ?selected-index)
+                                         (first items)
+                                         (nth items ?selected-index))]}))
 
 (reg-event-fx
   ::set-current-playable
