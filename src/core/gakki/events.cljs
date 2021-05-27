@@ -150,9 +150,15 @@
 (reg-event-fx
   :player/play-items
   [trim-v (path :player :queue)]
-  (fn [_ [items]]
-    {:db items
-     :dispatch [::set-current-playable (first items)]}))
+  (fn [_ [items ?selected-index]]
+    {:db (if (nil? ?selected-index)
+           items
+           (vec (concat
+                  (drop ?selected-index items)
+                  (take ?selected-index items))))
+     :dispatch [::set-current-playable (if (nil? ?selected-index)
+                                         (first items)
+                                         (nth items ?selected-index))]}))
 
 (reg-event-fx
   ::set-current-playable
