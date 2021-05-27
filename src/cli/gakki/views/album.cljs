@@ -4,11 +4,14 @@
             ["ink" :as k]
             [reagent.core :as r]
             [gakki.cli.input :refer [use-input]]
+            [gakki.components.limited-text :refer [limited-text]]
             [gakki.components.player-mini :refer [player-mini]]
             [gakki.components.scrollable :refer [vertical-list]]
             [gakki.theme :as theme]))
 
 (def max-description-length 280)
+(def max-album-title-length 20)
+(def max-artist-name-length 20)
 
 (defn- length-wrapped [f length]
   (fn wrapped [v]
@@ -35,13 +38,15 @@
     [:> k/Text {:color theme/text-color-disabled}
      "Albums / "]
 
-    [:> k/Text {:color theme/header-color-on-background
-                :underline true}
+    [limited-text {:color theme/header-color-on-background
+                   :max-width max-album-title-length
+                   :underline true}
      (:title album)]
 
     [:> k/Text {:color theme/text-color-disabled} " / "]
 
-    [:> k/Text {:color theme/text-color-on-background}
+    [limited-text {:color theme/text-color-on-background
+                   :max-width max-artist-name-length}
      (:artist album)]]
 
    [player-mini]])
