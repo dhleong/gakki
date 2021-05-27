@@ -40,6 +40,7 @@
     {:id (j/get track-entity :videoId)
      :title (j/get track-entity :title)
      :kind :track
+     :provider :ytm
      :artist (j/get track-entity :artistNames)
      :image-url (pick-thumbnail track-entity)}))
 
@@ -49,6 +50,7 @@
     {:id (j/get album-entity :id)
      :title (j/get album-entity :title)
      :kind :album
+     :provider :ytm
      :description (j/get details-entity :description)
      :radio-playlist-id (j/get album-entity :radioAutomixPlaylistId)
      :image-url (pick-thumbnail album-entity)
