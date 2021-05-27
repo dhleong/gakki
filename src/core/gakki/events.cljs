@@ -126,9 +126,7 @@
         :song {:dispatch [::set-current-playable item]}
 
         :playlist (if-let [items (seq (:items item))]
-                    {:db (-> db
-                             (assoc-in [:player :queue] items))
-                     :dispatch [::set-current-playable (first items)]}
+                    {:dispatch [:player/play-items items]}
 
                     ; Unresolved playlist; fetch and resolve now:
                     {:providers/resolve-and-open [:playlist (:accounts db) item]})
@@ -148,6 +146,13 @@
     {:db (assoc-in db [entity-kind (:id entity)] entity)
      :fx [(when (= :action/open ?action)
             [:dispatch [:player/open entity]])]}))
+
+(reg-event-fx
+  :player/play-items
+  [trim-v (path :player :queue)]
+  (fn [_ [items]]
+    {:db items
+     :dispatch [::set-current-playable (first items)]}))
 
 (reg-event-fx
   ::set-current-playable

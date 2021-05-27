@@ -10,13 +10,14 @@
   [:> k/Text (:title track)])
 
 (defn view [album-id]
-  (use-input
-    (fn [k]
-      (case k
-        :escape (>evt [:navigate! [:home]])
-        nil)))
-
   (let [album (<sub [:album album-id])]
+    (use-input
+      (fn [k]
+        (case k
+          "P" (>evt [:player/play-items (:items album)])
+          :escape (>evt [:navigate! [:home]])
+          nil)))
+
     [:> k/Box {:flex-direction :column
                :border-color theme/text-color-on-background
                :border-style :round
