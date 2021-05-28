@@ -1,0 +1,53 @@
+name: Continuous Integration
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node_version: [12]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Setup Clojure
+      uses: DeLaGuardo/setup-clojure@3.0
+      with:
+        cli: '1.10.1.469'
+
+    - name: Clojure dependency cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('shadow-cljs.edn') }}
+        restore-keys: |
+          ${{ runner.os }}-m2-
+
+    - name: Node dependency cache
+      uses: actions/cache@v2
+      with:
+        path: '**/node_modules'
+        key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Start shadow server
+      run: npm run start
+
+    - name: Verify Lint
+      run: npm run lint
+
+    - name: Verify Tests
+      run: npm run test
+
