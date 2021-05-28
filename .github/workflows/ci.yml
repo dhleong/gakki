@@ -41,9 +41,10 @@ jobs:
 
     - name: Install dependencies
       run: yarn install --frozen-lockfile
+      run: sudo apt-get install libasound2-dev
 
     - name: Start shadow server
-      run: yarn dev start
+      run: yarn start
 
     - name: Verify Lint
       run: yarn lint
