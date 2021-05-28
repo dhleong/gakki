@@ -40,14 +40,14 @@ jobs:
           ${{ runner.os }}-node-
 
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --frozen-lockfile
 
     - name: Start shadow server
-      run: npm run start
+      run: yarn dev start
 
     - name: Verify Lint
-      run: npm run lint
+      run: yarn lint
 
     - name: Verify Tests
-      run: npm run test
+      run: yarn test
 
