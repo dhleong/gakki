@@ -140,6 +140,7 @@
     (do-resolve-playlist account playlist-id))
   )
 
+#_:clj-kondo/ignore
 (comment
   (p/let [client (account->client
                    (:ytm @(re-frame.core/subscribe [:accounts])))
