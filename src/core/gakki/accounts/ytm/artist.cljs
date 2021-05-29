@@ -7,6 +7,17 @@
             [gakki.accounts.ytm.util :refer [runs->text
                                              unpack-navigation-endpoint]]))
 
+(defn- unpack-playlist [header button-key title]
+  (when-let [radio-id (-> header
+                          (j/get-in [button-key
+                                     :buttonRenderer])
+                          unpack-navigation-endpoint
+                          :id)]
+    {:id radio-id
+     :kind :playlist
+     :provider :ytm
+     :title (str title " Radio")}))
+
 (defn load [^YTMusic client id]
   (p/let [response (send-request (.-cookie client)
                                  #js {:id id
@@ -32,22 +43,6 @@
      :description (-> header
                       (j/get :description)
                       (runs->text))
-     :radio (when-let [radio-id (-> header
-                                    (j/get-in [:startRadioButton
-                                               :buttonRenderer])
-                                    unpack-navigation-endpoint
-                                    :id)]
-              {:id radio-id
-               :kind :playlist
-               :provider :ytm
-               :title (str title " Radio")})
-     :shuffle (when-let [radio-id (-> header
-                                      (j/get-in [:playButton
-                                                 :buttonRenderer])
-                                      unpack-navigation-endpoint
-                                      :id)]
-                {:id radio-id
-                 :kind :playlist
-                 :provider :ytm
-                 :title (str title " Radio")})
+     :radio (unpack-playlist header :startRadioButton (str "Shuffle " title))
+     :shuffle (unpack-playlist header :playButton (str title " Radio"))
      :items (keep music-shelf->section raw-rows)}))
