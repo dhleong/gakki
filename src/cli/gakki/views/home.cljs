@@ -1,9 +1,8 @@
 (ns gakki.views.home
-  (:require [archetype.util :refer [<sub >evt]]
+  (:require [archetype.util :refer [>evt]]
             ["ink" :as k]
-            ["ink-spinner" :default Spinner]
             [gakki.cli.input :refer [use-input]]
-            [gakki.components.player-mini :refer [player-mini]]
+            [gakki.components.header :refer [header]]
             [gakki.components.carousels :refer [carousels]]
             [gakki.theme :as theme]))
 
@@ -13,16 +12,6 @@
 
     nil))
 
-(defn- header []
-  [:> k/Box {:flex-direction :row
-             :justify-content :space-between}
-   [:> k/Text {:color theme/header-color-on-background}
-    (if (<sub [:loading?])
-      [:> Spinner {:type "dots"}]
-      " ")
-    " Gakki Home"]
-   [player-mini]])
-
 (defn view []
   (use-input handle-input)
 
@@ -30,6 +19,6 @@
              :border-color theme/text-color-on-background
              :border-style :round
              :padding-x 1}
-   [header]
+   [header "Gakki Home"]
 
    [:f> carousels]])

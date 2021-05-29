@@ -4,8 +4,8 @@
             ["ink" :as k]
             [reagent.core :as r]
             [gakki.cli.input :refer [use-input]]
+            [gakki.components.header :refer [header]]
             [gakki.components.limited-text :refer [limited-text]]
-            [gakki.components.player-mini :refer [player-mini]]
             [gakki.components.scrollable :refer [vertical-list]]
             [gakki.theme :as theme]))
 
@@ -30,11 +30,10 @@
                 {:color theme/text-color-on-background})
     " " title]])
 
-(defn- header [album]
-  [:> k/Box {:flex-direction :row
-             :justify-content :space-between
-             :padding-bottom 1}
-   [:> k/Box {:flex-direction :row}
+(defn- album-header [album]
+  [header
+   [:> k/Box {:flex-direction :row
+              :padding-bottom 1}
     [:> k/Text {:color theme/text-color-disabled}
      "Albums / "]
 
@@ -47,9 +46,7 @@
 
     [limited-text {:color theme/text-color-on-background
                    :max-width max-artist-name-length}
-     (:artist album)]]
-
-   [player-mini]])
+     (:artist album)]]])
 
 (defn- description [album]
   (when-not (empty? (:description album))
@@ -92,7 +89,7 @@
                  :border-color theme/text-color-on-background
                  :border-style :round
                  :padding-x 1}
-       [header album]
+       [album-header album]
 
        [description album]
 
