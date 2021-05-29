@@ -108,3 +108,8 @@
   :album
   (fn [db [_ id]]
     (get-in db [:album id])))
+
+(reg-sub
+  :artist
+  (fn [db [_ id]]
+    (get-in db [:artist id])))

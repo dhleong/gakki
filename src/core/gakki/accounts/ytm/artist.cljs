@@ -45,4 +45,4 @@
                       (runs->text))
      :radio (unpack-playlist header :startRadioButton (str "Shuffle " title))
      :shuffle (unpack-playlist header :playButton (str title " Radio"))
-     :items (keep music-shelf->section raw-rows)}))
+     :categories (keep music-shelf->section raw-rows)}))

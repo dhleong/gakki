@@ -22,6 +22,13 @@
   (fn [db [new-page]]
     (assoc db :page new-page)))
 
+(reg-event-db
+  :navigate/back!
+  [trim-v]
+  (fn [db _]
+    ; TODO backstack
+    (assoc db :page [:home])))
+
 
 ; ======= Auth/Providers ==================================
 
@@ -136,6 +143,11 @@
 
                  ; Unresolved album; fetch and resolve now:
                  {:providers/resolve-and-open [:album (:accounts db) item]})
+
+        :artist (if (:categories item)
+                  {:dispatch [:navigate! [:artist (:id item)]]}
+
+                  {:providers/resolve-and-open [:artist (:accounts db) item]})
 
         (println "TODO support opening: " item)))))
 

@@ -137,6 +137,9 @@
   (resolve-album [_ account album-id]
     (do-resolve-album account album-id))
 
+  (resolve-artist [_ account artist-id]
+    (do-resolve-artist account artist-id))
+
   (resolve-playlist [_ account playlist-id]
     (do-resolve-playlist account playlist-id))
   )

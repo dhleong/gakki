@@ -24,6 +24,10 @@
     [this account album-id]
     "Return a promise...")
 
+  (resolve-artist
+    [this account artist-id]
+    "Return a promise...")
+
   (resolve-playlist
     [this account playlist-id]
     "Return a promise..."))
