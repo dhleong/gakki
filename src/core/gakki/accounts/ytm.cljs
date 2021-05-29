@@ -6,6 +6,7 @@
             ["ytmusic" :rename {YTMUSIC YTMusic}]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
             [gakki.accounts.core :refer [IAccountProvider]]
+            [gakki.accounts.ytm.consts :refer [ytm-kinds]]
             [gakki.accounts.ytm.album :as album]
             [gakki.accounts.ytm.artist :as artist]
             [gakki.player.ytm :refer [youtube-id->playable]]))
@@ -20,11 +21,6 @@
                (fn [_creds]
                  (p/do!
                    (println "TODO: Persist creds")))})))))
-
-(def ^:private ytm-kinds
-  {"MUSIC_PAGE_TYPE_ALBUM" :album
-   "MUSIC_PAGE_TYPE_ARTIST" :artist
-   "MUSIC_PAGE_TYPE_PLAYLIST" :playlist})
 
 (defn- ->text [obj]
   (or (when (string? obj)
