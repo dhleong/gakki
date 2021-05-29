@@ -203,7 +203,7 @@
   ::set-current-playable
   [trim-v (inject-cofx ::inject/sub [:player/volume-percent])]
   (fn [{:keys [db] volume-percent :player/volume-percent} [playable]]
-    (println "set playable <- " playable)
+    (println "set playable <- " playable "@" volume-percent)
     {:db (-> db
              (assoc-in [:player :current] playable)
              (assoc-in [:player :state] :playing))

@@ -37,6 +37,9 @@
       (js/clearTimeout end-timer)
       (js/clearTimeout ending-timer))))
 
+(defn- set-volume! [^RtAudio speaker volume-level]
+  (j/assoc! speaker .-outputVolume volume-level))
+
 (deftype PcmStreamPlayable [state events config ^Readable stream]
   IPlayable
   (events [_this] events)
@@ -55,6 +58,9 @@
         (.start speaker))
 
       (let [speaker ((:create-speaker @state))]
+        (when-let [level (:volume @state)]
+          (set-volume! speaker level))
+
         (swap! state assoc
                :speaker speaker
                :clear-timer (enqueue-end-notification events config speaker)
@@ -78,7 +84,9 @@
     (player/pause this))
 
   (set-volume [_this level]
-    (j/assoc! (:speaker @state) .-outputVolume level)))
+    (swap! state assoc :volume level)
+    (when-let [speaker (:speaker @state)]
+      (set-volume! speaker level))))
 
 (defn pcm-stream->playable
   "Create a Playable from a config map and a PCM stream"
