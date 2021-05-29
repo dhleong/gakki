@@ -37,8 +37,4 @@
              :padding-x 1}
    [header]
 
-   [:f> carousels
-    :categories (<sub [:home/categories])
-    :navigate-categories! #(>evt [:home/navigate-categories %])
-    :navigate-row! #(>evt [:home/navigate-row %])
-    :open-selected! #(>evt [:home/open-selected])]])
+   [:f> carousels]])

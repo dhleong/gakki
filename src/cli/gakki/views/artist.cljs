@@ -23,9 +23,4 @@
        "Artists / "]
       (:title artist)]
 
-     [:f> carousels
-      :categories (:categories artist)
-      :navigate-categories! identity ; TODO
-      :navigate-row! identity ; TODO
-      :open-selected! identity]])
-  )
+     [:f> carousels]]))

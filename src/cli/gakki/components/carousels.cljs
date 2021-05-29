@@ -1,6 +1,8 @@
 (ns gakki.components.carousels
-  "Renders a sectional/carousel-based UI, like the Home page, or Artists"
-  (:require ["figures" :as figures]
+  "Renders a sectional/carousel-based UI, like the Home page, or Artists.
+   The data is automatically pulled from the `[:carousel/categories]` sub"
+  (:require [archetype.util :refer [<sub >evt]]
+            ["figures" :as figures]
             ["ink" :as k]
             [gakki.cli.input :refer [use-input]]
             [gakki.components.scrollable :refer [horizontal-list
@@ -30,23 +32,20 @@
     :items items
     :render category-item]])
 
-(defn carousels [& {:keys [categories
-                           navigate-categories!
-                           navigate-row!
-                           open-selected!]}]
+(defn carousels []
   (use-input
     (fn [k]
       (case k
-        "j" (navigate-categories! :down)
-        "k" (navigate-categories! :up)
-        "h" (navigate-row! :left)
-        "l" (navigate-row! :right)
+        "j" (>evt [:carousel/navigate-categories :down])
+        "k" (>evt [:carousel/navigate-categories :up])
+        "h" (>evt [:carousel/navigate-row :left])
+        "l" (>evt [:carousel/navigate-row :right])
 
-        :return (open-selected!)
+        :return (>evt [:carousel/open-selected])
         nil)))
 
   [vertical-list
-   :items categories
+   :items (<sub [:carousel/categories])
    :follow-selected? true
    :key-fn :title
    :render category-row])
