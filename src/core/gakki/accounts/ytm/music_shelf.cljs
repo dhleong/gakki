@@ -22,13 +22,13 @@
              0
              :url]))
 
-(defn- compose-shelf-item [{:keys [thumbnail items] :as item}]
+(defn- compose-shelf-item [{:keys [image-url items] :as item}]
   ; TODO radio id?
   (if (and (> (count items) 2)
            (= :track (:kind (first items)))
            (= :artist (:kind (second items))))
     (assoc (first items)
-           :thumbnail thumbnail
+           :image-url image-url
            :artist (:title (second items))
            :album (:title (nth items 2)))
 
@@ -46,7 +46,7 @@
   (if-let [flex-columns (j/get-in item [:musicResponsiveListItemRenderer
                                         :flexColumns])]
     (compose-shelf-item
-      {:thumbnail (-> item
+      {:image-url (-> item
                       (j/get-in [:musicResponsiveListItemRenderer :thumbnail])
                       pick-thumbnail)
        :items (keep parse-flex-column-item flex-columns)})
@@ -63,7 +63,7 @@
            :title (runs->text title)
            :subtitle (when-let [subtitle (j/get root :subtitle)]
                        (runs->text subtitle))
-           :thumbnail (-> root
+           :image-url (-> root
                           (j/get :thumbnailRenderer)
                           pick-thumbnail))))
 
