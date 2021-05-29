@@ -43,8 +43,11 @@
     (let [k (:provider entity)
           provider (get providers k)
           account (get accounts k)]
+
       (if (and provider account)
-        (-> (p/let [f (case kind
+        (-> (p/let [_ (>evt [:loading/update-count inc]) ; start by loading
+
+                    f (case kind
                         :album ap/resolve-album
                         :artist ap/resolve-artist
                         :playlist ap/resolve-playlist)
@@ -58,7 +61,11 @@
 
             (p/catch (fn [e]
                        ; TODO logging...
-                       (println "[err: " k "] " e))))
+                       (println "[err: " k "] " e)))
+
+            (p/finally (fn []
+                         (>evt [:loading/update-count dec])))
+            )
 
         (println "[err: " k "] Invalid provider or no account")))))
 
