@@ -20,14 +20,27 @@
   :navigate!
   [trim-v]
   (fn [db [new-page]]
-    (assoc db :page new-page)))
+    (-> db
+        (assoc :page new-page)
+        (update :backstack conj (:page db)))))
+
+(reg-event-db
+  :navigate/replace!
+  [trim-v]
+  (fn [db [new-top-page]]
+    (-> db
+        (assoc :page new-top-page)
+        (assoc :backstack []))))
 
 (reg-event-db
   :navigate/back!
   [trim-v]
   (fn [db _]
-    ; TODO backstack
-    (assoc db :page [:home])))
+    (if-let [prev (peek (:backstack db))]
+      (-> db
+          (assoc :page prev)
+          (update :backstack pop))
+      (assoc db :page [:home]))))
 
 
 ; ======= Auth/Providers ==================================

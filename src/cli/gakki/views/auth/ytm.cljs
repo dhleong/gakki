@@ -88,7 +88,7 @@
   (use-input
     (fn [k]
       (case k
-        :escape (>evt [:navigate! [:auth]])
+        :escape (>evt [:navigate/replace! [:auth]])
         nil)))
 
   (let [account (<sub [:account :ytm])]

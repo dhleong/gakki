@@ -82,7 +82,7 @@
                       (>evt [:player/play-items (:items album)]))
             :escape (if @state
                       (reset! state nil)
-                      (>evt [:navigate! [:home]]))
+                      (>evt [:navigate/back!]))
             nil)))
 
       [:> k/Box {:flex-direction :column

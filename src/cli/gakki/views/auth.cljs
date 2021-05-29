@@ -55,8 +55,8 @@
           "j" (swap! selected-atom rotate! 1)
           "k" (swap! selected-atom rotate! -1)
 
-          :escape (>evt [:navigate! [:home]])
-          :return (>evt [:navigate! [(keyword "auth" selected-key)]])
+          :escape (>evt [:navigate/replace! [:home]])
+          :return (>evt [:navigate/replace! [(keyword "auth" selected-key)]])
 
           nil)))
 
