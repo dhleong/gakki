@@ -1,17 +1,47 @@
 (ns gakki.views.queue
   (:require [archetype.util :refer [>evt <sub]]
+            ["figures" :as figures]
             ["ink" :as k]
             [gakki.cli.input :refer [use-input]]
             [gakki.cli.subs :as subs]
             [gakki.components.header :refer [header]]
+            [gakki.components.limited-text :refer [limited-text]]
             [gakki.components.scrollable :refer [vertical-list]]
             [gakki.theme :as theme]))
 
 (def ^:private preferred-max-queue-height 20)
 
-(defn render-queue-item [track]
-  [:> k/Text {:wrap :truncate-end}
-   (str track)])
+(defn queue-item [{:keys [selected?] :as track}]
+  [:> k/Box {:flex-direction :row}
+   [:> k/Text (if selected?
+                figures/pointer
+                " ")
+    " "]
+
+   [limited-text {:color theme/text-color-on-background
+                  :wrap :truncate-end}
+    (:title track)]
+   [:> k/Text {:color theme/text-color-disabled} " / "]
+   [limited-text {:wrap :truncate-end}
+    (:artist track)]
+   [:> k/Text {:color theme/text-color-disabled}
+    " " figures/pointerSmall " "]
+   [limited-text {:color theme/text-color-disabled
+                  :wrap :truncate-end}
+    (:album track)]])
+
+(defn- queue-header [queue]
+  (let [duration (<sub [:queue/duration-display])]
+    [header {:padding-bottom 1}
+    [:> k/Text {:color theme/text-color-disabled}
+     "Queue / "]
+
+    (count queue)
+    " ♫"
+
+    [:> k/Text {:color theme/text-color-disabled}
+     "  / "
+     duration]]))
 
 (defn view []
   (use-input
@@ -26,26 +56,16 @@
                           (min
                             (count queue)
                             preferred-max-queue-height
-                            available-height))
-        duration (<sub [:queue/duration-display])]
+                            available-height))]
     [:> k/Box {:flex-direction :column
                :border-color theme/text-color-on-background
                :border-style :round
                :padding-x 1}
-     [header {:padding-bottom 1}
-      [:> k/Text {:color theme/text-color-disabled}
-       "Queue / "]
-
-      (count queue)
-      " ♫"
-
-      [:> k/Text {:color theme/text-color-disabled}
-       "  / "
-       duration]]
+     [queue-header queue]
 
      [vertical-list
       :items queue
       :height rendered-height
       :per-page (or rendered-height 5)
-      :render render-queue-item
+      :render queue-item
       ]]))
