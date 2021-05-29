@@ -5,7 +5,8 @@
             ["ytmusic" :rename {YTMUSIC YTMusic}]
             [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
             [gakki.accounts.ytm.util :refer [runs->text
-                                             unpack-navigation-endpoint]]))
+                                             unpack-navigation-endpoint]]
+            [gakki.const :as const]))
 
 (defn- unpack-playlist [header button-key title]
   (when-let [radio-id (-> header
@@ -36,6 +37,11 @@
           title (-> header
                     (j/get :title)
                     (runs->text))]
+
+    (when const/debug?
+      #_:clj-kondo/ignore
+      (def last-response response))
+
     {:id id
      :kind :artist
      :provider :ytm

@@ -3,6 +3,8 @@
             [gakki.accounts.ytm.util :refer [runs->text
                                              unpack-navigation-endpoint]]))
 
+(def ^:private ignored-section-titles #{"Videos"})
+
 (defn- parse-flex-column-item [^js item]
   (if-let [root (j/get item :musicResponsiveListItemFlexColumnRenderer)]
     (let [from-endpoint (unpack-navigation-endpoint (j/get root :text))]
@@ -73,17 +75,21 @@
 (defmethod music-shelf->section "musicShelfRenderer"
   [^js container]
   (j/let [^:js {renderer :musicShelfRenderer} container
-          ^:js {:keys [title contents]} renderer]
-    {:title (runs->text title)
-     :items (keep parse-shelf-item contents)}))
+          ^:js {:keys [title contents]} renderer
+          title (runs->text title)]
+    (when-not (contains? ignored-section-titles title)
+      {:title title
+       :items (keep parse-shelf-item contents)})))
 
 (defmethod music-shelf->section "musicCarouselShelfRenderer"
   [^js container]
   (j/let [^:js {renderer :musicCarouselShelfRenderer} container
-          ^:js {:keys [header contents]} renderer]
-    {:title (runs->text (j/get-in header [:musicCarouselShelfBasicHeaderRenderer
-                                          :title]))
-     :items (keep parse-shelf-item contents)}))
+          ^:js {:keys [header contents]} renderer
+          title (runs->text (j/get-in header [:musicCarouselShelfBasicHeaderRenderer
+                                              :title]))]
+    (when-not (contains? ignored-section-titles title)
+      {:title title
+       :items (keep parse-shelf-item contents)})))
 
 (defmethod music-shelf->section "musicDescriptionShelfRenderer" [_]
   ; Probably can skip quietly
