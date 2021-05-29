@@ -16,4 +16,5 @@
   (fn [raw-height _]
     (when raw-height
       ; subtract top/bottom borders + header and margin
-      (- raw-height 4))))
+      ; and one more for sanity
+      (max 0 (- raw-height 5)))))
