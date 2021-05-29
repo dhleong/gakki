@@ -6,7 +6,8 @@
             [gakki.views.auth.ytm :as auth-ytm]
             [gakki.views.album :as album]
             [gakki.views.artist :as artist]
-            [gakki.views.home :as home]))
+            [gakki.views.home :as home]
+            [gakki.views.queue :as queue]))
 
 (def ^:private pages
   {:home #'home/view
@@ -14,6 +15,7 @@
    :auth/ytm #'auth-ytm/view
    :album #'album/view
    :artist #'artist/view
+   :queue #'queue/view
    })
 
 (defn main []

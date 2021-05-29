@@ -44,6 +44,11 @@
     (get-in db [:player :current])))
 
 (reg-sub
+  :player/queue
+  (fn [db _]
+    (get-in db [:player :queue])))
+
+(reg-sub
   :player/state
   (fn [db _]
     (get-in db [:player :state])))
