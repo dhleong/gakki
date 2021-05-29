@@ -7,6 +7,7 @@
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
             [gakki.accounts.core :refer [IAccountProvider]]
             [gakki.accounts.ytm.album :as album]
+            [gakki.accounts.ytm.artist :as artist]
             [gakki.player.ytm :refer [youtube-id->playable]]))
 
 (def ^:private account->creds
@@ -118,6 +119,10 @@
   (p/let [^YTMusic ytm (account->client account)]
     (album/load ytm album-id)))
 
+(defn- do-resolve-artist [account artist-id]
+  (p/let [^YTMusic ytm (account->client account)]
+    (artist/load ytm artist-id)))
+
 (deftype YTMAccountProvider []
   IAccountProvider
   (get-name [_this] "YouTube Music")
@@ -163,6 +168,12 @@
   (p/let [result (do-resolve-album
                    (:ytm @(re-frame.core/subscribe [:accounts]))
                    "MPREb_XSoe2FaWnVW") ]
+    (prn result)
+    )
+
+  (p/let [result (do-resolve-artist
+                   (:ytm @(re-frame.core/subscribe [:accounts]))
+                   "UCvInFYiyeAJOGEjhqJnyaMA") ]
     (prn result)
     )
 
