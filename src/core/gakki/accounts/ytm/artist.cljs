@@ -4,7 +4,8 @@
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
             [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
-            [gakki.accounts.ytm.util :refer [runs->text]]))
+            [gakki.accounts.ytm.util :refer [runs->text
+                                             unpack-navigation-endpoint]]))
 
 (defn load [^YTMusic client id]
   (p/let [response (send-request (.-cookie client)
@@ -19,12 +20,34 @@
                                   :tabRenderer
                                   :content
                                   :sectionListRenderer
-                                  :contents]))]
-    (println "response=" response)
+                                  :contents]))
+          header (j/get-in response [:header :musicImmersiveHeaderRenderer])
+          title (-> header
+                    (j/get :title)
+                    (runs->text))]
     {:id id
      :kind :artist
      :provider :ytm
-     :title (-> response
-                (j/get-in [:header :musicImmersiveHeaderRenderer :title])
-                (runs->text))
+     :title title
+     :description (-> header
+                      (j/get :description)
+                      (runs->text))
+     :radio (when-let [radio-id (-> header
+                                    (j/get-in [:startRadioButton
+                                               :buttonRenderer])
+                                    unpack-navigation-endpoint
+                                    :id)]
+              {:id radio-id
+               :kind :playlist
+               :provider :ytm
+               :title (str title " Radio")})
+     :shuffle (when-let [radio-id (-> header
+                                      (j/get-in [:playButton
+                                                 :buttonRenderer])
+                                      unpack-navigation-endpoint
+                                      :id)]
+                {:id radio-id
+                 :kind :playlist
+                 :provider :ytm
+                 :title (str title " Radio")})
      :items (keep music-shelf->section raw-rows)}))

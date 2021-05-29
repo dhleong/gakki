@@ -1,21 +1,7 @@
 (ns gakki.accounts.ytm.music-shelf
   (:require [applied-science.js-interop :as j]
-            [gakki.accounts.ytm.util :refer [runs->text]]
-            [gakki.accounts.ytm.consts :refer [ytm-kinds]]))
-
-(defn- unpack-navigation-endpoint [^js runs-container]
-  (let [endpoint (j/get-in runs-container [:runs 0 :navigationEndpoint])
-        watch-id (j/get-in endpoint [:watchEndpoint :videoId])]
-    {:id (or watch-id
-             (j/get-in endpoint [:browseEndpoint :browseId]))
-     :provider :ytm
-     :kind (let [raw-kind (j/get-in endpoint [:browseEndpoint
-                                              :browseEndpointContextSupportedConfigs
-                                              :browseEndpointContextMusicConfig
-                                              :pageType])]
-             (get ytm-kinds raw-kind (if watch-id
-                                       :track
-                                       :unknown)))}))
+            [gakki.accounts.ytm.util :refer [runs->text
+                                             unpack-navigation-endpoint]]))
 
 (defn- parse-flex-column-item [^js item]
   (if-let [root (j/get item :musicResponsiveListItemFlexColumnRenderer)]
@@ -98,6 +84,10 @@
     {:title (runs->text (j/get-in header [:musicCarouselShelfBasicHeaderRenderer
                                           :title]))
      :items (keep parse-shelf-item contents)}))
+
+(defmethod music-shelf->section "musicDescriptionShelfRenderer" [_]
+  ; Probably can skip quietly
+  nil)
 
 (defmethod music-shelf->section :default
   [^js section]

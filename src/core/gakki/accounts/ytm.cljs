@@ -171,6 +171,7 @@
                    (:ytm @(re-frame.core/subscribe [:accounts]))
                    "UCvInFYiyeAJOGEjhqJnyaMA") ]
     (prn result)
+    (prn (select-keys result [:title :description :radio :shuffle]))
     )
 
   )
