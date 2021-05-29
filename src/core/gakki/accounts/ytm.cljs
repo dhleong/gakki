@@ -58,7 +58,7 @@
    :id (or (j/get-in navigationEndpoint [:watchEndpoint :videoId])
            (j/get-in navigationEndpoint [:browseEndpoint :browseId]))
    :kind (or (when (j/get-in navigationEndpoint [:watchEndpoint :videoId])
-               :song)
+               :track)
 
              (when-let [ytm-kind (j/get-in navigationEndpoint
                                            [:browseEndpoint
@@ -87,7 +87,7 @@
                                                 author album]}]
   {:id id
    :provider :ytm
-   :kind :song  ; an assumption...
+   :kind :track  ; an assumption...
    :duration (->seconds duration)
    :image-url (->thumbnail thumbnail)
    :title (->text title)

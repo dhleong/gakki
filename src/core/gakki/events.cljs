@@ -157,7 +157,7 @@
   (fn [{:keys [db]} [item]]
     (let [item (inflate-item db item)]
       (case (:kind item)
-        :song {:dispatch [::set-current-playable item]}
+        :track {:dispatch [::set-current-playable item]}
 
         :playlist (if-let [items (seq (:items item))]
                     {:dispatch [:player/play-items items]}
