@@ -11,11 +11,6 @@
   (case k
     "r" (>evt [:providers/refresh!])
 
-    ; TODO: these should probably be global...
-    "p" (>evt [:player/play-pause])
-    "[" (>evt [:player/volume-inc -1])
-    "]" (>evt [:player/volume-inc 1])
-
     nil))
 
 (defn- header []
