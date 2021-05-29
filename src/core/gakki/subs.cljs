@@ -54,6 +54,35 @@
     (get-in db [:player :state])))
 
 
+; ======= queue ===========================================
+
+(reg-sub
+  :queue/duration-seconds
+  :<- [:player/queue]
+  (fn [queue]
+    (->> queue
+         (transduce
+           (map :duration)
+           +))))
+
+(reg-sub
+  :queue/duration-display
+  :<- [:queue/duration-seconds]
+  (fn [seconds]
+    (cond
+      (> seconds (* 2 3600))
+      (str (/ (js/Math.floor (/ seconds 360))
+              10)
+           " hrs")
+
+      (> seconds 120)
+      (str (js/Math.floor (/ seconds 60))
+           " mins")
+
+      :else
+      (str seconds " s")
+      )))
+
 ; ======= home ============================================
 
 (reg-sub

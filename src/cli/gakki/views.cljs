@@ -2,6 +2,7 @@
   (:require [archetype.util :refer [<sub]]
             [gakki.theme :as theme]
             ["ink" :as k]
+            [gakki.cli.dimen :refer [dimens-tracker]]
             [gakki.views.auth :as auth]
             [gakki.views.auth.ytm :as auth-ytm]
             [gakki.views.album :as album]
@@ -23,17 +24,20 @@
         [page args] (<sub [:page])
         page-fn (get pages page)
         page-form [:f> page-fn args]]
-    (cond
-      (not page-fn)
-      [:> k/Text
-       [:> k/Text {:background-color "red"} " ERROR "]
-       " No page registered for: "
-       [:> k/Text {:color theme/header-color-on-background}
-        (str [page args])]]
+    [:<>
+     [:f> dimens-tracker]
 
-      (or (seq accounts)
-          (= "auth" (namespace page)))
-      page-form
+     (cond
+       (not page-fn)
+       [:> k/Text
+        [:> k/Text {:background-color "red"} " ERROR "]
+        " No page registered for: "
+        [:> k/Text {:color theme/header-color-on-background}
+         (str [page args])]]
 
-      :else
-      [:f> auth/view])))
+       (or (seq accounts)
+           (= "auth" (namespace page)))
+       page-form
+
+       :else
+       [:f> auth/view])]))
