@@ -22,6 +22,13 @@
   (fn [db [new-page]]
     (assoc db :page new-page)))
 
+(reg-event-db
+  :navigate/back!
+  [trim-v]
+  (fn [db _]
+    ; TODO backstack
+    (assoc db :page [:home])))
+
 
 ; ======= Auth/Providers ==================================
 
@@ -62,10 +69,38 @@
   (fn [db [provider-id {:keys [categories]}]]
     (assoc db provider-id categories)))
 
+
+; ======= Carousel shared =================================
+
+(def ^:private carousel-path
+  {:id :carousel-path
+   :before (fn [{{db :db} :coeffects :as context}]
+             (let [page (:page db)]
+               (assoc-in context [:coeffects :carousel]
+                         (get-in db (cons :gakki.subs/carousel-data page)))))
+   :after (fn [{{result :carousel new-db :db} :effects
+                {:keys [db]} :coeffects
+                :as context}]
+            (let [page (:page db)]
+              (if result
+                (-> context
+                    ; Ensure there is *some* db passed through:
+                    (assoc-in [:effects :db] (or new-db db))
+
+                    ; Apply the carousel fx into the correct path:
+                    (assoc-in (concat [:effects :db :gakki.subs/carousel-data]
+                                      page)
+                              result)
+
+                    ; Finally, remove the (handled here) carousel effect
+                    (update :effects dissoc :carousel))
+                context)))})
+
 (reg-event-fx
-  :home/navigate-categories
-  [trim-v (inject-cofx ::inject/sub [:home/categories])]
-  (fn [{db :db categories :home/categories} [direction]]
+  :carousel/navigate-categories
+  [trim-v carousel-path
+   (inject-cofx ::inject/sub [:carousel/categories])]
+  (fn [{categories :carousel/categories} [direction]]
     (let [delta (case direction
                   :up -1
                   :down 1)
@@ -74,16 +109,16 @@
                                  (nth categories
                                       (mod (+ idx delta)
                                            (count categories))))]
-        {:db (assoc db
-                    :home/selection {:category (category-id next-category)}
-                    :home/selected (first (:items next-category)))}))))
+        {:carousel {:selection {:category (category-id next-category)}
+                    :selected (first (:items next-category))}}))))
 
 (reg-event-fx
-  :home/navigate-row
-  [trim-v
-   (inject-cofx ::inject/sub [:home/selection])
-   (inject-cofx ::inject/sub [:home/categories])]
-  (fn [{db :db categories :home/categories selections :home/selection} [direction]]
+  :carousel/navigate-row
+  [trim-v carousel-path
+   (inject-cofx ::inject/sub [:carousel/selection])
+   (inject-cofx ::inject/sub [:carousel/categories])]
+  (fn [{categories :carousel/categories selections :carousel/selection}
+       [direction]]
     (let [{:keys [items] :as category} (or (when-let [id (:category selections)]
                                              (->> categories
                                                   (filter #(= id (category-id %)))
@@ -97,17 +132,16 @@
                              (nth items
                                   (mod (+ idx delta)
                                        (count items))))]
-        {:db (assoc db
-                    :home/selection {:category (category-id category)
-                                     :item (:id next-item)}
-                    :home/selected next-item)}))))
+        {:carousel {:selection {:category (category-id category)
+                                :item (:id next-item)}
+                    :selected next-item}}))))
 
 (reg-event-fx
-  :home/open-selected
-  [trim-v]
-  (fn [{:keys [db]} _]
-    (when-let [item (:home/selected db)]
-      {:dispatch [:player/open item]})))
+  :carousel/open-selected
+  [trim-v carousel-path (inject-cofx ::inject/sub [:page])]
+  (fn [{{:keys [selected]} :carousel} _]
+    (when selected
+      {:dispatch [:player/open selected]})))
 
 
 ; ======= Player control ==================================
@@ -123,7 +157,7 @@
   (fn [{:keys [db]} [item]]
     (let [item (inflate-item db item)]
       (case (:kind item)
-        :song {:dispatch [::set-current-playable item]}
+        :track {:dispatch [::set-current-playable item]}
 
         :playlist (if-let [items (seq (:items item))]
                     {:dispatch [:player/play-items items]}
@@ -136,6 +170,11 @@
 
                  ; Unresolved album; fetch and resolve now:
                  {:providers/resolve-and-open [:album (:accounts db) item]})
+
+        :artist (if (:categories item)
+                  {:dispatch [:navigate! [:artist (:id item)]]}
+
+                  {:providers/resolve-and-open [:artist (:accounts db) item]})
 
         (println "TODO support opening: " item)))))
 

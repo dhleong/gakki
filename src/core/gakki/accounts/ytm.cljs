@@ -6,7 +6,9 @@
             ["ytmusic" :rename {YTMUSIC YTMusic}]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
             [gakki.accounts.core :refer [IAccountProvider]]
+            [gakki.accounts.ytm.consts :refer [ytm-kinds]]
             [gakki.accounts.ytm.album :as album]
+            [gakki.accounts.ytm.artist :as artist]
             [gakki.player.ytm :refer [youtube-id->playable]]))
 
 (def ^:private account->creds
@@ -19,11 +21,6 @@
                (fn [_creds]
                  (p/do!
                    (println "TODO: Persist creds")))})))))
-
-(def ^:private ytm-kinds
-  {"MUSIC_PAGE_TYPE_ALBUM" :album
-   "MUSIC_PAGE_TYPE_ARTIST" :artist
-   "MUSIC_PAGE_TYPE_PLAYLIST" :playlist})
 
 (defn- ->text [obj]
   (or (when (string? obj)
@@ -61,7 +58,7 @@
    :id (or (j/get-in navigationEndpoint [:watchEndpoint :videoId])
            (j/get-in navigationEndpoint [:browseEndpoint :browseId]))
    :kind (or (when (j/get-in navigationEndpoint [:watchEndpoint :videoId])
-               :song)
+               :track)
 
              (when-let [ytm-kind (j/get-in navigationEndpoint
                                            [:browseEndpoint
@@ -90,7 +87,7 @@
                                                 author album]}]
   {:id id
    :provider :ytm
-   :kind :song  ; an assumption...
+   :kind :track  ; an assumption...
    :duration (->seconds duration)
    :image-url (->thumbnail thumbnail)
    :title (->text title)
@@ -118,6 +115,10 @@
   (p/let [^YTMusic ytm (account->client account)]
     (album/load ytm album-id)))
 
+(defn- do-resolve-artist [account artist-id]
+  (p/let [^YTMusic ytm (account->client account)]
+    (artist/load ytm artist-id)))
+
 (deftype YTMAccountProvider []
   IAccountProvider
   (get-name [_this] "YouTube Music")
@@ -135,6 +136,9 @@
 
   (resolve-album [_ account album-id]
     (do-resolve-album account album-id))
+
+  (resolve-artist [_ account artist-id]
+    (do-resolve-artist account artist-id))
 
   (resolve-playlist [_ account playlist-id]
     (do-resolve-playlist account playlist-id))
@@ -164,6 +168,13 @@
                    (:ytm @(re-frame.core/subscribe [:accounts]))
                    "MPREb_XSoe2FaWnVW") ]
     (prn result)
+    )
+
+  (p/let [result (do-resolve-artist
+                   (:ytm @(re-frame.core/subscribe [:accounts]))
+                   "UCvInFYiyeAJOGEjhqJnyaMA") ]
+    (prn result)
+    (prn (select-keys result [:title :description :radio :shuffle]))
     )
 
   )

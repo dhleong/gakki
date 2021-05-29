@@ -5,6 +5,8 @@
 
 (reg-sub :page :page)
 (reg-sub :accounts :accounts)
+(reg-sub :artists :artist)
+(reg-sub ::carousel-data ::carousel-data)
 
 (reg-sub
   :loading?
@@ -62,10 +64,32 @@
   (fn [db _]
     (:home/selection db)))
 
+
+; ======= Persistent page-based Carousels =================
+
 (reg-sub
-  :home/selection
+  ::carousel-categories
+  :<- [:page]
   :<- [::home-categories]
-  :<- [::home-selection]
+  :<- [:artists]
+  (fn [[page home-categories artists] _]
+    (case (first page)
+      :home home-categories
+      :artist (get-in artists [(second page) :categories])
+
+      nil)))
+
+(reg-sub
+  ::carousel-selection
+  :<- [:page]
+  :<- [::carousel-data]
+  (fn [[page carousel-data]]
+    (:selection (get-in carousel-data page))))
+
+(reg-sub
+  :carousel/selection
+  :<- [::carousel-categories]
+  :<- [::carousel-selection]
   (fn [[categories selections] _]
     (or (when (and (:category selections)
                    (:item selections))
@@ -81,9 +105,9 @@
                    (:id item))}))))
 
 (reg-sub
-  :home/categories
-  :<- [::home-categories]
-  :<- [:home/selection]
+  :carousel/categories
+  :<- [::carousel-categories]
+  :<- [:carousel/selection]
   (fn [[categories {selected-cat :category selected-item :item}] _]
     (->> categories
          (map (fn [category]
@@ -108,3 +132,9 @@
   :album
   (fn [db [_ id]]
     (get-in db [:album id])))
+
+(reg-sub
+  :artist
+  :<- [:artists]
+  (fn [artists [_ id]]
+    (get artists id)))

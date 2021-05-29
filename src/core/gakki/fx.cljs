@@ -46,11 +46,13 @@
       (if (and provider account)
         (-> (p/let [f (case kind
                         :album ap/resolve-album
+                        :artist ap/resolve-artist
                         :playlist ap/resolve-playlist)
                     result (f provider
                               account
                               (:id entity))]
-              (if (seq (:items result))
+              (if (or (seq (:items result))
+                      (seq (:categories result)))
                 (>evt [:player/on-resolved kind result :action/open])
                 (println "[err: " k "] Empty " kind result)))
 
