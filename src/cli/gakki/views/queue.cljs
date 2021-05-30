@@ -12,33 +12,46 @@
             [gakki.util.functional :refer [length-wrapped]]))
 
 (def ^:private preferred-max-queue-height 20)
+(def ^:private max-track-length-perc 0.4)
 
 (defn queue-item [{:keys [selected? current?] :as track}]
-  [:> k/Box {:flex-direction :row}
-   [:> k/Text {:color (if selected?
-                        theme/header-color-on-background
-                        theme/text-color-on-background)}
-    (cond
-      selected? figures/pointer
-      current? "♫"
-      :else " ")
-    " "]
+  ; subtract an extra 2 for the indicator space
+  ; and 8 for the separators (the arrow is wider than it looks)
+  (let [available-width (<sub [::subs/available-width - 10])
+        max-track-length (js/Math.floor (* max-track-length-perc available-width))
 
-   [limited-text {:color theme/text-color-on-background
-                  :italic current?
-                  :underline selected?
-                  :wrap :truncate-end}
-    (:title track)]
-   [:> k/Text {:color theme/text-color-disabled} " / "]
+        ; manual layout is annoying but... worth it, here.
+        track-width (min (count (:title track))
+                         max-track-length)
+        remaining-each (js/Math.floor (/ (- available-width track-width) 2))
+        artist-width (min (count (:artist track))
+                          remaining-each)
+        album-width (- available-width track-width artist-width)]
+    [:> k/Box {:flex-direction :row}
+     [:> k/Text {:color (if selected?
+                          theme/header-color-on-background
+                          theme/text-color-on-background)}
+      (cond
+        selected? figures/pointer
+        current? "♫"
+        :else " ")
+      " "]
 
-   [limited-text {:wrap :truncate-end}
-    (:artist track)]
-   [:> k/Text {:color theme/text-color-disabled}
-    " " figures/pointerSmall " "]
+     [limited-text {:color theme/text-color-on-background
+                    :italic current?
+                    :max-width max-track-length
+                    :underline selected?}
+      (:title track)]
+     [:> k/Text {:color theme/text-color-disabled} " / "]
 
-   [limited-text {:color theme/text-color-disabled
-                  :wrap :truncate-end}
-    (:album track)]])
+     [limited-text {:max-width artist-width}
+      (:artist track)]
+     [:> k/Text {:color theme/text-color-disabled}
+      " " figures/pointerSmall " "]
+
+     [limited-text {:color theme/text-color-disabled
+                    :max-width album-width}
+      (:album track)]]))
 
 (defn- queue-header [queue]
   (let [duration (<sub [:queue/duration-display])]
