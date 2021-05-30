@@ -20,9 +20,11 @@
   :navigate!
   [trim-v]
   (fn [db [new-page]]
-    (-> db
-        (assoc :page new-page)
-        (update :backstack conj (:page db)))))
+    (if (not= (:page db) new-page)
+      (-> db
+          (assoc :page new-page)
+          (update :backstack conj (:page db)))
+      db)))
 
 (reg-event-db
   :navigate/replace!
