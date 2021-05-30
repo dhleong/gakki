@@ -8,6 +8,7 @@
             [gakki.views.album :as album]
             [gakki.views.artist :as artist]
             [gakki.views.home :as home]
+            [gakki.views.playlist :as playlist]
             [gakki.views.queue :as queue]))
 
 (def ^:private pages
@@ -16,6 +17,7 @@
    :auth/ytm #'auth-ytm/view
    :album #'album/view
    :artist #'artist/view
+   :playlist #'playlist/view
    :queue #'queue/view
    })
 

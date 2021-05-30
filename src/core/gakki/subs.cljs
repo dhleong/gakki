@@ -6,6 +6,7 @@
 (reg-sub :page :page)
 (reg-sub :accounts :accounts)
 (reg-sub :artists :artist)
+(reg-sub :playlists :playlist)
 (reg-sub ::carousel-data ::carousel-data)
 
 (reg-sub
@@ -185,3 +186,20 @@
   :<- [:artists]
   (fn [artists [_ id]]
     (get artists id)))
+
+(reg-sub
+  :playlist
+  :<- [:playlists]
+  (fn [playlists [_ id]]
+    (get playlists id)))
+
+(reg-sub
+  :playlist/items-with-state
+  :<- [:playlists]
+  :<- [:player/item]
+  (fn [[playlists now-playing] [_ id]]
+    (let [items (get-in playlists [id :items])]
+      (->> items
+           (mapv #(if (= (:id %) (:id now-playing))
+                    (assoc % :current? true)
+                    %))))))

@@ -172,13 +172,13 @@
       (case (:kind item)
         :track {:dispatch [::set-current-playable item]}
 
-        :playlist (if-let [items (seq (:items item))]
-                    {:dispatch [:player/play-items items]}
+        :playlist (if (seq (:items item))
+                    {:dispatch [:navigate! [:playlist (:id item)]]}
 
                     ; Unresolved playlist; fetch and resolve now:
                     {:providers/resolve-and-open [:playlist (:accounts db) item]})
 
-        :album (if (:items item)
+        :album (if (seq (:items item))
                  {:dispatch [:navigate! [:album (:id item)]]}
 
                  ; Unresolved album; fetch and resolve now:
@@ -191,11 +191,17 @@
 
         (println "TODO support opening: " item)))))
 
+(defn- clean-entity [entity]
+  (if (and (seq (:items entity))
+           (not (vector? (:items entity))))
+    (update entity :items vec)
+    entity))
+
 (reg-event-fx
   :player/on-resolved
   [trim-v]
   (fn [{:keys [db]} [entity-kind entity ?action]]
-    {:db (assoc-in db [entity-kind (:id entity)] entity)
+    {:db (assoc-in db [entity-kind (:id entity)] (clean-entity entity))
      :fx [(when (= :action/open ?action)
             [:dispatch [:player/open entity]])]}))
 

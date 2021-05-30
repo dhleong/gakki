@@ -43,27 +43,29 @@
 (defn- queue-header [queue]
   (let [duration (<sub [:queue/duration-display])]
     [header {:padding-bottom 1}
-    [:> k/Text {:color theme/text-color-disabled}
-     "Queue / "]
+     [:> k/Text {:color theme/text-color-disabled}
+      "Queue / "]
 
-    (count queue)
-    " ♫"
+     (count queue)
+     " ♫"
 
-    [:> k/Text {:color theme/text-color-disabled}
-     "  / "
-     duration]]))
+     [:> k/Text {:color theme/text-color-disabled}
+      "  / "
+      duration]]))
 
-(defn view []
+(defn track-list [& {:keys [items header preferred-max-height
+                            on-index-selected
+                            on-whole-list-selected]
+                     :or {preferred-max-height preferred-max-queue-height}}]
   (r/with-let [selected-index (r/atom nil)]
-    (let [queue (<sub [:queue/items-with-state])
-          queue (if-let [selected-index @selected-index]
-                  (update queue selected-index assoc :selected? true)
-                  queue)
+    (let [items (if-let [selected-index @selected-index]
+                  (update items selected-index assoc :selected? true)
+                  items)
           available-height (<sub [::subs/available-height])
           rendered-height (when available-height
                             (min
-                              (count queue)
-                              preferred-max-queue-height
+                              (count items)
+                              preferred-max-height
                               available-height))]
 
       (use-input
@@ -71,17 +73,20 @@
           (case k
             "j" (swap! selected-index (length-wrapped
                                         (fnil inc -1)
-                                        (count queue)))
+                                        (count items)))
             "k" (swap! selected-index (length-wrapped
                                         (fnil dec 1)
-                                        (count queue)))
+                                        (count items)))
 
             :escape (if (nil? @selected-index)
                       (>evt [:navigate/back!])
                       (reset! selected-index nil))
 
-            :return (when-some [index @selected-index]
-                      (>evt [:player/nth-in-queue index]))
+            :return (if-some [index @selected-index]
+                      (on-index-selected index)
+
+                      (when on-whole-list-selected
+                        (on-whole-list-selected)))
 
             nil)))
 
@@ -89,12 +94,19 @@
                  :border-color theme/text-color-on-background
                  :border-style :round
                  :padding-x 1}
-       [queue-header queue]
+       header
 
        [vertical-list
-        :items queue
+        :items items
         :follow-selected? true
         :height rendered-height
         :per-page (or rendered-height 5)
         :render queue-item
         ]])))
+
+(defn view []
+  (let [queue (<sub [:queue/items-with-state])]
+    [:f> track-list
+     :items queue
+     :header [queue-header queue]
+     :on-index-selected #(>evt [:player/nth-in-queue %])]))
