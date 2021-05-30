@@ -5,6 +5,7 @@
 
 (defn scrollable-list [{:keys [flex-direction
                                follow-selected?
+                               height
                                key-fn
                                per-page
                                items
@@ -25,7 +26,8 @@
           items (->> items
                      (drop scroll)
                      (take per-page))]
-      [:> k/Box {:flex-direction flex-direction}
+      [:> k/Box {:flex-direction flex-direction
+                 :height height}
        (for [item items]
          ^{:key (key-fn item)}
          [render item])])))

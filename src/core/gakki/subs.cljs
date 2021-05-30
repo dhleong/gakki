@@ -44,9 +44,56 @@
     (get-in db [:player :current])))
 
 (reg-sub
+  :player/queue
+  (fn [db _]
+    (get-in db [:player :queue])))
+
+(reg-sub
   :player/state
   (fn [db _]
     (get-in db [:player :state])))
+
+
+; ======= queue ===========================================
+
+(reg-sub
+  :queue/items
+  :<- [:player/queue]
+  (fn [{:keys [items]} _]
+    items))
+
+(reg-sub
+  :queue/duration-seconds
+  :<- [:queue/items]
+  (fn [queue]
+    (->> queue
+         (transduce
+           (map :duration)
+           +))))
+
+(reg-sub
+  :queue/duration-display
+  :<- [:queue/duration-seconds]
+  (fn [seconds]
+    (cond
+      (> seconds (* 2 3600))
+      (str (/ (js/Math.floor (/ seconds 360))
+              10)
+           " hrs")
+
+      (> seconds 120)
+      (str (js/Math.floor (/ seconds 60))
+           " mins")
+
+      :else
+      (str seconds " s")
+      )))
+
+(reg-sub
+  :queue/items-with-state
+  :<- [:player/queue]
+  (fn [{queue :items current-index :index} _]
+    (update queue current-index assoc :current? true)))
 
 
 ; ======= home ============================================

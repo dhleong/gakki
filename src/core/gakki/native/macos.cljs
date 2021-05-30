@@ -38,6 +38,7 @@
   (case event
     :toggle (>evt [:player/play-pause])
     :next-track (>evt [:player/next-in-queue])
+    :previous-track (>evt [:player/rewind-or-prev-in-queue])
 
     (println "TODO: handle media event: " event)))
 

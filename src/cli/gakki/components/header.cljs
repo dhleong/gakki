@@ -7,17 +7,26 @@
 
 (defn- text? [items]
   (every? #(or (string? %)
-               (identical? k/Text
-                           (second %)))
+               (number? %)
+               (and (vector? %)
+                    (identical? k/Text
+                                (second %))))
           items))
 
 (defn header [& title]
-  (let [title-container (if (text? title)
+  (let [opts (when (map? (first title))
+               (first title))
+        title (if opts
+                (next title)
+                title)
+
+        title-container (if (text? title)
                           [:> k/Text {:color theme/header-color-on-background}]
                           [:> k/Box {:flex-direction :row}])
         title-element (into title-container title)]
-    [:> k/Box {:flex-direction :row
-               :justify-content :space-between}
+    [:> k/Box (merge opts
+                     {:flex-direction :row
+                      :justify-content :space-between})
      title-element
 
      [:> k/Box {:flex-direction :row

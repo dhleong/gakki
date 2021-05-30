@@ -203,14 +203,14 @@
   :player/play-items
   [trim-v (path :player :queue)]
   (fn [_ [items ?selected-index]]
-    {:db (if (nil? ?selected-index)
-           items
-           (vec (concat
-                  (drop ?selected-index items)
-                  (take ?selected-index items))))
-     :dispatch [::set-current-playable (if (nil? ?selected-index)
-                                         (first items)
-                                         (nth items ?selected-index))]}))
+    (let [items (if (vector? items)
+                  items
+                  (vec items))]
+      {:db {:items items
+            :index (or ?selected-index 0)}
+       :dispatch [::set-current-playable (if (nil? ?selected-index)
+                                           (first items)
+                                           (nth items ?selected-index))]})))
 
 (reg-event-fx
   ::set-current-playable
@@ -241,10 +241,26 @@
 
 (reg-event-fx
   :player/next-in-queue
+  [trim-v (path :player :queue)]
+  (fn [{{current-index :index} :db} _]
+    {:dispatch [:player/nth-in-queue (inc current-index)]}))
+
+(reg-event-fx
+  :player/rewind-or-prev-in-queue
+  [trim-v (path :player :queue)]
+  (fn [{{current-index :index} :db} _]
+    ; TODO In theory, it might be nice for this to rewind if we are > N seconds
+    ; into the playback of the track, but we don't keep have that information...
+    ; ... yet. So for now, we just always go back in the queue.
+    (when (> current-index 0)
+      {:dispatch [:player/nth-in-queue (dec current-index)]})))
+
+(reg-event-fx
+  :player/nth-in-queue
   [trim-v (path :player)]
-  (fn [{player-state :db} _]
-    (if-let [next-item (first (next (:queue player-state)))]
-      {:db (update player-state :queue next)
+  (fn [{{{queue :items} :queue :as player-state} :db} [index]]
+    (if-some [next-item (nth queue index)]
+      {:db (assoc-in player-state [:queue :index] index)
        :dispatch [::set-current-playable next-item]}
 
       ; nothing more in the queue

@@ -7,15 +7,12 @@
             [gakki.components.header :refer [header]]
             [gakki.components.limited-text :refer [limited-text]]
             [gakki.components.scrollable :refer [vertical-list]]
-            [gakki.theme :as theme]))
+            [gakki.theme :as theme]
+            [gakki.util.functional :refer [length-wrapped]]))
 
 (def max-description-length 280)
 (def max-album-title-length 20)
 (def max-artist-name-length 20)
-
-(defn- length-wrapped [f length]
-  (fn wrapped [v]
-    (mod (f v) length)))
 
 (defn track-row [{:keys [title selected?]}]
   [:> k/Box {:flex-direction :row}

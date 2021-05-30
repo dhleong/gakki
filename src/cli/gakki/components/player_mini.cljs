@@ -8,7 +8,8 @@
   (use-input
     (fn [k]
       (case k
-        "p" (>evt [:player/play-pause])
+        "q" (>evt [:navigate! [:queue]])
+        " " (>evt [:player/play-pause])
         "[" (>evt [:player/volume-inc -1])
         "]" (>evt [:player/volume-inc 1])
 
