@@ -5,6 +5,7 @@
             ["figures" :as figures]
             ["ink" :as k]
             [gakki.cli.input :refer [use-input]]
+            [gakki.cli.subs :as subs]
             [gakki.components.scrollable :refer [horizontal-list
                                                  vertical-list]]
             [gakki.theme :as theme]))
@@ -44,8 +45,11 @@
         :return (>evt [:carousel/open-selected])
         nil)))
 
-  [vertical-list
-   :items (<sub [:carousel/categories])
-   :follow-selected? true
-   :key-fn :title
-   :render category-row])
+  (let [available-height (<sub [::subs/available-height])]
+    [vertical-list
+     :items (<sub [:carousel/categories])
+     :follow-selected? true
+     :key-fn :title
+     :per-page (js/Math.floor
+                 (/ available-height 5))
+     :render category-row]))
