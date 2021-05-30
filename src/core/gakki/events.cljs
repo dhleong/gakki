@@ -309,9 +309,10 @@
 
 (defmethod handle-player-event :playable-ending [player-state _]
   (log/debug "playable ending")
-  (when-let [next-item (first (next (:queue player-state)))]
-    (log/debug "... prepare " next-item)
-    {:player/prepare! next-item}))
+  (let [queue (:queue player-state)]
+    (when-let [next-item (nth (:items queue) (inc (:index queue)))]
+      (log/debug "... prepare " next-item)
+      {:player/prepare! next-item})))
 
 (defmethod handle-player-event :default [_ {what :type}]
   (println "WARN: Unexpected player event type: " what))
