@@ -57,8 +57,14 @@
 ; ======= queue ===========================================
 
 (reg-sub
-  :queue/duration-seconds
+  :queue/items
   :<- [:player/queue]
+  (fn [{:keys [items]} _]
+    items))
+
+(reg-sub
+  :queue/duration-seconds
+  :<- [:queue/items]
   (fn [queue]
     (->> queue
          (transduce
@@ -82,6 +88,13 @@
       :else
       (str seconds " s")
       )))
+
+(reg-sub
+  :queue/items-with-state
+  :<- [:player/queue]
+  (fn [{queue :items current-index :index} _]
+    (update queue current-index assoc :current? true)))
+
 
 ; ======= home ============================================
 

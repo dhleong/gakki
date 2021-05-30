@@ -203,14 +203,14 @@
   :player/play-items
   [trim-v (path :player :queue)]
   (fn [_ [items ?selected-index]]
-    {:db (if (nil? ?selected-index)
-           items
-           (vec (concat
-                  (drop ?selected-index items)
-                  (take ?selected-index items))))
-     :dispatch [::set-current-playable (if (nil? ?selected-index)
-                                         (first items)
-                                         (nth items ?selected-index))]}))
+    (let [items (if (vector? items)
+                  items
+                  (vec items))]
+      {:db {:items items
+            :index (or ?selected-index 0)}
+       :dispatch [::set-current-playable (if (nil? ?selected-index)
+                                           (first items)
+                                           (nth items ?selected-index))]})))
 
 (reg-event-fx
   ::set-current-playable
@@ -242,9 +242,21 @@
 (reg-event-fx
   :player/next-in-queue
   [trim-v (path :player)]
-  (fn [{player-state :db} _]
-    (if-let [next-item (first (next (:queue player-state)))]
-      {:db (update player-state :queue next)
+  (fn [{{{queue :items current-index :index} :queue :as player-state} :db} _]
+    (if-let [next-item (nth queue (inc current-index))]
+      {:db (update-in player-state [:queue :index] inc)
+       :dispatch [::set-current-playable next-item]}
+
+      ; nothing more in the queue
+      {:db (assoc player-state :state :paused)
+       :native/set-state! :paused})))
+
+(reg-event-fx
+  :player/nth-in-queue
+  [trim-v (path :player)]
+  (fn [{{{queue :items} :queue :as player-state} :db} [index]]
+    (if-some [next-item (nth queue index)]
+      {:db (assoc-in player-state [:queue :index] index)
        :dispatch [::set-current-playable next-item]}
 
       ; nothing more in the queue
