@@ -241,15 +241,19 @@
 
 (reg-event-fx
   :player/next-in-queue
-  [trim-v (path :player)]
-  (fn [{{{queue :items current-index :index} :queue :as player-state} :db} _]
-    (if-let [next-item (nth queue (inc current-index))]
-      {:db (update-in player-state [:queue :index] inc)
-       :dispatch [::set-current-playable next-item]}
+  [trim-v (path :player :queue)]
+  (fn [{{current-index :index} :db} _]
+    {:dispatch [:player/nth-in-queue (inc current-index)]}))
 
-      ; nothing more in the queue
-      {:db (assoc player-state :state :paused)
-       :native/set-state! :paused})))
+(reg-event-fx
+  :player/rewind-or-prev-in-queue
+  [trim-v (path :player :queue)]
+  (fn [{{current-index :index} :db} _]
+    ; TODO In theory, it might be nice for this to rewind if we are > N seconds
+    ; into the playback of the track, but we don't keep have that information...
+    ; ... yet. So for now, we just always go back in the queue.
+    (when (> current-index 0)
+      {:dispatch [:player/nth-in-queue (dec current-index)]})))
 
 (reg-event-fx
   :player/nth-in-queue
