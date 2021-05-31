@@ -11,6 +11,8 @@
 
 (declare ^:private on-voice-connect-status-update)
 
+(defonce ^:private state (atom nil))
+
 (defn- try-connect [^DiscordClient client]
   (-> (p/let [result (.login client
                              #js {:clientId const/discord-app-id
@@ -18,12 +20,11 @@
                                   :redirectUri redirect-uri
                                   :scopes scopes})]
         (log/debug "Discord logged in: " result)
+        (swap! state assoc :ready? true)
 
         (.subscribe client "VOICE_CONNECTION_STATUS"
                     (fn on-voice-state [ev]
-                      (on-voice-connect-status-update ev)))
-
-        )
+                      (on-voice-connect-status-update ev))))
 
       (p/catch (j/fn [^:js {:keys [code] :as e}]
                  (if (not= "ECONNREFUSED" code)
@@ -51,14 +52,16 @@
 ; ======= public interface ================================
 
 (defn set-now-playing! [item]
-  (when client
+  (when (and client (:ready? @state))
     (-> client
         (.setActivity
           #js {:details "listening to music"
                :startTimestamp (js/Date.now)
                :state (str "listening to " (:title item))
                :type 2
-               :instance false}))))
+               :instance false})
+        (p/catch (fn [e]
+                   (log/debug "Failed to set discord status" e))))))
 
 (comment
 
