@@ -9,7 +9,8 @@
             [gakki.views.artist :as artist]
             [gakki.views.home :as home]
             [gakki.views.playlist :as playlist]
-            [gakki.views.queue :as queue]))
+            [gakki.views.queue :as queue]
+            [gakki.views.splash :as splash]))
 
 (def ^:private pages
   {:home #'home/view
@@ -30,6 +31,9 @@
      [:f> dimens-tracker]
 
      (cond
+       (nil? accounts)
+       [splash/view]
+
        (not page-fn)
        [:> k/Text
         [:> k/Text {:background-color "red"} " ERROR "]

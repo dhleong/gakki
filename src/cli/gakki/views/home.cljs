@@ -1,10 +1,11 @@
 (ns gakki.views.home
-  (:require [archetype.util :refer [>evt]]
+  (:require [archetype.util :refer [>evt <sub]]
             ["ink" :as k]
             [gakki.cli.input :refer [use-input]]
             [gakki.components.header :refer [header]]
             [gakki.components.carousels :refer [carousels]]
-            [gakki.theme :as theme]))
+            [gakki.theme :as theme]
+            [gakki.views.splash :as splash]))
 
 (defn- handle-input [k]
   (case k
@@ -12,7 +13,7 @@
 
     nil))
 
-(defn view []
+(defn- initialized []
   (use-input handle-input)
 
   [:> k/Box {:flex-direction :column
@@ -22,3 +23,8 @@
    [header "Gakki Home"]
 
    [:f> carousels]])
+
+(defn view []
+  (if (<sub [:initializing?])
+    [splash/view]
+    [:f> initialized]))

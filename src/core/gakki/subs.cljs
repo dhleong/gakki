@@ -14,6 +14,18 @@
   (fn [db _]
     (> (:loading-count db) 0)))
 
+(reg-sub
+  :initializing?
+  :<- [:loading?]
+  :<- [:page]
+  :<- [:carousel/categories]
+  :<- [:queue/items]
+  (fn [[loading? page categories queue] _]
+    (and loading?
+         (= [:home] page)
+         (empty? categories)
+         (empty? queue))))
+
 
 ; ======= auth ============================================
 

@@ -76,7 +76,6 @@
 (defn- do-fetch-home [account]
   (p/let [^YTMusic ytm (account->client account)
           home (.getHomePage ytm)]
-    (println home)
     {:categories
      (->> (j/get home :content)
           (map (j/fn [^:js {:keys [title content]}]
@@ -101,7 +100,6 @@
     ;   (>evt [:player/on-resolved :playlist result])
     ; to replace the resolved playlist; if we concat new items with old,
     ; it should "just work"
-    (println data)
     {:id (j/get data :playlistId)
      :provider :ytm
      :kind :playlist
