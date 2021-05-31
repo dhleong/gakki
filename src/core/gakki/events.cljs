@@ -352,8 +352,8 @@
   (fn [{:keys [db]} [set-name value]]
     (let [new-db (update db set-name (fnil disj #{}) value)]
       {:db new-db
-       :dispatch (when-not (= db new-db)
-                   [:integrations/update])})))
+       :fx [(when-not (= db new-db)
+              [:dispatch [:integrations/update]])]})))
 
 (reg-event-fx
   :integrations/update

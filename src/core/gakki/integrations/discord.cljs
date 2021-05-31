@@ -3,10 +3,10 @@
             [archetype.util :refer [>evt]]
             ["discord-rpc" :rename {Client DiscordClient}]
             [promesa.core :as p]
-            [gakki.const :as const]))
+            [gakki.const :as const]
+            [gakki.util.logging :as log]))
 
 (def ^:private scopes #js ["rpc" "rpc.voice.read"])
-;; (def redirect-uri "http://localhost:42554/oauth")
 (def ^:private redirect-uri "http://127.0.0.1")
 
 (declare ^:private on-voice-connect-status-update)
@@ -17,7 +17,7 @@
                                   :clientSecret const/discord-oauth-secret
                                   :redirectUri redirect-uri
                                   :scopes scopes})]
-        (println "Discord logged in: " result)
+        (log/debug "Discord logged in: " result)
 
         (.subscribe client "VOICE_CONNECTION_STATUS"
                     (fn on-voice-state [ev]
@@ -35,9 +35,6 @@
   (when-not (empty? const/discord-oauth-secret)
     (doto (DiscordClient. #js {:transport "ipc"})
       (.on "error" (fn [e] (println "RPC Client error" e)))
-      (.on "ready" (fn []
-                     (println "as" (j/get-in client [:application :name]))
-                     (println "user" (j/get-in client [:user]))))
       (try-connect))))
 
 
