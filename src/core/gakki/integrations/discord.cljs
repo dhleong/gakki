@@ -11,7 +11,7 @@
 
 (declare ^:private on-voice-connect-status-update)
 
-(defonce ^:private state (atom nil))
+(defonce ^:private client-state (atom nil))
 
 (defn- try-connect [^DiscordClient client]
   (-> (p/let [result (.login client
@@ -20,7 +20,7 @@
                                   :redirectUri redirect-uri
                                   :scopes scopes})]
         (log/debug "Discord logged in: " result)
-        (swap! state assoc :ready? true)
+        (swap! client-state assoc :ready? true)
 
         (.subscribe client "VOICE_CONNECTION_STATUS"
                     (fn on-voice-state [ev]
@@ -51,22 +51,34 @@
 
 ; ======= public interface ================================
 
-(defn set-now-playing! [item]
-  (when (and client (:ready? @state))
+(defn set-state! [{:keys [item state]}]
+  (when (and client (:ready? @client-state))
     (-> client
         (.setActivity
-          #js {:details "listening to music"
-               :startTimestamp (js/Date.now)
-               :state (str "listening to " (:title item))
-               :type 2
+          #js {:details (str "Listening to " (:title item))
+               :state (str "by " (:artist item)
+                           (when (= :paused state)
+                             " [paused]"))
+               :startTimestamp (when (= :playing state)
+                                 (js/Date.now))
+
+               ; NOTE: If we wanted, we could use :partyId to show the activity
+               ; in the "Active Now" section:
+               ;; :partyId (str "gakki:" (:id item))
+
                :instance false})
         (p/catch (fn [e]
                    (log/debug "Failed to set discord status" e))))))
 
+#_:clj-kondo/ignore
 (comment
 
+  (set-now-playing!
+    @(re-frame.core/subscribe [:player/item]))
+
   (p/let [resp (set-now-playing!
-                {:title "Test"})]
+                {:title "Test"
+                 :artist "Foo"})]
     (println resp))
 
   )

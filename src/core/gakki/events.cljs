@@ -230,19 +230,22 @@
     {:db (-> db
              (assoc-in [:player :current] playable)
              (assoc-in [:player :state] :playing))
+     :integrations/set-state! {:item playable :state :playing}
      :native/set-now-playing! playable
      :player/play! {:item playable
                     :config {:volume-percent volume-percent}}}))
 
 (reg-event-fx
   :player/play-pause
-  [trim-v (path :player :state)]
-  (fn [{current-state :db} _]
+  [trim-v (path :player)]
+  (fn [{{current-state :state :as player} :db} _]
     (when-let [new-state (case current-state
                            :playing :paused
                            :paused :playing
                            nil nil)]
-      (assoc {:db new-state
+      (assoc {:db (assoc player :state new-state)
+              :integrations/set-state! {:state new-state
+                                        :item (:current player)}
               :native/set-state! new-state}
              (case new-state
                :playing :player/unpause!
