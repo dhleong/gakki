@@ -2,16 +2,18 @@
   (:require [archetype.util :refer [>evt]]
             [re-frame.core :refer [reg-fx]]
             [promesa.core :as p]
-            [gakki.native :as native]
             [gakki.accounts.core :as ap]
             [gakki.accounts :refer [providers]]
-            [gakki.player.remote :as remote]))
+            [gakki.native :as native]
+            [gakki.player.remote :as remote]
+            [gakki.util.logging :as log]))
 
 (reg-fx
   :auth/load!
   (fn []
-    (p/let [accounts (native/load-accounts)]
-      (>evt [:auth/set accounts]))))
+    (log/with-timing-promise :fx/auth-load!
+      (p/let [accounts (native/load-accounts)]
+        (>evt [:auth/set accounts])))))
 
 (reg-fx
   :auth/save!

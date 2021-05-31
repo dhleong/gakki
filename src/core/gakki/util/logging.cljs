@@ -1,11 +1,24 @@
 (ns gakki.util.logging
   (:require [clojure.string :as str]
+            [promesa.core :as p]
             [re-frame.core :as re-frame]
             [gakki.const :as const]))
+
+(def ^:private print-timings? false)
 
 (defn debug [& args]
   (when const/debug?
     (apply println args)))
+
+(defn timing [event ms]
+  (when (and const/debug? print-timings?)
+    (println "[ timing" event "]: " ms "ms")))
+
+(defn with-timing-promise [event promise-obj]
+  (p/let [start (js/Date.now)
+          result promise-obj]
+    (timing event (- (js/Date.now) start))
+    result))
 
 (defn patch
   "Patch various logging methods to avoid messing up the CLI UI"

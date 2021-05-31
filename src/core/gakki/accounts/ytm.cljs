@@ -2,6 +2,7 @@
   (:require [applied-science.js-interop :as j]
             [archetype.util :refer [>evt]]
             [clojure.string :as str]
+            [gakki.util.logging :as log]
             [promesa.core :as p]
             ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
@@ -12,7 +13,7 @@
             [gakki.accounts.ytm.artist :as artist]
             [gakki.player.ytm :refer [youtube-id->playable]]))
 
-(def ^:private account->creds
+(defonce ^:private account->creds
   (memoize
     (fn [account]
       (cached
@@ -23,6 +24,8 @@
                  (let [updated (merge account
                                       (js->clj creds :keywordize-keys true))]
                    (>evt [:auth/save :ytm updated {:load-home? false}])))})))))
+
+(defonce ^:private created-creds (atom nil))
 
 (defn- ->text [obj]
   (or (when (string? obj)
@@ -71,18 +74,33 @@
                                                 ytm-kind))))})
 
 (defn- account->client [account]
-  (p/let [creds (account->creds account)
-          cookies-obj (.get creds)]
+  (p/let [initial? (nil? (get @created-creds account))
+          start (js/Date.now)
+          creds (account->creds account)
+          cookies-obj (.get creds)
+          delta (- (js/Date.now) start)]
+
+    ; logging:
+    (swap! created-creds assoc account true)
+    (if initial?
+      (log/timing :ytm/initial-cookie-fetch delta)
+      (log/timing :ytm/cookie-refresh delta))
+
     (YTMusic. (j/get cookies-obj :cookies))))
 
 (defn- do-fetch-home [account]
-  (p/let [^YTMusic ytm (account->client account)
-          home (.getHomePage ytm)]
-    {:categories
-     (->> (j/get home :content)
-          (map (j/fn [^:js {:keys [title content]}]
-                 {:title title
-                  :items (map ->home-item content)})))}))
+  (log/with-timing-promise :ytm/parse-and-fetch-home
+    (p/let [^YTMusic ytm (account->client account)
+
+            start (js/Date.now)
+            home (.getHomePage ytm)]
+      (log/timing :ytm/fetch-home (- (js/Date.now) start))
+
+      {:categories
+       (->> (j/get home :content)
+            (map (j/fn [^:js {:keys [title content]}]
+                   {:title title
+                    :items (map ->home-item content)})))})))
 
 (j/defn ^:private ->playlist-item [^:js {:keys [id duration thumbnail title
                                                 author album]}]
