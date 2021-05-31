@@ -57,9 +57,11 @@
 (reg-event-fx
   :auth/save
   [trim-v]
-  (fn [{:keys [db]} [provider account]]
+  (fn [{:keys [db]} [provider account {:keys [load-home?]
+                                       :or {load-home? true}}]]
     {:db (assoc-in db [:accounts provider] account)
-     :providers/load! {provider account}
+     :providers/load! (when load-home?
+                        {provider account})
      :auth/save! [provider account]}))
 
 (reg-event-db

@@ -21,19 +21,20 @@
 (reg-fx
   :providers/load!
   (fn [accounts]
-    (>evt [:loading/update-count inc])
-    (->> accounts
-         (map (fn [[k account]]
-                (when-let [provider (get providers k)]
-                  (-> (p/let [results (ap/fetch-home provider account)]
-                        (when results
-                          (>evt [:home/replace k results])))
-                      (p/catch (fn [e]
-                                 ; TODO logging
-                                 (println "[err: " k "] " e)))))))
-         p/all
-         (p/map (fn []
-                  (>evt [:loading/update-count dec]))))))
+    (when (seq accounts)
+      (>evt [:loading/update-count inc])
+      (->> accounts
+           (map (fn [[k account]]
+                  (when-let [provider (get providers k)]
+                    (-> (p/let [results (ap/fetch-home provider account)]
+                          (when results
+                            (>evt [:home/replace k results])))
+                        (p/catch (fn [e]
+                                   ; TODO logging
+                                   (println "[err: " k "] " e)))))))
+           p/all
+           (p/map (fn []
+                    (>evt [:loading/update-count dec])))))))
 
 (reg-fx
   :providers/resolve-and-open

@@ -1,5 +1,6 @@
 (ns gakki.accounts.ytm
   (:require [applied-science.js-interop :as j]
+            [archetype.util :refer [>evt]]
             [clojure.string :as str]
             [promesa.core :as p]
             ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
@@ -18,9 +19,10 @@
         (OauthCredentialsManager.
           (clj->js account)
           #js {:persistCredentials
-               (fn [_creds]
-                 (p/do!
-                   (println "TODO: Persist creds")))})))))
+               (fn [creds]
+                 (let [updated (merge account
+                                      (js->clj creds :keywordize-keys true))]
+                   (>evt [:auth/save :ytm updated {:load-home? false}])))})))))
 
 (defn- ->text [obj]
   (or (when (string? obj)
