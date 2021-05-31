@@ -62,10 +62,6 @@
                :startTimestamp (when (= :playing state)
                                  (js/Date.now))
 
-               ; NOTE: If we wanted, we could use :partyId to show the activity
-               ; in the "Active Now" section:
-               ;; :partyId (str "gakki:" (:id item))
-
                :instance false})
         (p/catch (fn [e]
                    (log/debug "Failed to set discord status" e))))))
