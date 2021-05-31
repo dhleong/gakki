@@ -346,8 +346,8 @@
   (fn [{:keys [db]} [set-name value]]
     (let [new-db (update db set-name (fnil conj #{}) value)]
       {:db new-db
-       :dispatch (when-not (= db new-db)
-                   [:integrations/update])})))
+       :fx [(when-not (= db new-db)
+              [:dispatch [:integrations/update]])]})))
 
 (reg-event-fx
   :integrations/set-remove
@@ -360,9 +360,7 @@
 
 (reg-event-fx
   :integrations/update
-  [trim-v]
-  (fn [{{vars :integration-vars player :player} :db} _]
-    {:fx [(let [base-perc (/ (:volume player) max-volume-int)]
-            (if (seq (:voice-connected vars))
-              [:player/set-volume! (* const/suppressed-volume-percent base-perc)]
-              [:player/set-volume! base-perc]))]}))
+  [trim-v (inject-cofx ::inject/sub [:player/volume-percent])]
+  (fn [{{vars :integration-vars} :db volume :player/volume-percent} _]
+    {:fx [(when-not (nil? (:voice-connected vars))
+            [:player/set-volume! volume])]}))

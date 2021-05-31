@@ -1,6 +1,6 @@
 (ns gakki.subs
-  (:require [gakki.const :refer [max-volume-int]]
-            [re-frame.core :refer [reg-sub]]
+  (:require [re-frame.core :refer [reg-sub]]
+            [gakki.const :as const :refer [max-volume-int]]
             [gakki.util.media :refer [category-id]]))
 
 (reg-sub :page :page)
@@ -39,10 +39,19 @@
 ; ======= player ==========================================
 
 (reg-sub
-  :player/volume-percent
+  ::player-volume
   (fn [db _]
-    (/ (get-in db [:player :volume] max-volume-int)
-       max-volume-int)))
+    (get-in db [:player :volume] max-volume-int)))
+
+(reg-sub
+  :player/volume-percent
+  :<- [::player-volume]
+  :<- [:var :voice-connected]
+  (fn [[volume voice-connected-integrations] _]
+    (let [base-percent (/ volume max-volume-int)]
+      (if (empty? voice-connected-integrations)
+        base-percent
+        (* const/suppressed-volume-percent base-percent)))))
 
 (reg-sub
   :player/adjusting-volume-percent
@@ -215,3 +224,17 @@
            (mapv #(if (= (:id %) (:id now-playing))
                     (assoc % :current? true)
                     %))))))
+
+
+; ======= integrations ====================================
+
+(reg-sub
+  :integration-vars
+  (fn [db _]
+    (get db :integration-vars)))
+
+(reg-sub
+  :var
+  :<- [:integration-vars]
+  (fn [vars [_ var-name]]
+    (get vars var-name)))
