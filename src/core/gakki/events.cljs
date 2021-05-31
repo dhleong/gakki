@@ -5,7 +5,7 @@
                                    path trim-v]]
             [vimsical.re-frame.cofx.inject :as inject]
             [gakki.db :as db]
-            [gakki.const :refer [max-volume-int]]
+            [gakki.const :as const :refer [max-volume-int]]
             [gakki.util.coll :refer [index-of nth-or-nil]]
             [gakki.util.logging :as log]
             [gakki.util.media :refer [category-id]]))
@@ -278,21 +278,28 @@
        :native/set-state! :paused})))
 
 (reg-event-fx
-  :player/volume-inc
+  :player/set-volume
   [trim-v (path :player)]
-  (fn [{player :db} [delta]]
+  (fn [{player :db} [new-volume]]
+    ; NOTE: new-volume should be in [0..max-volume-int]
     ; TODO persist volume preference
-    (let [current-volume (or (:volume player)
-                             max-volume-int)
-          new-volume (-> (+ current-volume delta)
+    (let [new-volume (-> new-volume
                          (max 0)
                          (min max-volume-int))]
       {:db (-> player
                (assoc :volume new-volume)
                (update :adjusting-volume? inc))
        :player/set-volume! (/ new-volume max-volume-int)
-       :dispatch-later {:ms 1500 :dispatch [::stop-adjusting-volume]}
-       })))
+       :dispatch-later {:ms 1500 :dispatch [::stop-adjusting-volume]}})))
+
+(reg-event-fx
+  :player/volume-inc
+  [trim-v (path :player)]
+  (fn [{player :db} [delta]]
+    (let [current-volume (or (:volume player)
+                             max-volume-int)
+          new-volume (+ current-volume delta)]
+      {:dispatch [:player/set-volume new-volume]})))
 
 (reg-event-db
   ::stop-adjusting-volume
@@ -326,3 +333,33 @@
   (fn [{:keys [db]} [event]]
     (println "player event: " event)
     (handle-player-event db event)))
+
+
+; ======= Integrations ====================================
+
+(reg-event-fx
+  :integrations/set-add
+  [trim-v (path :integration-vars)]
+  (fn [{:keys [db]} [set-name value]]
+    (let [new-db (update db set-name (fnil conj #{}) value)]
+      {:db new-db
+       :dispatch (when-not (= db new-db)
+                   [:integrations/update])})))
+
+(reg-event-fx
+  :integrations/set-remove
+  [trim-v (path :integration-vars)]
+  (fn [{:keys [db]} [set-name value]]
+    (let [new-db (update db set-name (fnil disj #{}) value)]
+      {:db new-db
+       :dispatch (when-not (= db new-db)
+                   [:integrations/update])})))
+
+(reg-event-fx
+  :integrations/update
+  [trim-v]
+  (fn [{{vars :integration-vars player :player} :db} _]
+    {:fx [(let [base-perc (/ (:volume player) max-volume-int)]
+            (if (seq (:voice-connected vars))
+              [:player/set-volume! (* const/suppressed-volume-percent base-perc)]
+              [:player/set-volume! base-perc]))]}))
