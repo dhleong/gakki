@@ -8,36 +8,9 @@
 
 (def ^:private scopes #js ["rpc" "rpc.voice.read"])
 (def ^:private redirect-uri "http://127.0.0.1")
-
-(declare ^:private on-voice-connect-status-update)
+(def ^:private reconnect-delay 5000)
 
 (defonce ^:private client-state (atom nil))
-
-(defn- try-connect [^DiscordClient client]
-  (-> (p/let [result (.login client
-                             #js {:clientId const/discord-app-id
-                                  :clientSecret const/discord-oauth-secret
-                                  :redirectUri redirect-uri
-                                  :scopes scopes})]
-        (log/debug "Discord logged in: " result)
-        (swap! client-state assoc :ready? true)
-
-        (.subscribe client "VOICE_CONNECTION_STATUS"
-                    (fn on-voice-state [ev]
-                      (on-voice-connect-status-update ev))))
-
-      (p/catch (j/fn [^:js {:keys [code] :as e}]
-                 (if (not= "ECONNREFUSED" code)
-                   (do (println "Error connecting to Discord:" e)
-                       (js/console.log e))
-                   (println "TODO retry connection"))))))
-
-(defonce ^:private client
-  (when-not (empty? const/discord-oauth-secret)
-    (doto (DiscordClient. #js {:transport "ipc"})
-      (.on "error" (fn [e] (println "RPC Client error" e)))
-      (try-connect))))
-
 
 ; ======= events ==========================================
 
@@ -49,10 +22,73 @@
     ; ignore:
     nil))
 
+
+; ======= connection management / init ====================
+
+(declare ^:private retry-connect)
+
+(defn- try-connect []
+  (swap! client-state
+         (fn [{:keys [^DiscordClient client, retry-timeout last-state]}]
+           (when client
+             (.removeAllListeners client "disconnect")
+             (.destroy client))
+           (when retry-timeout
+             (js/clearTimeout retry-timeout))
+           {:last-state last-state
+            :connecting? true}))
+
+  (-> (p/let [^DiscordClient client (DiscordClient. #js {:transport "ipc"})
+              result (.login client
+                             #js {:clientId const/discord-app-id
+                                  :clientSecret const/discord-oauth-secret
+                                  :redirectUri redirect-uri
+                                  :scopes scopes})]
+        (log/debug "Discord logged in: " result)
+        (swap! client-state assoc
+               :connecting? false
+               :ready? true
+               :client client)
+
+        (doto client
+          (.once "disconnected"
+                 (fn []
+                   (log/debug "Lost connection to discord; reconnecting later")
+                   (retry-connect)))
+
+          (.subscribe "VOICE_CONNECTION_STATUS"
+                      (fn on-voice-state [ev]
+                        (on-voice-connect-status-update ev)))))
+
+      (p/catch (j/fn [^:js {:keys [code message] :as e}]
+                 (if-not (or (= "ECONNREFUSED" code)
+                             (= "Could not connect" message))
+                   (do (println "Error connecting to Discord:" e)
+                       (js/console.log e))
+
+                   (retry-connect))))))
+
+(defn- retry-connect []
+  (swap! client-state assoc
+         :connecting? false
+         :client nil
+         :retry-timeout (js/setTimeout
+                          try-connect
+                          reconnect-delay)))
+
+(let [state @client-state]
+  (when-not (or (:client state)
+                (:retry-timeout state)
+                (:connecting? state))
+    (try-connect)))
+
+
 ; ======= public interface ================================
 
-(defn set-state! [{:keys [item state]}]
-  (when (and client (:ready? @client-state))
+(defn set-state! [{:keys [item state] :as full-state}]
+  (swap! client-state assoc :last-state full-state)
+
+  (when-let [^DiscordClient client (:state @client-state)]
     (-> client
         (.setActivity
           #js {:details (str "Listening to " (:title item))
