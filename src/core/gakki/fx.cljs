@@ -25,6 +25,16 @@
     (native/add-account provider account)))
 
 
+; ======= Prefs ===========================================
+
+(reg-fx
+  :prefs/load!
+  (fn []
+    (log/with-timing-promise :fx/prefs-load!
+      (p/let [prefs (native/load-prefs)]
+        (>evt [:prefs/set prefs])))))
+
+
 ; ======= Provider-based loading ==========================
 
 (reg-fx

@@ -14,7 +14,8 @@
   ::initialize-db
   (fn [_ _]
     {:db db/default-db
-     :auth/load! :!}))
+     :auth/load! :!
+     :prefs/load! :!}))
 
 (reg-event-db
   :navigate!

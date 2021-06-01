@@ -1,8 +1,22 @@
 (ns gakki.native.default
   (:require [applied-science.js-interop :as j]
             [cognitect.transit :as t]
+            ["fs/promises" :as fs]
+            [gakki.util.logging :as log]
             ["keytar" :refer [deletePassword findCredentials setPassword]]
+            ["os" :as os]
+            ["path" :as path]
             [promesa.core :as p]))
+
+(defn- config-dir
+  ([] (path/join
+        (os/homedir)
+        ".config"
+        "gakki"))
+  ([sub-dir]
+   (path/join (config-dir) sub-dir)))
+
+; ======= auth commands ===================================
 
 (def ^:private auth-service "io.github.dhleong.gakki")
 
@@ -26,7 +40,24 @@
   (deletePassword auth-service (name kind)))
 
 
+; ======= prefs commands ==================================
+
+(defn load-prefs []
+  (-> (p/let [path (config-dir "prefs.json")
+              raw (fs/readFile path)]
+        (-> raw
+            (js/JSON.parse)
+            (js->clj :keywordize-keys true)))
+      (p/catch (j/fn [^:js {:keys [code] :as e}]
+                 (when-not (= "ENOENT" code)
+                   (log/debug e))
+                 nil))))
+
+
 (def commands
   {:load-accounts load-accounts
    :add-account add-account
-   :delete-account delete-account})
+   :delete-account delete-account
+
+   :load-prefs load-prefs
+   })
