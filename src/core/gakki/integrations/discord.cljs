@@ -12,31 +12,37 @@
 
 (defonce ^:private client-state (atom nil))
 
+(declare set-state!)
+
 ; ======= events ==========================================
 
 (defn- on-voice-connect-status-update [ev]
-  (case (j/get ev :state)
-    "DISCONNECTED" (>evt [:integrations/set-remove :voice-connected :discord])
-    "VOICE_CONNECTED" (>evt [:integrations/set-add :voice-connected :discord])
+  (when-not (= false (:suppress-in-voice? (:config @client-state)))
+    (case (j/get ev :state)
+      "DISCONNECTED" (>evt [:integrations/set-remove :voice-connected :discord])
+      "VOICE_CONNECTED" (>evt [:integrations/set-add :voice-connected :discord])
 
-    ; ignore:
-    nil))
+      ; ignore:
+      nil)))
 
 
 ; ======= connection management / init ====================
 
-(declare ^:private retry-connect)
-
-(defn- try-connect []
+(defn- disconnect [{:keys [connecting?]}]
   (swap! client-state
          (fn [{:keys [^DiscordClient client, retry-timeout last-state]}]
            (when client
-             (.removeAllListeners client "disconnect")
+             (.removeAllListeners client "disconnected")
              (.destroy client))
            (when retry-timeout
              (js/clearTimeout retry-timeout))
            {:last-state last-state
-            :connecting? true}))
+            :connecting? connecting?})))
+
+(declare ^:private retry-connect)
+
+(defn- try-connect []
+  (disconnect {:connecting? true})
 
   (-> (p/let [^DiscordClient client (DiscordClient. #js {:transport "ipc"})
               result (.login client
@@ -58,7 +64,10 @@
 
           (.subscribe "VOICE_CONNECTION_STATUS"
                       (fn on-voice-state [ev]
-                        (on-voice-connect-status-update ev)))))
+                        (on-voice-connect-status-update ev))))
+
+        (when-let [last-state (:last-state @client-state)]
+          (set-state! last-state)))
 
       (p/catch (j/fn [^:js {:keys [code message] :as e}]
                  (if-not (or (= "ECONNREFUSED" code)
@@ -76,31 +85,55 @@
                           try-connect
                           reconnect-delay)))
 
-(let [state @client-state]
-  (when-not (or (:client state)
-                (:retry-timeout state)
-                (:connecting? state))
-    (try-connect)))
-
 
 ; ======= public interface ================================
 
 (defn set-state! [{:keys [item state] :as full-state}]
-  (swap! client-state assoc :last-state full-state)
+  (let [{:keys [config]} (swap! client-state assoc :last-state full-state)]
+    (when-not (= false (:share-activity? config))
+      (when-let [^DiscordClient client (:client @client-state)]
+        (-> client
+            (.setActivity
+              #js {:details (str "Listening to " (:title item))
+                   :state (str "by " (:artist item)
+                               (when (= :paused state)
+                                 " [paused]"))
+                   :startTimestamp (when (= :playing state)
+                                     (js/Date.now))
 
-  (when-let [^DiscordClient client (:state @client-state)]
-    (-> client
-        (.setActivity
-          #js {:details (str "Listening to " (:title item))
-               :state (str "by " (:artist item)
-                           (when (= :paused state)
-                             " [paused]"))
-               :startTimestamp (when (= :playing state)
-                                 (js/Date.now))
+                   :instance false})
+            (p/catch (fn [e]
+                       (log/debug "Failed to set discord status" e))))))))
 
-               :instance false})
-        (p/catch (fn [e]
-                   (log/debug "Failed to set discord status" e))))))
+(defn configure!
+  "Expects a map:
+    {:share-activity? bool  ; if `false`, disables activity sharing
+     :suppress-in-voice? bool ; if `false`, disables volume suppression in voice
+     }"
+  [config]
+  (let [state (swap! client-state assoc :config config)
+        ^DiscordClient client (:client state)]
+    (cond
+      (nil? config) (disconnect {:connecting? false})
+
+      (not (or client
+               (:retry-timeout state)
+               (:connecting? state)))
+      (try-connect)
+
+      ; reconnecting:
+      (not client) nil
+
+      ;; already connected; reconfigure:
+
+      :else
+      (do
+        (if (false? (:share-activity? config))
+          (.clearActivity client)
+          (set-state! (:last-state state)))
+
+        (when (false? (:suppress-in-voice? config))
+          (>evt [:integrations/set-remove :voice-connected :discord]))))))
 
 #_:clj-kondo/ignore
 (comment

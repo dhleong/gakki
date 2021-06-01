@@ -100,5 +100,9 @@
 ; ======= Integrations ====================================
 
 (reg-fx
+  :integrations/configure!
+  integrations/configure!)
+
+(reg-fx
   :integrations/set-state!
   integrations/set-state!)

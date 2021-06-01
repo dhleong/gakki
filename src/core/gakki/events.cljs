@@ -78,6 +78,18 @@
       {:providers/load! accounts})))
 
 
+; ======= Prefs ===========================================
+
+(reg-event-fx
+  :prefs/set
+  [trim-v (path :prefs)]
+  (fn [_ [prefs]]
+    {:db prefs
+     :integrations/configure! (merge
+                                db/default-integrations
+                                (:integrations prefs))}))
+
+
 ; ======= Home control ====================================
 
 (reg-event-db
