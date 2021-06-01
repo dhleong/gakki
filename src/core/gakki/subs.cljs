@@ -44,14 +44,20 @@
     (get-in db [:player :volume] max-volume-int)))
 
 (reg-sub
+  :player/volume-suppress-amount
+  :<- [:var :voice-connected]
+  (fn [voice-connected-integrations _]
+    (if (empty? voice-connected-integrations)
+      1.0
+      const/suppressed-volume-percent)))
+
+(reg-sub
   :player/volume-percent
   :<- [::player-volume]
-  :<- [:var :voice-connected]
-  (fn [[volume voice-connected-integrations] _]
+  :<- [:player/volume-suppress-amount]
+  (fn [[volume suppress-amount] _]
     (let [base-percent (/ volume max-volume-int)]
-      (if (empty? voice-connected-integrations)
-        base-percent
-        (* const/suppressed-volume-percent base-percent)))))
+      (* base-percent suppress-amount))))
 
 (reg-sub
   :player/adjusting-volume-percent

@@ -295,8 +295,10 @@
 
 (reg-event-fx
   :player/set-volume
-  [trim-v (path :player)]
-  (fn [{player :db} [new-volume]]
+  [trim-v
+   (path :player)
+   (inject-cofx ::inject/sub [:player/volume-suppress-amount])]
+  (fn [{player :db suppress-amount :player/volume-suppress-amount} [new-volume]]
     ; NOTE: new-volume should be in [0..max-volume-int]
     ; TODO persist volume preference
     (let [new-volume (-> new-volume
@@ -305,7 +307,8 @@
       {:db (-> player
                (assoc :volume new-volume)
                (update :adjusting-volume? inc))
-       :player/set-volume! (/ new-volume max-volume-int)
+       :player/set-volume! (* (/ new-volume max-volume-int)
+                              suppress-amount)
        :dispatch-later {:ms 1500 :dispatch [::stop-adjusting-volume]}})))
 
 (reg-event-fx
