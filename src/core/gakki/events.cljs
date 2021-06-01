@@ -6,7 +6,7 @@
             [vimsical.re-frame.cofx.inject :as inject]
             [gakki.db :as db]
             [gakki.const :refer [max-volume-int]]
-            [gakki.util.coll :refer [index-of]]
+            [gakki.util.coll :refer [index-of nth-or-nil]]
             [gakki.util.logging :as log]
             [gakki.util.media :refer [category-id]]))
 
@@ -269,7 +269,7 @@
   :player/nth-in-queue
   [trim-v (path :player)]
   (fn [{{{queue :items} :queue :as player-state} :db} [index]]
-    (if-some [next-item (nth queue index)]
+    (if-some [next-item (nth-or-nil queue index)]
       {:db (assoc-in player-state [:queue :index] index)
        :dispatch [::set-current-playable next-item]}
 
@@ -311,8 +311,9 @@
 
 (defmethod handle-player-event :playable-ending [player-state _]
   (log/debug "playable ending")
-  (let [queue (:queue player-state)]
-    (when-let [next-item (nth (:items queue) (inc (:index queue)))]
+  (let [queue (:queue player-state)
+        next-index (inc (:index queue))]
+    (when-let [next-item (nth-or-nil (:items queue) next-index)]
       (log/debug "... prepare " next-item)
       {:player/prepare! next-item})))
 
