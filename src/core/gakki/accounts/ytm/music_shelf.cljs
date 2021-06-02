@@ -1,6 +1,7 @@
 (ns gakki.accounts.ytm.music-shelf
   (:require [applied-science.js-interop :as j]
-            [gakki.accounts.ytm.util :refer [runs->text
+            [gakki.accounts.ytm.util :refer [->seconds
+                                             runs->text
                                              unpack-navigation-endpoint]]))
 
 (def ^:private ignored-section-titles #{"Videos"})
@@ -22,12 +23,13 @@
              0
              :url]))
 
-(defn- compose-shelf-item [{:keys [image-url items] :as item}]
+(defn- compose-shelf-item [{:keys [duration image-url items] :as item}]
   ; TODO radio id?
   (if (and (> (count items) 2)
            (= :track (:kind (first items)))
            (= :artist (:kind (second items))))
     (assoc (first items)
+           :duration duration
            :image-url image-url
            :artist (:title (second items))
            :album (:title (nth items 2)))
@@ -45,11 +47,19 @@
   [^js item]
   (if-let [flex-columns (j/get-in item [:musicResponsiveListItemRenderer
                                         :flexColumns])]
-    (compose-shelf-item
-      {:image-url (-> item
-                      (j/get-in [:musicResponsiveListItemRenderer :thumbnail])
-                      pick-thumbnail)
-       :items (keep parse-flex-column-item flex-columns)})
+    (let [duration-runs (j/get-in item [:musicResponsiveListItemRenderer
+                                        :fixedColumns
+                                        0
+                                        :musicResponsiveListItemFixedColumnRenderer
+                                        :text])]
+      (compose-shelf-item
+        {:image-url (-> item
+                        (j/get-in [:musicResponsiveListItemRenderer :thumbnail])
+                        pick-thumbnail)
+         :duration (some-> duration-runs
+                           runs->text
+                           ->seconds)
+         :items (keep parse-flex-column-item flex-columns)}))
 
     (throw (ex-info "Unexpected musicResponsiveListItemRenderer contents"
                     {:contents item}))))
