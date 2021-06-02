@@ -1,7 +1,8 @@
 (ns gakki.accounts.ytm.music-shelf
   (:require [applied-science.js-interop :as j]
-            [gakki.accounts.ytm.util :refer [runs->text
-                                             unpack-navigation-endpoint]]))
+            [gakki.accounts.ytm.util :as util :refer [->seconds
+                                                      runs->text
+                                                      unpack-navigation-endpoint]]))
 
 (def ^:private ignored-section-titles #{"Videos"})
 
@@ -14,24 +15,25 @@
     (throw (ex-info "Unexpected flexColumn item"
                     {:item item}))))
 
-(defn- pick-thumbnail [^js music-thumbnail-renderer-container]
-  (j/get-in music-thumbnail-renderer-container
-            [:musicThumbnailRenderer
-             :thumbnail
-             :thumbnails
-             0
-             :url]))
-
-(defn- compose-shelf-item [{:keys [image-url items] :as item}]
+(defn- compose-shelf-item [{:keys [duration image-url items] :as item}]
   ; TODO radio id?
-  (if (and (> (count items) 2)
-           (= :track (:kind (first items)))
-           (= :artist (:kind (second items))))
+  (cond
+    (and (> (count items) 2)
+         (= :track (:kind (first items)))
+         (= :artist (:kind (second items))))
     (assoc (first items)
+           :duration duration
            :image-url image-url
            :artist (:title (second items))
            :album (:title (nth items 2)))
 
+    ; NOTE: It is apparently possible to have items that don't have an ID!
+    ; The Web UI renders them as disabled, and the only available action is to
+    ; remove them from the playlist. For now, we will simply omit them.
+    (nil? (:id item))
+    nil
+
+    :else
     (assoc item
            :provider :ytm
            :kind :unknown)))
@@ -45,11 +47,19 @@
   [^js item]
   (if-let [flex-columns (j/get-in item [:musicResponsiveListItemRenderer
                                         :flexColumns])]
-    (compose-shelf-item
-      {:image-url (-> item
-                      (j/get-in [:musicResponsiveListItemRenderer :thumbnail])
-                      pick-thumbnail)
-       :items (keep parse-flex-column-item flex-columns)})
+    (let [duration-runs (j/get-in item [:musicResponsiveListItemRenderer
+                                        :fixedColumns
+                                        0
+                                        :musicResponsiveListItemFixedColumnRenderer
+                                        :text])]
+      (compose-shelf-item
+        {:image-url (-> item
+                        (j/get-in [:musicResponsiveListItemRenderer :thumbnail])
+                        util/pick-thumbnail)
+         :duration (some-> duration-runs
+                           runs->text
+                           ->seconds)
+         :items (keep parse-flex-column-item flex-columns)}))
 
     (throw (ex-info "Unexpected musicResponsiveListItemRenderer contents"
                     {:contents item}))))
@@ -65,7 +75,7 @@
                        (runs->text subtitle))
            :image-url (-> root
                           (j/get :thumbnailRenderer)
-                          pick-thumbnail))))
+                          util/pick-thumbnail))))
 
 
 ; ======= Shelf parsing ===================================
