@@ -2,19 +2,12 @@
   (:require [applied-science.js-interop :as j]
             [cognitect.transit :as t]
             ["fs/promises" :as fs]
-            [gakki.util.logging :as log]
             ["keytar" :refer [deletePassword findCredentials setPassword]]
-            ["os" :as os]
             ["path" :as path]
-            [promesa.core :as p]))
+            [promesa.core :as p]
+            [gakki.util.logging :as log]
+            [gakki.util.paths :as paths]))
 
-(defn- config-dir
-  ([] (path/join
-        (os/homedir)
-        ".config"
-        "gakki"))
-  ([sub-dir]
-   (path/join (config-dir) sub-dir)))
 
 ; ======= auth commands ===================================
 
@@ -43,7 +36,7 @@
 ; ======= prefs commands ==================================
 
 (defn load-prefs []
-  (-> (p/let [path (config-dir "prefs.json")
+  (-> (p/let [path (paths/user-config "prefs.json")
               raw (fs/readFile path)]
         (-> raw
             (js/JSON.parse)
@@ -54,10 +47,39 @@
                  nil))))
 
 
+
+; ======= Persistent state ================================
+
+(defn load-persistent-state []
+  (-> (p/let [path (paths/internal-data "persistent-state.edn")
+              raw (fs/readFile path)]
+        (-> (t/reader :json)
+            (t/read raw)))
+      (p/catch (j/fn [^:js {:keys [code] :as e}]
+                 (when-not (= "ENOENT" code)
+                   (log/debug e))
+                 nil))))
+
+(defn save-persistent-state [state]
+  (-> (p/let [path (paths/internal-data "persistent-state.edn")]
+        (fs/mkdir (path/dirname path) #js {:recursive true})
+        (fs/writeFile path
+                      (-> (t/writer :json)
+                          (t/write state))))
+      (p/catch (fn [e]
+                 (log/debug "Error persisting state" e)
+                 nil))))
+
+
+; ======= Commands declaration ============================
+
 (def commands
   {:load-accounts load-accounts
    :add-account add-account
    :delete-account delete-account
 
    :load-prefs load-prefs
+
+   :load-persistent-state load-persistent-state
+   :save-persistent-state save-persistent-state
    })

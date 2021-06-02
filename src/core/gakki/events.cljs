@@ -6,6 +6,7 @@
             [vimsical.re-frame.cofx.inject :as inject]
             [gakki.db :as db]
             [gakki.const :as const :refer [max-volume-int]]
+            [gakki.persistent :as persistent]
             [gakki.util.coll :refer [index-of nth-or-nil]]
             [gakki.util.logging :as log]
             [gakki.util.media :refer [category-id]]))
@@ -15,6 +16,7 @@
   (fn [_ _]
     {:db db/default-db
      :auth/load! :!
+     :persistent/load! :!
      :prefs/load! :!}))
 
 (reg-event-db
@@ -89,6 +91,27 @@
      :integrations/configure! (merge
                                 db/default-integrations
                                 (:integrations prefs))}))
+
+
+; ======= Persistent state ================================
+
+(reg-event-fx
+  :persistent/load!
+  [trim-v]
+  (fn [_ _]
+    {:persistent/load! :!}))
+
+(reg-event-db
+  :persistent/set
+  [trim-v]
+  (fn [db [state]]
+    (persistent/restore-state db state)))
+
+(reg-event-fx
+  :persistent/save
+  [trim-v]
+  (fn [{:keys [db]} _]
+    {:persistent/save (persistent/pull-state db)}))
 
 
 ; ======= Home control ====================================
@@ -300,7 +323,6 @@
    (inject-cofx ::inject/sub [:player/volume-suppress-amount])]
   (fn [{player :db suppress-amount :player/volume-suppress-amount} [new-volume]]
     ; NOTE: new-volume should be in [0..max-volume-int]
-    ; TODO persist volume preference
     (let [new-volume (-> new-volume
                          (max 0)
                          (min max-volume-int))]
@@ -309,7 +331,8 @@
                (update :adjusting-volume? inc))
        :player/set-volume! (* (/ new-volume max-volume-int)
                               suppress-amount)
-       :dispatch-later {:ms 1500 :dispatch [::stop-adjusting-volume]}})))
+       :dispatch-later {:ms 1500 :dispatch [::stop-adjusting-volume]}
+       :dispatch [:persistent/save]})))
 
 (reg-event-fx
   :player/volume-inc

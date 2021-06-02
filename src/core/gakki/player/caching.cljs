@@ -1,18 +1,16 @@
 (ns gakki.player.caching
-  (:require [applied-science.js-interop :as j]
-            ["env-paths" :as env-paths]
-            ["fs" :rename {createWriteStream create-write-stream
+  (:require ["fs" :rename {createWriteStream create-write-stream
                            createReadStream create-read-stream}]
             ["fs/promises" :as fs]
             ["path" :as path]
             ["stream" :refer [Writable Transform]]
             [promesa.core :as p]
             [gakki.player.analyze :refer [analyze-audio]]
-            [gakki.util.logging :as log]))
+            [gakki.util.logging :as log]
+            [gakki.util.paths :as paths]))
 
 (def ^:private cache-dir
-  (-> (env-paths "gakki", #js {:suffix ""})
-      (j/get :cache)))
+  (paths/platform :cache))
 
 (defn- open-stream [path]
   (p/create

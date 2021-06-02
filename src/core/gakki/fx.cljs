@@ -35,6 +35,68 @@
         (>evt [:prefs/set prefs])))))
 
 
+; ======= Persistent state ================================
+
+(defonce ^:private persistent-debounce-state (atom nil))
+(def ^:private persistent-debounce-delay 2000)
+
+(defn- persist-pending-state []
+  (p/let [to-persist @persistent-debounce-state
+
+          ; clear the persistent state *for now* so any concurrent writes
+          ; will be enqueued
+          _ (reset! persistent-debounce-state nil)
+
+          state-to-write (:pending to-persist)]
+
+    ; NOTE: this double when looks pointless, but it allows promesa
+    ; to wait on the promise returned from save-persitent-state before
+    ; performing the final swap!
+    (when state-to-write
+      (native/save-persistent-state state-to-write))
+
+    (when state-to-write
+      (log/debug "Persisted state.")
+      (swap! persistent-debounce-state
+             (fn [old-state]
+               (if (= (:pending old-state) state-to-write)
+                 (do (js/clearTimeout (:timeout old-state))
+                     {:on-disk state-to-write})
+
+                 (assoc old-state :on-disk state-to-write)))))))
+
+(reg-fx
+  :persistent/save
+  (fn [state]
+    (swap! persistent-debounce-state
+           (fn [debounce-state]
+             (cond
+               ; This state is already on disk; cancel any pending writes
+               (= (:on-disk debounce-state) state)
+               (do (js/clearTimeout (:timeout debounce-state))
+                   (dissoc debounce-state :timeout :pending))
+
+               ; This state is already pending a write; ignore
+               (= (:pending debounce-state) state)
+               debounce-state
+
+               :else
+               (do
+                 (js/clearTimeout (:timeout debounce-state))
+                 {:on-disk (:on-disk debounce-state)
+                  :pending state
+                  :timeout (js/setTimeout
+                             persist-pending-state
+                             persistent-debounce-delay)}))))))
+
+(reg-fx
+  :persistent/load!
+  (fn []
+    (log/with-timing-promise :fx/persistent-load!
+      (p/let [prefs (native/load-persistent-state)]
+        (>evt [:persistent/set prefs])))))
+
+
 ; ======= Provider-based loading ==========================
 
 (reg-fx

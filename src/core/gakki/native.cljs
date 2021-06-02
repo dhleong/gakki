@@ -30,6 +30,12 @@
 (defn load-prefs []
   ((handler :load-prefs)))
 
+(defn load-persistent-state []
+  ((handler :load-persistent-state)))
+
+(defn save-persistent-state [state]
+  ((handler :save-persistent-state) state))
+
 (defn set-state! [state]
   ((handler :set-state!) state))
 
