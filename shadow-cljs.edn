@@ -37,7 +37,15 @@
 
  :builds {:cli {:target :node-script
                 :output-to "resources/cli.js"
-                :main gakki.cli/init}
+                :main gakki.cli/init
+
+                :closure-defines {gakki.const/discord-app-id
+                                  #shadow/env "GAKKI_DISCORD_APP_ID"
+
+                                  gakki.const/discord-oauth-secret
+                                  #shadow/env "GAKKI_DISCORD_OAUTH_SECRET"
+                                  }
+                }
 
           :player {:target :node-library
                    :output-to "resources/player.js"

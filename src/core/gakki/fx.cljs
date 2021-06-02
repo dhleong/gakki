@@ -4,9 +4,13 @@
             [promesa.core :as p]
             [gakki.accounts.core :as ap]
             [gakki.accounts :refer [providers]]
+            [gakki.integrations :as integrations]
             [gakki.native :as native]
             [gakki.player.remote :as remote]
             [gakki.util.logging :as log]))
+
+
+; ======= Auth ============================================
 
 (reg-fx
   :auth/load!
@@ -19,6 +23,19 @@
   :auth/save!
   (fn [[provider account]]
     (native/add-account provider account)))
+
+
+; ======= Prefs ===========================================
+
+(reg-fx
+  :prefs/load!
+  (fn []
+    (log/with-timing-promise :fx/prefs-load!
+      (p/let [prefs (native/load-prefs)]
+        (>evt [:prefs/set prefs])))))
+
+
+; ======= Provider-based loading ==========================
 
 (reg-fx
   :providers/load!
@@ -72,6 +89,9 @@
 
         (println "[err: " k "] Invalid provider or no account")))))
 
+
+; ======= Player ==========================================
+
 (reg-fx
   :player/play!
   (fn [{:keys [item config]}]
@@ -85,3 +105,14 @@
 (reg-fx :player/unpause!  remote/unpause!)
 (reg-fx :player/pause!  remote/pause!)
 (reg-fx :player/set-volume!  remote/set-volume!)
+
+
+; ======= Integrations ====================================
+
+(reg-fx
+  :integrations/configure!
+  integrations/configure!)
+
+(reg-fx
+  :integrations/set-state!
+  integrations/set-state!)

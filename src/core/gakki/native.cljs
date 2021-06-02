@@ -27,6 +27,9 @@
 (defn load-accounts []
   ((handler :load-accounts)))
 
+(defn load-prefs []
+  ((handler :load-prefs)))
+
 (defn set-state! [state]
   ((handler :set-state!) state))
 

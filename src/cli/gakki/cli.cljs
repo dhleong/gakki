@@ -5,6 +5,7 @@
             [gakki.events :as events]
             [gakki.fx]
             [gakki.cli.fx]
+            [gakki.integrations.discord]
             [gakki.subs]
             [gakki.native :as native]
             [gakki.util.logging :as logging]
