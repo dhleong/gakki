@@ -48,6 +48,7 @@
               result (.login client
                              #js {:clientId const/discord-app-id
                                   :clientSecret const/discord-oauth-secret
+                                  :prompt "none"
                                   :redirectUri redirect-uri
                                   :scopes scopes})]
         (log/debug "Discord logged in: " result)
