@@ -19,7 +19,7 @@
                                   0
                                   :musicPlaylistShelfRenderer])]
     ; TODO extract continuation data
-    (mapv parse-shelf-item (j/get shelf :contents))))
+    (vec (keep parse-shelf-item (j/get shelf :contents)))))
 
 (defn load [^YTMusic client, id]
   (p/let [response (send-request (.-cookie client)
