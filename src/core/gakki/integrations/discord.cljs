@@ -135,29 +135,30 @@
      :suppress-in-voice? bool ; if `false`, disables volume suppression in voice
      }"
   [config]
-  (let [state (swap! client-state assoc :config config)
-        ^DiscordClient client (:client state)]
-    (cond
-      (nil? config) (disconnect {:connecting? false})
+  (when-not (empty? const/discord-app-id)
+    (let [state (swap! client-state assoc :config config)
+          ^DiscordClient client (:client state)]
+      (cond
+        (nil? config) (disconnect {:connecting? false})
 
-      (not (or client
-               (:retry-timeout state)
-               (:connecting? state)))
-      (try-connect)
+        (not (or client
+                 (:retry-timeout state)
+                 (:connecting? state)))
+        (try-connect)
 
-      ; reconnecting:
-      (not client) nil
+        ; reconnecting:
+        (not client) nil
 
-      ;; already connected; reconfigure:
+        ;; already connected; reconfigure:
 
-      :else
-      (do
-        (if (false? (:share-activity? config))
-          (.clearActivity client)
-          (set-state! (:last-state state)))
+        :else
+        (do
+          (if (false? (:share-activity? config))
+            (.clearActivity client)
+            (set-state! (:last-state state)))
 
-        (when (false? (:suppress-in-voice? config))
-          (>evt [:integrations/set-remove :voice-connected :discord]))))))
+          (when (false? (:suppress-in-voice? config))
+            (>evt [:integrations/set-remove :voice-connected :discord])))))))
 
 #_:clj-kondo/ignore
 (comment
