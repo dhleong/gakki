@@ -2,7 +2,6 @@
   (:require [applied-science.js-interop :as j]
             [archetype.util :refer [>evt]]
             [clojure.string :as str]
-            [gakki.util.logging :as log]
             [promesa.core :as p]
             ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
@@ -11,7 +10,9 @@
             [gakki.accounts.ytm.consts :refer [ytm-kinds]]
             [gakki.accounts.ytm.album :as album]
             [gakki.accounts.ytm.artist :as artist]
-            [gakki.player.ytm :refer [youtube-id->playable]]))
+            [gakki.accounts.ytm.playlist :as playlist]
+            [gakki.player.ytm :refer [youtube-id->playable]]
+            [gakki.util.logging :as log]))
 
 (defonce ^:private account->creds
   (memoize
@@ -39,23 +40,6 @@
              (str/join "; ")))
 
       (str obj)))
-
-(defn- ->thumbnail [obj]
-  (when (js/Array.isArray obj)
-    (when-let [entry (first obj)]
-      (j/get entry :url))))
-
-(defn- ->seconds [s]
-  (let [parts (->> (str/split s ":")
-                   (map #(js/parseInt % 10)))
-        [h m s] (case (count parts)
-                  0 [0 0 0]
-                  1 [0 0 (first parts)]
-                  2 (cons 0 parts)
-                  3 parts)]
-    (+ (* h 3600)
-       (* m 60)
-       s)))
 
 (j/defn ^:private ->home-item [^:js {:keys [title navigationEndpoint]}]
   {:title (->text title)
@@ -102,32 +86,13 @@
                    {:title title
                     :items (map ->home-item content)})))})))
 
-(j/defn ^:private ->playlist-item [^:js {:keys [id duration thumbnail title
-                                                author album]}]
-  {:id id
-   :provider :ytm
-   :kind :track  ; an assumption...
-   :duration (->seconds duration)
-   :image-url (->thumbnail thumbnail)
-   :title (->text title)
-   :artist (->text author)
-   :album (->text album)})
-
 (defn- do-resolve-playlist [account playlist-id]
-  (p/let [^YTMusic ytm (account->client account)
-          data (.getPlaylist ytm playlist-id)]
+  (p/let [^YTMusic ytm (account->client account)]
     ; TODO lazily continue loading the playlist? We can use:
     ;   (>evt [:player/on-resolved :playlist result])
     ; to replace the resolved playlist; if we concat new items with old,
     ; it should "just work"
-    {:id (j/get data :playlistId)
-     :provider :ytm
-     :kind :playlist
-     :title (->text (j/get data :title))
-     :image-url (->thumbnail (j/get data :thumbnail))
-     :items
-     (->> (j/get data :content)
-          (map ->playlist-item))}))
+    (playlist/load ytm playlist-id)))
 
 (defn- do-resolve-album [account album-id]
   (p/let [^YTMusic ytm (account->client account)]
@@ -173,20 +138,24 @@
   (p/let [client (account->client
                    (:ytm @(re-frame.core/subscribe [:accounts])))
           ;; result (-> client
-          ;;            (.getPlaylist "MPREb_6zoi6tZGf72"))
+          ;;            (.getPlaylist "VLPLw6X_oq5Z8kl_Myg9QL1ZKxV1BobTeXrb"))
           result (send-request (.-cookie client)
-                               #js {:id "MPREb_6zoi6tZGf72"
+                               #js {:id "VLPLw6X_oq5Z8kl_Myg9QL1ZKxV1BobTeXrb"
                                     :type "ALBUM"
                                     :endpoint "browse"})
           ]
-    (js/console.log (js/JSON.stringify result nil 2))
+    (println (js/JSON.stringify result nil 2))
     )
+
+  (p/let [result (do-resolve-playlist
+                   (:ytm @(re-frame.core/subscribe [:accounts]))
+                   "VLPLw6X_oq5Z8kl_Myg9QL1ZKxV1BobTeXrb") ]
+    (cljs.pprint/pprint result))
 
   (p/let [result (do-resolve-album
                    (:ytm @(re-frame.core/subscribe [:accounts]))
                    "MPREb_XSoe2FaWnVW") ]
-    (prn result)
-    )
+    (prn result))
 
   (p/let [result (do-resolve-artist
                    (:ytm @(re-frame.core/subscribe [:accounts]))

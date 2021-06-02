@@ -3,11 +3,47 @@
             [clojure.string :as str]
             [gakki.accounts.ytm.consts :refer [ytm-kinds]]))
 
+(defn ->seconds [s]
+  (let [parts (->> (str/split s ":")
+                   (map #(js/parseInt % 10)))
+        [h m s] (case (count parts)
+                  0 [0 0 0]
+                  1 [0 0 (first parts)]
+                  2 (cons 0 parts)
+                  3 parts)]
+    (+ (* h 3600)
+       (* m 60)
+       s)))
+
 (defn runs->text [^js runs-container]
   (when-let [runs (j/get runs-container :runs)]
     (->> runs
          (map #(j/get % :text))
          (str/join " "))))
+
+(defn pick-thumbnail
+  "Given some nested object structure like:
+
+     {:thumbnail
+      {:croppedSquareThumbnailRenderer
+       {:thumbnail
+        {:thumbnails
+         [{:url \"URL\"}]}}}}
+
+   Extracts a thumbnail URL."
+  [^js thumbnail-container]
+  (loop [container thumbnail-container]
+    (cond
+      (js/Array.isArray container)
+      (j/get (first container) :url)
+
+      (j/get container :thumbnail)
+      (recur (j/get container :thumbnail))
+
+      :else
+      (let [container-keys (js/Object.keys container)]
+        (when (= 1 (count container-keys))
+          (recur (j/get container (first container-keys))))))))
 
 (defn unpack-navigation-endpoint [^js runs-container-or-endpoint]
   (let [endpoint (or (j/get runs-container-or-endpoint :navigationEndpoint)
