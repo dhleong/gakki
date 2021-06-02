@@ -8,7 +8,10 @@
 
 (def ^:private scopes #js ["rpc" "rpc.voice.read"])
 (def ^:private redirect-uri "http://127.0.0.1")
-(def ^:private reconnect-delay 5000)
+
+(def ^:private max-retries 5)
+(def ^:private not-running-retry-delay 5000)
+(def ^:private connect-error-retry-delay 5000)
 
 (defonce ^:private client-state (atom nil))
 
@@ -41,50 +44,68 @@
 
 (declare ^:private retry-connect)
 
-(defn- try-connect []
-  (disconnect {:connecting? true})
+(defn- try-connect
+  ([] (try-connect 0))
+  ([retry-count]
+   (disconnect {:connecting? true})
 
-  (-> (p/let [^DiscordClient client (DiscordClient. #js {:transport "ipc"})
-              result (.login client
-                             #js {:clientId const/discord-app-id
-                                  :clientSecret const/discord-oauth-secret
-                                  :prompt "none"
-                                  :redirectUri redirect-uri
-                                  :scopes scopes})]
-        (log/debug "Discord logged in: " result)
-        (swap! client-state assoc
-               :connecting? false
-               :ready? true
-               :client client)
+   (-> (p/let [^DiscordClient client (DiscordClient. #js {:transport "ipc"})
+               result (.login client
+                              #js {:clientId const/discord-app-id
+                                   :clientSecret const/discord-oauth-secret
+                                   :prompt "none"
+                                   :redirectUri redirect-uri
+                                   :scopes scopes})]
+         (log/debug "Discord logged in: " result)
+         (swap! client-state assoc
+                :connecting? false
+                :ready? true
+                :client client)
 
-        (doto client
-          (.once "disconnected"
-                 (fn []
-                   (log/debug "Lost connection to discord; reconnecting later")
-                   (retry-connect)))
+         (doto client
+           (.once "disconnected"
+                  (fn []
+                    (log/debug "Lost connection to discord; reconnecting later")
+                    (retry-connect 0)))
 
-          (.subscribe "VOICE_CONNECTION_STATUS"
-                      (fn on-voice-state [ev]
-                        (on-voice-connect-status-update ev))))
+           (.subscribe "VOICE_CONNECTION_STATUS"
+                       (fn on-voice-state [ev]
+                         (on-voice-connect-status-update ev))))
 
-        (when-let [last-state (:last-state @client-state)]
-          (set-state! last-state)))
+         (when-let [last-state (:last-state @client-state)]
+           (set-state! last-state)))
 
-      (p/catch (j/fn [^:js {:keys [code message] :as e}]
-                 (if-not (or (= "ECONNREFUSED" code)
-                             (= "Could not connect" message))
-                   (do (println "Error connecting to Discord:" e)
-                       (js/console.log e))
+       (p/catch (j/fn [^:js {:keys [code message] :as e}]
+                  (cond
+                    ; Probably, Discord is just not running
+                    (or (= "ECONNREFUSED" code)
+                        (= "Could not connect" message))
+                    (retry-connect 0)
 
-                   (retry-connect))))))
+                    ; This is thrown by the RPC client if the connection was
+                    ; closed before receiving any READY payload; *probably*
+                    ; the app is still starting up.
+                    (and (< retry-count max-retries)
+                         (= "connection closed" message))
+                    (retry-connect (inc retry-count))
 
-(defn- retry-connect []
+                    :else
+                    (do (println "Error connecting to Discord"
+                                 "\ncode:" code
+                                 "\nretry-count: " retry-count
+                                 "\n" e)
+                        (js/console.log e))))))))
+
+(defn- retry-connect [retry-count]
+  (log/debug "Retry connection @ attempt" retry-count)
   (swap! client-state assoc
          :connecting? false
          :client nil
          :retry-timeout (js/setTimeout
-                          try-connect
-                          reconnect-delay)))
+                          #(try-connect retry-count)
+                          (if (= 0 retry-count)
+                            not-running-retry-delay
+                            connect-error-retry-delay))))
 
 
 ; ======= public interface ================================
