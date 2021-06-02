@@ -97,7 +97,9 @@
                         (js/console.log e))))))))
 
 (defn- retry-connect [retry-count]
-  (log/debug "Retry connection @ attempt" retry-count)
+  (when (> retry-count 0)
+    (log/debug "Retry connection @ attempt" retry-count))
+
   (swap! client-state assoc
          :connecting? false
          :client nil
