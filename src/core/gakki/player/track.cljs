@@ -2,7 +2,8 @@
   (:require [gakki.util.logging :as log]
             [promesa.core :as p]
             [gakki.player.clip :as clip :refer [IAudioClip]]
-            [gakki.player.pcm2 :as pcm :refer [IPCMSource]]
+            [gakki.player.pcm2 :as pcm-source]
+            [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
             [gakki.player.seek :as seek]))
 
 (defprotocol IAudioTrack
@@ -101,8 +102,9 @@
                    (close old))
 
                  (create
-                   (pcm/create-disk-source
-                     "/Users/daniel/Library/Caches/gakki/ytm.2mqi6Vqfhh8"))))
+                   (pcm-source/create-caching-source
+                     "ytm.2mqi6Vqfhh8"
+                     #(throw (ex-info "Not cached" {}))))))
 
 
   (close @test-track)
