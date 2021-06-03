@@ -1,29 +1,28 @@
 (ns gakki.player.seek
   (:require ["stream" :refer [Readable Transform]]))
 
-(defn- create-skip-bytes-transform [n]
+(defn- create-nbytes-chunkwise-transform [n]
   (let [to-skip (atom n)]
     (Transform.
       #js {:transform
            (fn seek-transform [chnk _encoding callback]
              (let [skip-remaining @to-skip
                    chunk-size (.-length chnk)]
-               (cond
-                 (<= skip-remaining 0)
+               (if (< skip-remaining chunk-size)
+                 ; NOTE: We may actually want to skip part of this chunk,
+                 ; but since this is chunkwise, we just send the whole chunk.
+                 ; This is mostly to ensure that we always send complete PCM
+                 ; blocks to not break output. If we ever needed a more precise
+                 ; seek then it's simply a matter of slicing off the remainder
+                 ; from the beginning of the chunk.
                  (this-as this (.push this chnk))
 
-                 (>= skip-remaining chunk-size)
-                 (swap! to-skip - chunk-size)
-
-                 :else
-                 (do
-                   (reset! to-skip 0)
-                   (this-as this (.push this (.slice chnk skip-remaining)))))
+                 (swap! to-skip - chunk-size))
 
                (callback)))})))
 
-(defn nbytes [^Readable input, n]
+(defn nbytes-chunkwise [^Readable input, n]
   (if (= 0 n)
     input
-    (let [tf (create-skip-bytes-transform n)]
+    (let [tf (create-nbytes-chunkwise-transform n)]
       (.pipe input tf))))

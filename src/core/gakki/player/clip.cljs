@@ -9,16 +9,25 @@
                            (.write speaker chnk)
                            (callback))}))
 
+(defn- device-by-id [^RtAudio speaker, id]
+  (-> (.getDevices speaker)
+      (nth id)
+      (js->clj :keywordize-keys true)))
+
 (defprotocol IAudioClip
   "An AudioClip represents a forward-only stream of audio starting
    from *some* point in time"
   (close [this])
   (current-time [this])
+  (default-output-device? [this]
+    "Returns true if this clip is configured to play on the system's
+     *current* default output device.")
   (play [this])
+  (playing? [this])
   (pause [this])
   (set-volume [this volume-percent]))
 
-(deftype AudioClip [^Readable input, ^RtAudio speaker, ^Writable output]
+(deftype AudioClip [^Readable input, ^RtAudio speaker, device, ^Writable output]
   IAudioClip
   (close [this]
     (pause this)
@@ -27,13 +36,21 @@
   (current-time [_this]
     (j/get speaker :streamTime))
 
-  (play [_this]
-    (when-not (.isStreamRunning speaker)
+  (default-output-device? [_this]
+    (let [current-default (device-by-id speaker
+                                        (.getDefaultOutputDevice speaker))]
+      (= device current-default)))
+
+  (play [this]
+    (when-not (playing? this)
       (.pipe input output)
       (.start speaker)))
 
-  (pause [_this]
-    (when (.isStreamRunning speaker)
+  (playing? [_this]
+    (.isStreamRunning speaker))
+
+  (pause [this]
+    (when (playing? this)
       (.unpipe input output)
       (.stop speaker)))
 
@@ -47,10 +64,11 @@
                    ; TODO log?
                    (log/debug "PCM Stream Error [" kind "] " e))
         instance (RtAudio.)
+        device-id (.getDefaultOutputDevice instance)
         instance (doto instance
                    (.openStream
                      ; Output stream:
-                     #js {:deviceId (.getDefaultOutputDevice instance)
+                     #js {:deviceId device-id
                           :nChannels channels}
                      nil ; No input stream
                      (.-RTAUDIO_SINT16 RtAudioFormat)
@@ -61,5 +79,6 @@
                      nil ; output callback
                      0 ; stream flags
                      on-error)
-                   (j/assoc! :streamTime start-time-seconds))]
-    (->AudioClip stream instance (->writable-stream instance))))
+                   (j/assoc! :streamTime start-time-seconds))
+        device (device-by-id instance device-id)]
+    (->AudioClip stream instance device (->writable-stream instance))))

@@ -39,11 +39,12 @@
     ; FIXME: sample size *probably* shouldn't be a const...
     ;  but I'm unsure how to determine it.
     (p/let [sample-size-bytes 2  ; 16 bit signed integers
-            config (read-config this)]
-      (* duration-seconds
-         (:channels config)
-         (:sample-rate config)
-         sample-size-bytes)))
+            config (read-config this)
+            over-precise-bytes (* duration-seconds
+                                  (:channels config)
+                                  (:sample-rate config)
+                                  sample-size-bytes)]
+      (int (js/Math.floor over-precise-bytes))))
 
   (open-read-stream [this]
     (p/let [config (read-config this)
