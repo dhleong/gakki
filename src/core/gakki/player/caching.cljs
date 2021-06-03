@@ -56,14 +56,10 @@
   (let [file-path (path/join cache-dir cache-key)]
     (-> (p/let [_ (fs/mkdir cache-dir #js {:recursive true})
                 stream (open-stream file-path)
-                info (analyze-audio file-path)]
+                config (analyze-audio file-path)]
           (log/debug "opened cached")
-          ; TODO extract codec/container. Also... frame-size?
           {:stream stream
-           :config (merge {:frame-size 960
-                           :codec "opus"
-                           :container "webm"}
-                          info)})
+           :config config})
 
         (p/catch
           (fn [_]

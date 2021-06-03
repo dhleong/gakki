@@ -29,7 +29,13 @@
                      :sample-rate (->int sample-rate)
                      :channels (if (= "stereo" stereo-mono)
                                  2
-                                 1)})
+                                 1)
+
+                     ; TODO extract these:
+                     :codec "opus"
+                     :container "webm"
+                     :frame-size 960
+                     })
 
                   (p-reject (or err
                                 (ex-info "Failed to extra audio info"

@@ -2,9 +2,8 @@
   (:require ["prism-media" :as prism]))
 
 (defn decode-stream
-  "Given a config map and an encoded audio stream, return a stream
-   that decodes the audio stream to PCM data. The config map must look
-   like:
+  "Given a config map and an encoded audio stream, return a stream that decodes
+   the audio stream to 16bit signed PCM data. The config map must look like:
 
    {:channels <number>
     :sample-rate <hz number>
