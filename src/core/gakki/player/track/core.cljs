@@ -3,7 +3,7 @@
             [promesa.core :as p]
             [gakki.player.clip :as clip :refer [IAudioClip]]
             [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
-            [gakki.player.seek :as seek]))
+            [gakki.player.stream.seek :as seek]))
 
 (defprotocol IAudioTrack
   (close [this])

@@ -6,9 +6,10 @@
             ["fs" :rename {createWriteStream create-write-stream
                            createReadStream create-read-stream}]
             ["fs/promises" :as fs]
+            [gakki.player.decode :refer [decode-stream]]
             [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
             [gakki.player.pcm.disk :as disk]
-            [gakki.player.decode :refer [decode-stream]]))
+            [gakki.player.stream.counting :as counting]))
 
 (defn- pipe-temp-into [^Writable destination-stream
                        & {:keys [path offset get-complete? end?]
@@ -30,9 +31,7 @@
                                :offset (+ offset total-read)
                                :get-complete? get-complete?
                                :end? completed?)))]
-    (doto from-tmp
-      (.on "data" (fn [buf]
-                    (swap! bytes-read + (.-length buf))))
+    (doto (counting/nbytes-atom-inc from-tmp bytes-read)
       (.once "end" handle-file-end)
       (.pipe destination-stream #js {:end end?}))))
 
@@ -125,9 +124,8 @@
 
     (swap! state assoc
            :in-progress-decode
-           (doto (decode-stream config caching-transform)
-             (.on "data" (fn [chnk]
-                           (swap! state update :decoded-bytes + (.-length chnk))))))
+           (-> (decode-stream config caching-transform)
+               (counting/nbytes-atom-inc state :decoded-bytes)))
 
     (->CachingPCMSource
       config destination-path tmp-path state)))

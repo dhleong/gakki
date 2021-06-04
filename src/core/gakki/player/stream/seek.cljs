@@ -1,4 +1,4 @@
-(ns gakki.player.seek
+(ns gakki.player.stream.seek
   (:require ["stream" :refer [Readable Transform]]))
 
 (defn- create-nbytes-chunkwise-transform [n]
