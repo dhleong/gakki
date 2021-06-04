@@ -100,12 +100,11 @@
   (let [tmp-path (str destination-path ".progress")
         ^Writable to-disk (create-write-stream tmp-path)
         state (atom nil)
-        caching-transform (-> stream
-                              (duplicate/to-stream to-disk)
-                              (counting/nbytes-atom-inc state :written))]
+        caching-stream (-> stream
+                           (duplicate/to-stream to-disk)
+                           (counting/nbytes-atom-inc state :bytes-written))]
 
     (doto stream
-      (.pipe caching-transform)
       (.on "end" (fn []
                    (log/debug "Completed download of " destination-path)
                    (-> (complete-download tmp-path destination-path)
@@ -118,7 +117,7 @@
 
     (swap! state assoc
            :in-progress-decode
-           (-> (decode-stream config caching-transform)
+           (-> (decode-stream config caching-stream)
                (counting/nbytes-atom-inc state :decoded-bytes)))
 
     (->CachingPCMSource
