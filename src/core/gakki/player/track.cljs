@@ -2,7 +2,6 @@
   (:require ["events" :refer [EventEmitter]]
             [gakki.util.logging :as log]
             [gakki.player.clip :as clip]
-            [gakki.player.pcm2 :as pcm-source]
             [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
             [gakki.player.track.core :as track]
             [gakki.player.track.events :as events]))
@@ -28,7 +27,7 @@
 
                  (doto
                    (create
-                     (pcm-source/create-caching-source
+                     (gakki.player.pcm/create-caching-source
                        "ytm.2mqi6Vqfhh8"
                        #(gakki.player.ytm/youtube-id->stream "2mqi6Vqfhh8")))
                    (clip/play))))

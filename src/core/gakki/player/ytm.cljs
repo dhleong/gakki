@@ -5,7 +5,7 @@
             [promesa.core :as p]
             [gakki.util.convert :refer [->int]]
             [gakki.player.core :as gp]
-            [gakki.player.pcm2 :as pcm2]
+            [gakki.player.pcm :as pcm]
             [gakki.player.track :as track]))
 
 (defn- youtube-id->url [id]
@@ -38,7 +38,7 @@
 
 (defn youtube-id->playable [id]
   (track/create-playable
-    (pcm2/create-caching-source
+    (pcm/create-caching-source
       (str "ytm." id)
       #(youtube-id->stream id))))
 
