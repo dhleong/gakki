@@ -23,20 +23,20 @@
   (swap! test-track (fn [old]
                  (when old
                    (log/debug "Closing old " old)
-                   (close old))
+                   (track/close old))
 
                  (doto
-                   (create
+                   (track/create
                      (gakki.player.pcm/create-caching-source
                        "ytm.2mqi6Vqfhh8"
                        #(gakki.player.ytm/youtube-id->stream "2mqi6Vqfhh8")))
                    (clip/play))))
 
 
-  (close @test-track)
+  (track/close @test-track)
 
   (clip/play @test-track)
   (clip/pause @test-track)
-  (seek @test-track 20)
+  (track/seek @test-track 20)
 
   )
