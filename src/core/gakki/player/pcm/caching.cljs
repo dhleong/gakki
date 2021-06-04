@@ -1,5 +1,6 @@
 (ns gakki.player.pcm.caching
-  (:require [gakki.util.logging :as log]
+  (:require [clojure.string :as str]
+            [gakki.util.logging :as log]
             [promesa.core :as p]
             ["stream" :refer [PassThrough Transform Writable]]
             ["fs" :rename {createWriteStream create-write-stream
@@ -13,19 +14,27 @@
                        & {:keys [path offset get-complete? end?]
                           :or {end? false
                                offset 0}}]
-  (let [from-tmp (create-read-stream path)]
+  (let [from-tmp (create-read-stream path #js {:start offset})
+        bytes-read (atom 0)
+        handle-file-end (if end?
+                          identity ; nothing to do; we're done downloading!
+
+                          #(let [completed? (get-complete?)
+                                 total-read @bytes-read]
+                             (pipe-temp-into
+                               destination-stream
+                               :path (if completed?
+                                       ; switch to the full file:
+                                       (str/replace path #"\.progress$" "")
+                                       path)
+                               :offset (+ offset total-read)
+                               :get-complete? get-complete?
+                               :end? completed?)))]
     (doto from-tmp
-      (.once "end" (fn []
-                     (log/debug "Temp file stream ended after reading"
-                                (.-bytesRead from-tmp) " bytes"
-                                " (offset=" offset ")")
-                     (pipe-temp-into
-                         destination-stream
-                         :path path
-                         :offset (+ (.-bytesRead from-tmp) offset)
-                         :get-complete? get-complete?
-                         :end? (get-complete?))))
-      (.pipe destination-stream #{:end end?}))))
+      (.on "data" (fn [buf]
+                    (swap! bytes-read + (.-length buf))))
+      (.once "end" handle-file-end)
+      (.pipe destination-stream #js {:end end?}))))
 
 (deftype CachingPCMSource [config, ^String disk-path, ^String tmp-path, state]
   IPCMSource
@@ -112,6 +121,7 @@
                                         :disk (disk/create destination-path))))))))
 
     ; TODO can we cancel the download if the user skips past the song?
+    ; This might look like a (dispose) method on the Source
 
     (swap! state assoc
            :in-progress-decode

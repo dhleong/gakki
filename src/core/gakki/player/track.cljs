@@ -94,6 +94,7 @@
 
 (defonce test-track (atom nil))
 
+#_:clj-kondo/ignore
 (comment
 
   (swap! test-track (fn [old]
@@ -101,10 +102,12 @@
                    (log/debug "Closing old " old)
                    (close old))
 
-                 (create
-                   (pcm-source/create-caching-source
-                     "ytm.2mqi6Vqfhh8"
-                     #(gakki.player.ytm/youtube-id->stream "2mqi6Vqfhh8")))))
+                 (doto
+                   (create
+                     (pcm-source/create-caching-source
+                       "ytm.2mqi6Vqfhh8"
+                       #(gakki.player.ytm/youtube-id->stream "2mqi6Vqfhh8")))
+                   (clip/play))))
 
 
   (close @test-track)
