@@ -1,13 +1,41 @@
 (ns gakki.player.pcm.caching
-  (:require [promesa.core :as p]
+  (:require [gakki.util.logging :as log]
+            [promesa.core :as p]
+            ["stream" :refer [PassThrough Transform Writable]]
+            ["fs" :rename {createWriteStream create-write-stream
+                           createReadStream create-read-stream}]
+            ["fs/promises" :as fs]
             [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
+            [gakki.player.pcm.disk :as disk]
             [gakki.player.decode :refer [decode-stream]]))
 
-(deftype CachingPCMSource [^Readable stream, config, ^String disk-path, state]
+(defn- pipe-temp-into [^Writable destination-stream
+                       & {:keys [path offset get-complete? end?]
+                          :or {end? false
+                               offset 0}}]
+  (let [from-tmp (create-read-stream path)]
+    (doto from-tmp
+      (.once "end" (fn []
+                     (log/debug "Temp file stream ended after reading"
+                                (.-bytesRead from-tmp) " bytes"
+                                " (offset=" offset ")")
+                     (pipe-temp-into
+                         destination-stream
+                         :path path
+                         :offset (+ (.-bytesRead from-tmp) offset)
+                         :get-complete? get-complete?
+                         :end? (get-complete?))))
+      (.pipe destination-stream #{:end end?}))))
+
+(deftype CachingPCMSource [config, ^String disk-path, ^String tmp-path, state]
   IPCMSource
-  (seekable-duration [this]
-    (p/let [analysis (pcm/read-config this)]
-      (:duration analysis)))
+  (seekable-duration [_this]
+    (let [current-state @state]
+      (if (:disk current-state)
+        (pcm/seekable-duration
+          (:disk current-state))
+
+        (pcm/bytes-to-duration-with config (:decoded-bytes current-state)))))
 
   (read-config [_this] config)
 
@@ -16,9 +44,80 @@
       (pcm/duration-to-bytes-with config duration-seconds)))
 
   (open-read-stream [_this]
-    ; TODO
-    (decode-stream config stream)))
+    (let [current-state @state]
+      (when-let [^Readable downloader (:in-progress-decode current-state)]
+
+        ; Pipe the downloader stream into a blackhole destination stream
+        ; to ensure it continues downloading
+        (let [blackhole (Writable. #js {:write
+                                        (fn write [_ _ cb] (cb))})]
+          (.pipe downloader blackhole)
+
+          (swap! state (fn [old-state]
+                         (-> old-state
+                             (assoc :blackhole blackhole)
+                             (dissoc :in-progress-decode))))))
+
+      (cond
+        ; Easy case! If we have a :disk delegate, the download is complete
+        (:disk current-state)
+        (pcm/open-read-stream
+          (:disk current-state))
+
+        ; If we haven't yet provided the in-progress-decode stream, do that
+        (:in-progress-decode current-state)
+        (:in-progress-decode current-state)
+
+        ; Here's where it gets tricky; the stream hasn't finished downloading,
+        ; and we've already given away our clean, as-it-downloads stream. We
+        ; now have to create a stream from the temp file that doesn't end early
+        ; if it's read quickly through (that is, it will lazily contain any
+        ; bytes downloaded later.
+        :else
+        (let [stream (PassThrough.)]
+          (pipe-temp-into
+            stream
+            :path tmp-path
+            :get-complete? #(some? (:disk @state)))
+          (decode-stream config stream))))))
+
+(defn- complete-download [tmp-path destination-path]
+  (-> (fs/rename tmp-path destination-path)
+      (p/catch
+        (fn [err]
+          (println "Error completing download:" err)))))
 
 (defn create [^Readable stream, config destination-path]
-  ; TODO
-  (->CachingPCMSource stream config, destination-path (atom nil)))
+  (let [tmp-path (str destination-path ".progress")
+        ^Writable to-disk (create-write-stream tmp-path)
+        state (atom nil)
+        caching-transform (Transform.
+                            #js {:transform
+                                 (fn transform [chnk encoding callback]
+                                   (this-as this
+                                            (.push this chnk))
+                                   (.write to-disk chnk encoding
+                                           (fn [v]
+                                             (swap! state update :written +
+                                                    (.-length chnk))
+                                             (callback v))))})]
+
+    (doto stream
+      (.pipe caching-transform)
+      (.on "end" (fn []
+                   (log/debug "Completed download of " destination-path)
+                   (-> (complete-download tmp-path destination-path)
+                       (p/then (fn []
+                                 (swap! state assoc
+                                        :disk (disk/create destination-path))))))))
+
+    ; TODO can we cancel the download if the user skips past the song?
+
+    (swap! state assoc
+           :in-progress-decode
+           (doto (decode-stream config caching-transform)
+             (.on "data" (fn [chnk]
+                           (swap! state update :decoded-bytes + (.-length chnk))))))
+
+    (->CachingPCMSource
+      config destination-path tmp-path state)))

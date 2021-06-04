@@ -31,7 +31,7 @@
     {:config config
      :url (j/get fmt :url)}))
 
-(defn- youtube-id->stream [id]
+(defn youtube-id->stream [id]
   (p/let [{:keys [config url]} (youtube-id->url id)
           response (fetch url)
           ^js stream (j/get response :body)]

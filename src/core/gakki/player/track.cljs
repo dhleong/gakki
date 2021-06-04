@@ -104,13 +104,13 @@
                  (create
                    (pcm-source/create-caching-source
                      "ytm.2mqi6Vqfhh8"
-                     #(throw (ex-info "Not cached" {}))))))
+                     #(gakki.player.ytm/youtube-id->stream "2mqi6Vqfhh8")))))
 
 
   (close @test-track)
 
   (clip/play @test-track)
   (clip/pause @test-track)
-  (seek @test-track 6.301)
+  (seek @test-track 20)
 
   )

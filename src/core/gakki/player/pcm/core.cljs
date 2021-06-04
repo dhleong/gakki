@@ -15,3 +15,10 @@
                                   (:sample-rate config)
                                   sample-size-bytes)]
     (int (js/Math.floor over-precise-bytes))))
+
+(defn bytes-to-duration-with [config bytes-count]
+  (let [sample-size-bytes 2  ; FIXME see above
+        samples (/ bytes-count
+                   sample-size-bytes
+                   (:channels config))]
+    (* samples (:sample-rate config))))
