@@ -67,32 +67,54 @@
                                id source-state-atom destination-stream
                                :path path
                                :new-offset new-offset)))
-        input-stream (counting/nbytes-atom-inc from-tmp bytes-read)]
+        handle-error (if end?
+                       identity
+
+                       (j/fn [^:js {:keys [code] :as e}]
+                         (if (and (= "ENOENT" code)
+                                  (not end?))
+                           (do (log/debug "Partial pipe #" id
+                                          "hit ENOENT; the download may have completed?")
+                               (restart-pipe
+                                 id source-state-atom destination-stream
+                                 :path path
+                                 :new-offset offset))
+
+                           (throw e))))
+
+        input-stream (counting/nbytes-atom-inc from-tmp bytes-read)
+
+        cleanup (fn []
+                  (.off input-stream "end" handle-file-end)
+                     (.off input-stream "error" handle-error)
+                     (.unpipe input-stream destination-stream)
+                     (remove-watch source-state-atom [id :still-current-partial?]))]
 
     ; If a new stream is opened, we should clean up
     (add-watch source-state-atom [id :still-current-partial?]
                (fn [_k _r _old new-state]
-                 (when-not (= id (:current-partial-stream new-state))
-                   (log/debug "Partial pipe #" id " is no longer current; cleaning up")
-                   (remove-watch source-state-atom [id :more-bytes-available?])
-                   (remove-watch source-state-atom [id :still-current-partial?])
-                   (.off input-stream "end" handle-file-end)
-                   (.unpipe input-stream destination-stream))))
+                 (cond
+                   ; The download has finished; we should switch to it:
+                   (:disk new-state)
+                   (let [new-offset (+ offset @bytes-read)]
+                     (log/debug "Partial pipe #" id " is switching to the complete file")
+                     (cleanup)
+                     (restart-pipe
+                       id source-state-atom destination-stream
+                       :path path
+                       :new-offset new-offset))
+
+                   ; We're no longer the current partial stream:
+                   (not= id (:current-partial-stream new-state))
+                   (do
+                     (log/debug "Partial pipe #" id " is no longer current; cleaning up")
+                     (cleanup)
+                     (remove-watch source-state-atom [id :more-bytes-available?])))))
 
     (log/debug "Partial pipe #" id " writing @ " offset "; end? " end?)
     (doto input-stream
       (.once "end" handle-file-end)
-      (.once "error" (j/fn [^:js {:keys [code] :as e}]
-                       (if (and (= "ENOENT" code)
-                                (not end?))
-                         (do (log/debug "Partial pipe #" id
-                                        "hit ENOENT; the download may have completed?")
-                             (restart-pipe
-                               id source-state-atom destination-stream
-                               :path path
-                               :new-offset offset))
-
-                         (throw e))))
+      (.once "error" handle-error)
       (.pipe destination-stream #js {:end end?}))))
 
 (deftype CachingPCMSource [config, ^String disk-path, ^String tmp-path, state]
