@@ -21,7 +21,7 @@
 
                (callback)))})))
 
-(defn nbytes-chunkwise [^Readable input, n]
+(defn ^Readable nbytes-chunkwise [^Readable input, n]
   (if (= 0 n)
     input
     (let [tf (create-nbytes-chunkwise-transform n)]

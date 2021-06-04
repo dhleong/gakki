@@ -2,14 +2,16 @@
   (:require [clojure.string :as str]
             [gakki.util.logging :as log]
             [promesa.core :as p]
-            ["stream" :refer [PassThrough Transform Writable]]
+            ["stream" :refer [PassThrough Writable]]
             ["fs" :rename {createWriteStream create-write-stream
                            createReadStream create-read-stream}]
             ["fs/promises" :as fs]
             [gakki.player.decode :refer [decode-stream]]
             [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
             [gakki.player.pcm.disk :as disk]
-            [gakki.player.stream.counting :as counting]))
+            [gakki.player.stream.blackhole :as blackhole]
+            [gakki.player.stream.counting :as counting]
+            [gakki.player.stream.duplicate :as duplicate]))
 
 (defn- pipe-temp-into [^Writable destination-stream
                        & {:keys [path offset get-complete? end?]
@@ -57,8 +59,7 @@
 
         ; Pipe the downloader stream into a blackhole destination stream
         ; to ensure it continues downloading
-        (let [blackhole (Writable. #js {:write
-                                        (fn write [_ _ cb] (cb))})]
+        (let [blackhole (blackhole/create)]
           (.pipe downloader blackhole)
 
           (swap! state (fn [old-state]
@@ -99,16 +100,9 @@
   (let [tmp-path (str destination-path ".progress")
         ^Writable to-disk (create-write-stream tmp-path)
         state (atom nil)
-        caching-transform (Transform.
-                            #js {:transform
-                                 (fn transform [chnk encoding callback]
-                                   (this-as this
-                                            (.push this chnk))
-                                   (.write to-disk chnk encoding
-                                           (fn [v]
-                                             (swap! state update :written +
-                                                    (.-length chnk))
-                                             (callback v))))})]
+        caching-transform (-> stream
+                              (duplicate/to-stream to-disk)
+                              (counting/nbytes-atom-inc state :written))]
 
     (doto stream
       (.pipe caching-transform)

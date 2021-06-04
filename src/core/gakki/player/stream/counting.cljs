@@ -1,4 +1,5 @@
-(ns gakki.player.stream.counting)
+(ns gakki.player.stream.counting
+  (:require ["stream" :refer [Transform Readable]]))
 
 (defn- create-nbytes-counting-transform [on-count]
   (Transform.
@@ -8,7 +9,7 @@
            (on-count (.-length chnk))
            (callback))}))
 
-(defn nbytes-callback
+(defn ^Readable nbytes-callback
   "Pipes the Readable input stream into and returns a Transform stream
    which calls `on-count` periodically with the number of bytes read"
   [^Readable input, on-count]
