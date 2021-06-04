@@ -2,16 +2,8 @@
   (:require ["fs" :rename {createReadStream create-read-stream}]
             [promesa.core :as p]
             [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
-            [gakki.player.analyze :refer [analyze-audio]]
+            [gakki.player.analyze :as analyze]
             [gakki.player.decode :refer [decode-stream]]))
-
-(defn- analyze-caching [cache-atom atom-key path]
-  (if-let [cached (get @cache-atom atom-key)]
-    (p/resolved cached)
-
-    (p/let [analysis (analyze-audio path)]
-      (swap! cache-atom assoc atom-key analysis)
-      analysis)))
 
 (defn- open-stream [path]
   (p/create
@@ -28,7 +20,7 @@
       (:duration analysis)))
 
   (read-config [_this]
-    (analyze-caching state :analysis path))
+    (analyze/audio-caching state :analysis path))
 
   (duration-to-bytes [this duration-seconds]
     (p/let [config (pcm/read-config this)]

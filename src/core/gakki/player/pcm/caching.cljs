@@ -1,4 +1,7 @@
 (ns gakki.player.pcm.caching
+  "This very complicated IPCMSource takes a stream of raw, encoded bytes
+   from *somewhere* and caches them to a file on disk, providing seekable
+   access to however much of the input stream has been written."
   (:require [applied-science.js-interop :as j]
             [clojure.string :as str]
             [gakki.util.logging :as log]
