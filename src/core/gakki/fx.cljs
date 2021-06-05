@@ -156,13 +156,13 @@
 
 (reg-fx
   :player/play!
-  (fn [{:keys [item config]}]
-    (remote/play! (:provider item) item config)))
+  (fn [{:keys [item account config]}]
+    (remote/play! (:provider item) account item config)))
 
 (reg-fx
   :player/prepare!
-  (fn [item]
-    (remote/prepare! (:provider item) item)))
+  (fn [{:keys [item account]}]
+    (remote/prepare! (:provider item) account item)))
 
 (reg-fx :player/unpause!  remote/unpause!)
 (reg-fx :player/pause!  remote/pause!)

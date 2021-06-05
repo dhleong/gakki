@@ -269,6 +269,7 @@
      :integrations/set-state! {:item playable :state :playing}
      :native/set-now-playing! playable
      :player/play! {:item playable
+                    :account (get-in db [:accounts (:provider playable)])
                     :config {:volume-percent volume-percent}}}))
 
 (reg-event-fx
@@ -372,20 +373,22 @@
   (log/debug "playable end")
   {:dispatch [:player/next-in-queue]})
 
-(defmethod handle-player-event :playable-ending [player-state _]
+(defmethod handle-player-event :playable-ending [db _]
   (log/debug "playable ending")
-  (let [queue (:queue player-state)
+  (let [{player-state :player accounts :accounts} db
+        queue (:queue player-state)
         next-index (inc (:index queue))]
     (when-let [next-item (nth-or-nil (:items queue) next-index)]
       (log/debug "... prepare " next-item)
-      {:player/prepare! next-item})))
+      {:player/prepare! {:item next-item
+                         :account (get accounts (:provider next-item))}})))
 
 (defmethod handle-player-event :default [_ {what :type}]
   (println "WARN: Unexpected player event type: " what))
 
 (reg-event-fx
   :player/event
-  [trim-v (path :player)]
+  [trim-v]
   (fn [{:keys [db]} [event]]
     (println "player event: " event)
     (handle-player-event db event)))

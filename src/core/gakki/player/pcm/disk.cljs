@@ -1,5 +1,6 @@
 (ns gakki.player.pcm.disk
   (:require ["fs" :rename {createReadStream create-read-stream}]
+            ["fs/promises" :as fs]
             ["path" :as path]
             [promesa.core :as p]
             [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
@@ -27,6 +28,9 @@
   (seekable-duration [this]
     (p/let [analysis (pcm/read-config this)]
       (:duration analysis)))
+
+  (prepare [_this]
+    (fs/access path))
 
   (read-config [_this]
     (analyze/audio-caching state :analysis path))

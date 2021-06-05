@@ -40,7 +40,7 @@
     (log/debug "Pausing " playable)
     (player/pause playable)))
 
-(defn prepare! [{:keys [provider info]}]
+(defn prepare! [{:keys [provider account info]}]
   ; NOTE: this may be side-effecting: the provider will probably
   ; create a caching Playable which will begin to pre-fetch the file
   (if-let [provider-obj (get providers provider)]
@@ -51,14 +51,14 @@
         existing-playable
 
         ; New playable
-        (let [new-playable (ap/create-playable provider-obj info)]
+        (let [new-playable (ap/create-playable provider-obj account info)]
           (swap! state assoc :prepared {:info info
                                         :playable new-playable})
           new-playable)))
 
     (throw (ex-info "No such provider" {:id provider}))))
 
-(defn play [{:keys [_provider _info config] :as args}]
+(defn play [{:keys [_provider _account _info config] :as args}]
   (swap! state update :playable
 
          (fn [old]

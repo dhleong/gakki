@@ -4,9 +4,15 @@
             [gakki.player.clip :as clip]
             [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
             [gakki.player.track.core :as track]
-            [gakki.player.track.events :as events]))
+            [gakki.player.track.events :as events]
+            [promesa.core :as p]))
 
 (defn create-with-events [^IPCMSource pcm-source, ^EventEmitter events]
+  (-> pcm-source
+      (pcm/prepare)
+      (p/catch (fn [e]
+                 (log/debug "Error preparing " pcm-source ": " e)
+                 (.emit events "end"))))
   (events/wrap
     (track/create pcm-source)
     events))
@@ -26,10 +32,7 @@
                    (track/close old))
 
                  (doto
-                   (track/create
-                     (gakki.player.pcm/create-caching-source
-                       "ytm.2mqi6Vqfhh8"
-                       #(gakki.player.ytm/youtube-id->stream "2mqi6Vqfhh8")))
+                   (gakki.player.ytm/youtube-id->playable nil "2mqi6Vqfhh8")
                    (clip/play))))
 
 
