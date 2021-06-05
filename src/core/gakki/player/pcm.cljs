@@ -18,12 +18,14 @@
   (let [destination-path (path/join cache-dir cache-key)]
     (promised/create
       (-> (p/do!
-            (fs/access path)
+            (fs/access destination-path)
             (log/debug "opening cached @" destination-path)
             (create-disk-source destination-path))
 
           (p/catch
-            (fn [_]
+            (fn [e]
+              (log/debug "ERROR opening cached @ " destination-path ":" e)
+
               ; probably, we don't have it cached
               ; TODO we could potentially resume a partial download?
               (p/let [{:keys [stream config]} (promise-factory)]
