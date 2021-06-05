@@ -289,6 +289,20 @@
              :!))))
 
 (reg-event-fx
+  :player/play
+  [trim-v (path :player)]
+  (fn [{{current-state :state} :db} _]
+    (when (= :paused current-state)
+      {:dispatch [:player/play-pause]})))
+
+(reg-event-fx
+  :player/pause
+  [trim-v (path :player)]
+  (fn [{{current-state :state} :db} _]
+    (when (= :playing current-state)
+      {:dispatch [:player/play-pause]})))
+
+(reg-event-fx
   :player/next-in-queue
   [trim-v (path :player :queue)]
   (fn [{{current-index :index} :db} _]
