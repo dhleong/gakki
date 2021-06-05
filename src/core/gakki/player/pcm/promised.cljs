@@ -21,6 +21,8 @@
     (p/let [actual (await-storing resolved-value the-promise)]
       (pcm/seekable-duration actual)))
 
+  (prepare [_this] the-promise)
+
   (read-config [_this]
     (p/let [actual (await-storing resolved-value the-promise)]
       (pcm/read-config actual)))

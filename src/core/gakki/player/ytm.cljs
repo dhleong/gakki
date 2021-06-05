@@ -14,7 +14,6 @@
                     (account->cookies account))
           options (j/lit {:requestOptions
                           {:headers {:cookie cookies}}})
-          _ (println options)
           info (ytdl/getInfo id options)
           fmt (ytdl/chooseFormat
                 (j/get info :formats)

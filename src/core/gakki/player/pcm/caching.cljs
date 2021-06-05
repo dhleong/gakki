@@ -139,6 +139,8 @@
 
         (pcm/bytes-to-duration-with config (:decoded-bytes current-state)))))
 
+  (prepare [_this] (p/resolved nil))
+
   (read-config [_this] config)
 
   (duration-to-bytes [this duration-seconds]

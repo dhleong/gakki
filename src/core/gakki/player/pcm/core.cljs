@@ -3,6 +3,9 @@
 (defprotocol IPCMSource
   (seekable-duration [this])
   (read-config [this])
+  (prepare
+    [this]
+    "Returns a promise that might reject if unable to prepare.")
   (duration-to-bytes [this duration-seconds])
   (open-read-stream [this]))
 
