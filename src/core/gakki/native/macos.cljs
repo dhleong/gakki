@@ -3,6 +3,7 @@
             ["child_process" :refer [ChildProcess spawn]]
             [clojure.string :as str]
             [cognitect.transit :as t]
+            [gakki.util.logging :as log]
             ["path" :rename {join path-join}]
             [promesa.core :as p]
             ["stream" :refer [Readable]]))
@@ -35,7 +36,6 @@
                raw-message "\n" e))))
 
 (defn- handle-media-event [{:keys [event]}]
-  (println "Media event=" event)
   (case event
     :toggle (>evt [:player/play-pause])
     :next-track (>evt [:player/next-in-queue])
@@ -48,7 +48,7 @@
 (defn- handle-message [{kind :type :as message}]
   (case kind
     :ready nil ; ignore
-    :log (println "[log:native]" (:message message))
+    :log (log/debug "[log:native]" (:message message))
     :media (handle-media-event message)
 
     :auth-result (swap! requests update :auth
