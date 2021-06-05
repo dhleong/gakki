@@ -9,7 +9,7 @@
 
 (def ^:private writer (t/writer :json))
 (def ^:private reader (t/reader :json))
-(def ^:private debug-io? true)
+(def ^:private debug-io? false)
 
 (defonce state (atom nil))
 
@@ -33,7 +33,10 @@
       (when debug-io?
         (.on (.-stdout proc) "data"
              (fn [stdout]
-               (log/debug "[player] " (str/trim (.toString stdout))))))
+               (log/debug "[player] " (str/trim (.toString stdout)))))
+        (.on (.-stderr proc) "data"
+             (fn [stderr]
+               (log/debug "[player:err] " (str/trim (.toString stderr))))))
 
       (doto proc
         (.on "exit" clear-state!)

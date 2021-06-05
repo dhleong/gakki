@@ -94,7 +94,18 @@
   (pause [this]
     (when-let [clip (:clip @state)]
       (log/debug "Pausing clip " clip " from " this)
-      (clip/pause clip)))
+
+      (if-not (clip/default-output-device? clip)
+        (do
+          ; NOTE: As noted in the AudioClip implementation, if we try to
+          ; just pause the clip when its output device no longer exists, the
+          ; process will hang, so we have to just close it in this case.
+          (log/debug this " closing clip (no longer default device)")
+          (clip/close clip)
+          (swap! state dissoc :clip))
+
+        (clip/pause clip))
+      ))
 
   (set-volume [_this volume-percent]
     (swap! state assoc :volume volume-percent)

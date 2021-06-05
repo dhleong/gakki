@@ -29,8 +29,10 @@
 
 (deftype AudioClip [^Readable input, ^RtAudio speaker, device, ^Writable output]
   IAudioClip
-  (close [this]
-    (pause this)
+  (close [_this]
+    ; NOTE: If the output device has gone away (eg: disconnecting a bluetooth
+    ; headset) trying to (.stop) the speaker will *hang*, so we just close it
+    (.unpipe input output)
     (.closeStream speaker))
 
   (current-time [_this]
