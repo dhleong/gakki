@@ -27,8 +27,8 @@
       (pcm/duration-to-bytes-with config duration-seconds)))
 
   (open-read-stream [this]
-    (p/let [config (pcm/read-config this)
-            encoded-stream (open-stream path)]
+    (p/plet [config (pcm/read-config this)
+             encoded-stream (open-stream path)]
       (decode-stream config encoded-stream))))
 
 (defn create [path]

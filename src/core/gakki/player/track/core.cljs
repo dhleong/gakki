@@ -63,8 +63,8 @@
           (clip/play this))
 
         :else
-        (p/let [stream (pcm/open-read-stream source)
-                config (pcm/read-config source)]
+        (p/plet [stream (pcm/open-read-stream source)
+                 config (pcm/read-config source)]
           (swap!
             state
             (fn create-clip [{:keys [clip seek-time seek-bytes] :as current-state}]
