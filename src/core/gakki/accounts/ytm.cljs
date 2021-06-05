@@ -85,9 +85,8 @@
     (when-let [email (-> account :user :email)]
       (str email)))
 
-  (create-playable
-    [_this info]
-    (youtube-id->playable (:id info)))
+  (create-playable [_this account info]
+    (youtube-id->playable account (:id info)))
 
   (fetch-home [_ account]
     ; NOTE: this is pulled out to a separate fn to facilitate hot-reload dev

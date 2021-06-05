@@ -54,18 +54,20 @@
          {:type :pause}))
 
 (defn play!
-  ([provider-id info] (play! provider-id info nil))
-  ([provider-id info config]
+  ([provider-id account info] (play! provider-id account info nil))
+  ([provider-id account info config]
    (send! (ensure-launched!)
           {:type :play
            :provider provider-id
+           :account account
            :config config
            :info info})))
 
-(defn prepare! [provider-id info]
+(defn prepare! [provider-id account info]
   (send! (ensure-launched!)
          {:type :prepare
           :provider provider-id
+          :account account
           :info info}))
 
 (defn set-volume! [volume-level]
@@ -90,4 +92,4 @@
 
   (set-volume! 0.5)
 
-  (play! :ytm {:id "8FV4gcs-MNA"}))
+  (play! :ytm nil {:id "8FV4gcs-MNA"}))

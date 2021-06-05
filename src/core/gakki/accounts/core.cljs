@@ -7,9 +7,9 @@
     "Get the name/identifier of the account")
 
   (create-playable
-    [this playable-info]
-    "Given a playable info object (as returned from fetch-home), return
-     an IPlayable instance for object.")
+    [this account playable-info]
+    "Given the account and a playable info object (as returned from
+     fetch-home), return an IPlayable instance for object.")
 
   (fetch-home
     [this account]
