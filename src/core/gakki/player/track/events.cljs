@@ -29,6 +29,14 @@
       (js/clearTimeout ending-timer))))
 
 (deftype EventfulAudioTrack [^IAudioTrack base, ^EventEmitter events, state]
+  Object
+  (toString [_this]
+    (str "Eventful" base))
+
+  IPrintWithWriter
+  (-pr-writer [this writer _]
+    (-write writer (.toString this)))
+
   IAudioTrack
   (close [_this] (track/close base))
   (read-config [_this] (track/read-config base))

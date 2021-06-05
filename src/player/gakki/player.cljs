@@ -6,7 +6,8 @@
   (:require [cognitect.transit :as t]
             [gakki.accounts.core :as ap]
             [gakki.accounts :refer [providers]]
-            [gakki.player.core :as player]))
+            [gakki.player.core :as player]
+            [gakki.util.logging :as log]))
 
 (defonce ^:private state (atom nil))
 
@@ -36,6 +37,7 @@
 
 (defn pause [_]
   (when-let [playable (:playable @state)]
+    (log/debug "Pausing " playable)
     (player/pause playable)))
 
 (defn prepare! [{:keys [provider info]}]
@@ -96,7 +98,7 @@
                                 (t/read reader))]
     (if-let [handler (get handlers ty)]
       (do
-        (println "Dispatching:" msg "to: " handler)
+        (log/debug "Dispatching:" msg "to: " handler)
         (handler msg))
 
       (println "WARN: No handler for: " ty))))

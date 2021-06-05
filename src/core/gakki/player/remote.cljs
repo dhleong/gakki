@@ -2,12 +2,14 @@
   "Remote-control for the player subprocess"
   (:require [archetype.util :refer [>evt]]
             ["child_process" :refer [fork]]
+            [clojure.string :as str]
             [cognitect.transit :as t]
-            [gakki.const :as const]))
+            [gakki.const :as const]
+            [gakki.util.logging :as log]))
 
 (def ^:private writer (t/writer :json))
 (def ^:private reader (t/reader :json))
-(def ^:private debug-io? false)
+(def ^:private debug-io? true)
 
 (defonce state (atom nil))
 
@@ -22,11 +24,17 @@
 
     (let [proc (fork "resources/player.js"
                      #js {:stdio (if (and debug-io? const/debug?)
-                                   "inherit"
+                                   "pipe"
                                    "ignore")})
           clear-state! (fn [e]
                          (println "Player Exit:" e)
                          (reset! state nil))]
+
+      (when debug-io?
+        (.on (.-stdout proc) "data"
+             (fn [stdout]
+               (log/debug "[player] " (str/trim (.toString stdout))))))
+
       (doto proc
         (.on "exit" clear-state!)
         (.on "error" clear-state!)

@@ -11,6 +11,14 @@
   (seek [this timestamp-seconds]))
 
 (deftype AudioTrack [^IPCMSource source, state]
+  Object
+  (toString [_this]
+    (str "AudioTrack(" source ")"))
+
+  IPrintWithWriter
+  (-pr-writer [this writer _]
+    (-write writer (.toString this)))
+
   IAudioTrack
   (close [_this]
     (swap! state (fn [{:keys [clip] :as state}]
@@ -83,8 +91,9 @@
                   (clip/play))
                 (assoc current-state :clip clip))))))))
 
-  (pause [_this]
+  (pause [this]
     (when-let [clip (:clip @state)]
+      (log/debug "Pausing clip " clip " from " this)
       (clip/pause clip)))
 
   (set-volume [_this volume-percent]

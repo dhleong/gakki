@@ -1,5 +1,6 @@
 (ns gakki.player.pcm.disk
   (:require ["fs" :rename {createReadStream create-read-stream}]
+            ["path" :as path]
             [promesa.core :as p]
             [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
             [gakki.player.analyze :as analyze]
@@ -14,6 +15,14 @@
           (.on "open" #(p-resolve s)))))))
 
 (deftype DiskPCMSource [^String path, state]
+  Object
+  (toString [_this]
+    (str "DiskPCM(" (path/basename path) ")"))
+
+  IPrintWithWriter
+  (-pr-writer [this writer _]
+    (-write writer (.toString this)))
+
   IPCMSource
   (seekable-duration [this]
     (p/let [analysis (pcm/read-config this)]

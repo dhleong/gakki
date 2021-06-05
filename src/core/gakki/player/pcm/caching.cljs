@@ -4,18 +4,19 @@
    access to however much of the input stream has been written."
   (:require [applied-science.js-interop :as j]
             [clojure.string :as str]
-            [gakki.util.logging :as log]
-            [promesa.core :as p]
-            ["stream" :refer [PassThrough Writable]]
             ["fs" :rename {createWriteStream create-write-stream
                            createReadStream create-read-stream}]
             ["fs/promises" :as fs]
+            ["path" :as path]
+            [promesa.core :as p]
+            ["stream" :refer [PassThrough Writable]]
             [gakki.player.decode :refer [decode-stream]]
             [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
             [gakki.player.pcm.disk :as disk]
             [gakki.player.stream.blackhole :as blackhole]
             [gakki.player.stream.counting :as counting]
-            [gakki.player.stream.duplicate :as duplicate]))
+            [gakki.player.stream.duplicate :as duplicate]
+            [gakki.util.logging :as log]))
 
 (declare ^:private pipe-temp-into)
 
@@ -121,6 +122,14 @@
       (.pipe destination-stream #js {:end end?}))))
 
 (deftype CachingPCMSource [config, ^String disk-path, ^String tmp-path, state]
+  Object
+  (toString [_this]
+    (str "CachingPCM(" (path/basename disk-path) ")"))
+
+  IPrintWithWriter
+  (-pr-writer [this writer _]
+    (-write writer (.toString this)))
+
   IPCMSource
   (seekable-duration [_this]
     (let [current-state @state]
