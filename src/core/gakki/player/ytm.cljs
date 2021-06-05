@@ -5,10 +5,8 @@
             [promesa.core :as p]
             [gakki.util.convert :refer [->int]]
             [gakki.player.core :as gp]
-            [gakki.player.caching :refer [caching]]
-            [gakki.player.promised :refer [promise->playable]]))
-
-(def ^:private cache? true)
+            [gakki.player.pcm :as pcm]
+            [gakki.player.track :as track]))
 
 (defn- youtube-id->url [id]
   (p/let [info (ytdl/getInfo id)
@@ -31,7 +29,7 @@
     {:config config
      :url (j/get fmt :url)}))
 
-(defn- youtube-id->stream [id]
+(defn youtube-id->stream [id]
   (p/let [{:keys [config url]} (youtube-id->url id)
           response (fetch url)
           ^js stream (j/get response :body)]
@@ -39,14 +37,10 @@
      :stream stream}))
 
 (defn youtube-id->playable [id]
-  (promise->playable
-    (if cache?
-      (caching
-        (str "ytm." id)
-        #(youtube-id->stream id))
-
-      (p/let [{path :url :as obj} (youtube-id->url id)]
-        (assoc obj :path path)))))
+  (track/create-playable
+    (pcm/create-caching-source
+      (str "ytm." id)
+      #(youtube-id->stream id))))
 
 (comment
   (p/let [id "8FV4gcs-MNA"
