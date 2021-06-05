@@ -26,10 +26,7 @@
                    (track/close old))
 
                  (doto
-                   (track/create
-                     (gakki.player.pcm/create-caching-source
-                       "ytm.2mqi6Vqfhh8"
-                       #(gakki.player.ytm/youtube-id->stream "2mqi6Vqfhh8")))
+                   (gakki.player.ytm/youtube-id->playable nil "2mqi6Vqfhh8")
                    (clip/play))))
 
 

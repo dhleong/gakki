@@ -1,12 +1,11 @@
 (ns gakki.accounts.ytm
   (:require [applied-science.js-interop :as j]
-            [archetype.util :refer [>evt]]
             [clojure.string :as str]
             [promesa.core :as p]
-            ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
             [gakki.accounts.core :refer [IAccountProvider]]
+            [gakki.accounts.ytm.creds :refer [account->cookies]]
             [gakki.accounts.ytm.consts :refer [ytm-kinds]]
             [gakki.accounts.ytm.album :as album]
             [gakki.accounts.ytm.artist :as artist]
@@ -14,19 +13,6 @@
             [gakki.player.ytm :refer [youtube-id->playable]]
             [gakki.util.logging :as log]))
 
-(defonce ^:private account->creds
-  (memoize
-    (fn [account]
-      (cached
-        (OauthCredentialsManager.
-          (clj->js account)
-          #js {:persistCredentials
-               (fn [creds]
-                 (let [updated (merge account
-                                      (js->clj creds :keywordize-keys true))]
-                   (>evt [:auth/save :ytm updated {:load-home? false}])))})))))
-
-(defonce ^:private created-creds (atom nil))
 
 (defn- ->text [obj]
   (or (when (string? obj)
@@ -57,20 +43,10 @@
                (get ytm-kinds ytm-kind (keyword "unknown"
                                                 ytm-kind))))})
 
+
 (defn- account->client [account]
-  (p/let [initial? (nil? (get @created-creds account))
-          start (js/Date.now)
-          creds (account->creds account)
-          cookies-obj (.get creds)
-          delta (- (js/Date.now) start)]
-
-    ; logging:
-    (swap! created-creds assoc account true)
-    (if initial?
-      (log/timing :ytm/initial-cookie-fetch delta)
-      (log/timing :ytm/cookie-refresh delta))
-
-    (YTMusic. (j/get cookies-obj :cookies))))
+  (p/let [cookies (account->cookies account)]
+    (YTMusic. cookies)))
 
 (defn- do-fetch-home [account]
   (log/with-timing-promise :ytm/parse-and-fetch-home
