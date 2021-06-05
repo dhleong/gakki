@@ -388,7 +388,7 @@
 
 (reg-event-fx
   :player/event
-  [trim-v (path :player)]
+  [trim-v]
   (fn [{:keys [db]} [event]]
     (println "player event: " event)
     (handle-player-event db event)))
