@@ -26,12 +26,17 @@
           shelves (j/get-in selected [:content
                                       :sectionListRenderer
                                       :contents])]
-    {:categories (keep music-shelf->section shelves)}))
+    (keep music-shelf->section shelves)))
 
 (defn perform [^YTMusic client query]
-  (p/let [response (perform-with client {:query query
-                                         :params nil})]
-    response))
+  (p/let [[categories uploads] (p/all [(perform-with client {:query query})
+                                       (perform-with client {:query query
+                                                             :params :uploads})])
+          uploads (when (seq (:items (first uploads)))
+                    (assoc (first uploads) :title "Uploads"))]
+    {:categories (if uploads
+                   (cons uploads categories)
+                   categories)}))
 
 
 #_:clj-kondo/ignore
