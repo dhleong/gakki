@@ -1,5 +1,6 @@
 (ns gakki.accounts.ytm.music-shelf
   (:require [applied-science.js-interop :as j]
+            [clojure.string :as str]
             [gakki.accounts.ytm.util :as util :refer [->seconds
                                                       runs->text
                                                       unpack-navigation-endpoint]]))
@@ -15,6 +16,26 @@
     (throw (ex-info "Unexpected flexColumn item"
                     {:item item}))))
 
+(defn- resolve-generic-shelf-item [item items]
+  (cond
+    (#{:album :artist :playlist} (:kind item))
+    (-> item
+        (dissoc :duration :items)
+        (assoc :title (:title (first items))))
+
+    (= :track (:kind (first items)))
+    (let [[artist album duration] (-> items
+                                      second
+                                      :title
+                                      (str/split #"  •  "))]
+      (assoc (first items)
+             :artist artist
+             :album album
+             :duration (->seconds duration)))
+
+    :else
+    (throw (ex-info "Unexpected generic shelf item" {:item item}))))
+
 (defn- compose-shelf-item [{:keys [duration image-url items] :as item}]
   ; TODO radio id?
   (cond
@@ -27,6 +48,9 @@
            :image-url image-url
            :artist (:title (second items))
            :album (:title (nth items 2)))
+
+    (= (count items) 2)
+    (resolve-generic-shelf-item item items)
 
     ; NOTE: It is apparently possible to have items that don't have an ID!
     ; The Web UI renders them as disabled, and the only available action is to
@@ -48,19 +72,22 @@
   [^js item]
   (if-let [flex-columns (j/get-in item [:musicResponsiveListItemRenderer
                                         :flexColumns])]
-    (let [duration-runs (j/get-in item [:musicResponsiveListItemRenderer
-                                        :fixedColumns
-                                        0
-                                        :musicResponsiveListItemFixedColumnRenderer
-                                        :text])]
+    (let [renderer (j/get item :musicResponsiveListItemRenderer)
+          duration-runs (j/get-in renderer [:fixedColumns
+                                            0
+                                            :musicResponsiveListItemFixedColumnRenderer
+                                            :text])
+          endpoint (unpack-navigation-endpoint renderer)]
       (compose-shelf-item
-        {:image-url (-> item
-                        (j/get-in [:musicResponsiveListItemRenderer :thumbnail])
-                        util/pick-thumbnail)
-         :duration (some-> duration-runs
-                           runs->text
-                           ->seconds)
-         :items (keep parse-flex-column-item flex-columns)}))
+        (merge
+          endpoint
+          {:image-url (-> item
+                          (j/get-in [:musicResponsiveListItemRenderer :thumbnail])
+                          util/pick-thumbnail)
+           :duration (some-> duration-runs
+                             runs->text
+                             ->seconds)
+           :items (keep parse-flex-column-item flex-columns)})))
 
     (throw (ex-info "Unexpected musicResponsiveListItemRenderer contents"
                     {:contents item}))))
@@ -90,12 +117,12 @@
           title (runs->text title)]
     (when-not (contains? ignored-section-titles title)
       {:title title
-       :items (keep parse-shelf-item contents)})))
+       :items (vec (keep parse-shelf-item contents))})))
 
 (defmethod music-shelf->section "musicPlaylistShelfRenderer"
   [^js container]
   (j/let [^:js {{:keys [contents]} :musicPlaylistShelfRenderer} container]
-    {:items (keep parse-shelf-item contents)}))
+    {:items (vec (keep parse-shelf-item contents))}))
 
 (defmethod music-shelf->section "musicCarouselShelfRenderer"
   [^js container]
@@ -105,7 +132,7 @@
                                               :title]))]
     (when-not (contains? ignored-section-titles title)
       {:title title
-       :items (keep parse-shelf-item contents)})))
+       :items (vec (keep parse-shelf-item contents))})))
 
 (defmethod music-shelf->section "musicDescriptionShelfRenderer" [_]
   ; Probably can skip quietly
