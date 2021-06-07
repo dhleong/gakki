@@ -4,22 +4,36 @@
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
             [promesa.core :as p]
-            [gakki.accounts.ytm.music-shelf :refer [parse-shelf-item]]
+            [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
             [gakki.accounts.ytm.util :as util :refer [runs->text]]))
 
 (defn- parse-items [^js response]
-  (let [shelf (j/get-in response [:contents
-                                  :singleColumnBrowseResultsRenderer
-                                  :tabs
-                                  0
-                                  :tabRenderer
-                                  :content
-                                  :sectionListRenderer
-                                  :contents
-                                  0
-                                  :musicPlaylistShelfRenderer])]
+  (let [raw-shelves (j/get-in response [:contents
+                                        :singleColumnBrowseResultsRenderer
+                                        :tabs
+                                        0
+                                        :tabRenderer
+                                        :content
+                                        :sectionListRenderer
+                                        :contents])]
     ; TODO extract continuation data
-    (vec (keep parse-shelf-item (j/get shelf :contents)))))
+    (->> raw-shelves
+         (keep music-shelf->section)
+         (mapcat :items)
+         vec)))
+
+(defn inflate [id kind, ^js response]
+  (let [header (or (j/get-in response [:header :musicDetailHeaderRenderer])
+                   (j/get-in response [:header
+                                       :musicEditablePlaylistDetailHeaderRenderer
+                                       :header
+                                       :musicDetailHeaderRenderer]))]
+    {:id id
+     :provider :ytm
+     :kind kind
+     :title (runs->text (j/get header :title))
+     :image-url (util/pick-thumbnail header)
+     :items (parse-items response)}))
 
 (defn load [^YTMusic client, id]
   (p/let [response (send-request (.-cookie client)
@@ -27,15 +41,5 @@
                                             (str "VL" id)
                                             id)
                                       :type "PLAYLIST"
-                                      :endpoint "browse"})
-          header (or (j/get-in response [:header :musicDetailHeaderRenderer])
-                     (j/get-in response [:header
-                                         :musicEditablePlaylistDetailHeaderRenderer
-                                         :header
-                                         :musicDetailHeaderRenderer]))]
-    {:id id
-     :provider :ytm
-     :kind :playlist
-     :title (runs->text (j/get header :title))
-     :image-url (util/pick-thumbnail header)
-     :items (parse-items response)}))
+                                      :endpoint "browse"})]
+    (inflate id :playlist response)))

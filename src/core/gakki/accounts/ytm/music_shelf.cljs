@@ -20,7 +20,8 @@
   (cond
     (and (> (count items) 2)
          (= :track (:kind (first items)))
-         (= :artist (:kind (second items))))
+         (or (= :artist (:kind (second items)))
+             (= :album (:kind (nth items 2)))))
     (assoc (first items)
            :duration duration
            :image-url image-url
@@ -90,6 +91,11 @@
     (when-not (contains? ignored-section-titles title)
       {:title title
        :items (keep parse-shelf-item contents)})))
+
+(defmethod music-shelf->section "musicPlaylistShelfRenderer"
+  [^js container]
+  (j/let [^:js {{:keys [contents]} :musicPlaylistShelfRenderer} container]
+    {:items (keep parse-shelf-item contents)}))
 
 (defmethod music-shelf->section "musicCarouselShelfRenderer"
   [^js container]

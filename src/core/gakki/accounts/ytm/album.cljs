@@ -2,7 +2,8 @@
   (:require [applied-science.js-interop :as j]
             [promesa.core :as p]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]))
+            ["ytmusic" :rename {YTMUSIC YTMusic}]
+            [gakki.accounts.ytm.playlist :as playlist]))
 
 (defmulti ^:private apply-mutation (fn [_state mutation]
                                      (j/get mutation :type)))
@@ -59,14 +60,25 @@
      :items (->> (j/get details-entity :tracks)
                  (mapv (partial inflate-track state)))}))
 
+(defn- inflate-mutations [response]
+  (when-let [mutations (j/get-in response [:frameworkUpdates
+                                           :entityBatchUpdate
+                                           :mutations])]
+    (let [entities (apply-mutations mutations)
+          album-id (->> entities :musicAlbumRelease first)]
+      (when album-id
+        (inflate-album entities album-id)))))
+
+(defn- inflate-like-playlist [id response]
+  (let [like-playlist (playlist/inflate id :album response)]
+    (println "LIKE PL: " like-playlist)
+    (when (seq (:items like-playlist))
+      like-playlist)))
+
 (defn load [^YTMusic client id]
   (p/let [response (send-request (.-cookie client)
                                  #js {:id id
                                       :type "ALBUM"
-                                      :endpoint "browse"})
-          entities (apply-mutations (j/get-in response [:frameworkUpdates
-                                                        :entityBatchUpdate
-                                                        :mutations]))
-          album-id (->> entities :musicAlbumRelease first)]
-    (when album-id
-      (inflate-album entities album-id))))
+                                      :endpoint "browse"})]
+    (or (inflate-mutations response)
+        (inflate-like-playlist id response))))

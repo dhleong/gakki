@@ -34,6 +34,9 @@
   [^js thumbnail-container]
   (loop [container thumbnail-container]
     (cond
+      (nil? container)
+      nil
+
       (js/Array.isArray container)
       (j/get (first container) :url)
 
