@@ -3,6 +3,7 @@
             [promesa.core :as p]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
                                                generateBody generate-body}]
+            ["ytmusic" :rename {YTMUSIC YTMusic}]
             [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]))
 
 (def ^:private param-types

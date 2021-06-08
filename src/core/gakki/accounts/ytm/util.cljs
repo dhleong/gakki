@@ -15,11 +15,18 @@
        (* m 60)
        s)))
 
-(defn runs->text [^js runs-container]
-  (when-let [runs (j/get runs-container :runs)]
-    (->> runs
-         (map #(j/get % :text))
-         (str/join " "))))
+(defn runs->text
+  ([^js runs-container] (runs->text runs-container " "))
+  ([^js runs-container separator]
+   (when-let [runs (j/get runs-container :runs)]
+     (->> runs
+          (map #(j/get % :text))
+          (str/join separator)))))
+
+(defn single-key-child [^js obj]
+  (let [container-keys (js/Object.keys obj)]
+    (when (= 1 (count container-keys))
+      (j/get obj (first container-keys)))) )
 
 (defn pick-thumbnail
   "Given some nested object structure like:
@@ -44,9 +51,8 @@
       (recur (j/get container :thumbnail))
 
       :else
-      (let [container-keys (js/Object.keys container)]
-        (when (= 1 (count container-keys))
-          (recur (j/get container (first container-keys))))))))
+      (when-let [child (single-key-child container)]
+        (recur child)))))
 
 (defn unpack-navigation-endpoint [^js runs-container-or-endpoint]
   (let [endpoint (or (j/get runs-container-or-endpoint :navigationEndpoint)
