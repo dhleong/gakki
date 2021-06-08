@@ -6,6 +6,7 @@
             [gakki.accounts :as accounts]
             [gakki.accounts.core :as ap]
             [gakki.cli.input :refer [use-input]]
+            [gakki.components.frame :refer [frame]]
             [gakki.theme :as theme]))
 
 (defn- provider-row [selected-key k provider]
@@ -60,10 +61,7 @@
 
           nil)))
 
-    [:> k/Box {:flex-direction :column
-               :border-color theme/text-color-on-background
-               :border-style :round
-               :padding-x 1}
+    [frame
      [:> k/Text {:color theme/header-color-on-background}
       (if (empty? accounts)
         "Welcome to Gakki!"

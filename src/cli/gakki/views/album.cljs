@@ -4,6 +4,7 @@
             ["ink" :as k]
             [reagent.core :as r]
             [gakki.cli.input :refer [use-input]]
+            [gakki.components.frame :refer [frame]]
             [gakki.components.header :refer [header]]
             [gakki.components.limited-text :refer [limited-text]]
             [gakki.components.scrollable :refer [vertical-list]]
@@ -82,10 +83,7 @@
                       (>evt [:navigate/back!]))
             nil)))
 
-      [:> k/Box {:flex-direction :column
-                 :border-color theme/text-color-on-background
-                 :border-style :round
-                 :padding-x 1}
+      [frame
        [album-header album]
 
        [description album]

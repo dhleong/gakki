@@ -3,6 +3,7 @@
             [gakki.theme :as theme]
             ["ink" :as k]
             [gakki.cli.dimen :refer [dimens-tracker]]
+            [gakki.cli.nav :refer [global-nav]]
             [gakki.views.auth :as auth]
             [gakki.views.auth.ytm :as auth-ytm]
             [gakki.views.album :as album]
@@ -10,6 +11,7 @@
             [gakki.views.home :as home]
             [gakki.views.playlist :as playlist]
             [gakki.views.queue :as queue]
+            [gakki.views.search :as search]
             [gakki.views.splash :as splash]))
 
 (def ^:private pages
@@ -20,6 +22,7 @@
    :artist #'artist/view
    :playlist #'playlist/view
    :queue #'queue/view
+   :search #'search/view
    })
 
 (defn main []
@@ -29,6 +32,9 @@
         page-form [:f> page-fn args]]
     [:<>
      [:f> dimens-tracker]
+
+     (when (seq accounts)
+       [:f> global-nav])
 
      (cond
        (nil? accounts)
