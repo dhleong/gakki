@@ -10,6 +10,8 @@
             [gakki.accounts.ytm.album :as album]
             [gakki.accounts.ytm.artist :as artist]
             [gakki.accounts.ytm.playlist :as playlist]
+            [gakki.accounts.ytm.search :as search]
+            [gakki.accounts.ytm.search-suggest :as search-suggest]
             [gakki.player.ytm :refer [youtube-id->playable]]
             [gakki.util.logging :as log]))
 
@@ -96,7 +98,14 @@
 
   (resolve-playlist [_ account playlist-id]
     (do-resolve-playlist account playlist-id))
-  )
+
+  (search [_ account query]
+    (p/let [^YTMusic ytm (account->client account)]
+      (search/perform ytm query)))
+
+  (search-suggest [_ account partial-query]
+    (p/let [^YTMusic ytm (account->client account)]
+      (search-suggest/load ytm partial-query))))
 
 #_:clj-kondo/ignore
 (comment
