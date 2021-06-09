@@ -13,6 +13,7 @@
             [gakki.views.playlist :as playlist]
             [gakki.views.queue :as queue]
             [gakki.views.search :as search]
+            [gakki.views.search-results :as search-results]
             [gakki.views.splash :as splash]))
 
 (def ^:private pages
@@ -24,6 +25,7 @@
    :playlist #'playlist/view
    :queue #'queue/view
    :search #'search/view
+   :search/results #'search-results/view
    })
 
 (defn main []

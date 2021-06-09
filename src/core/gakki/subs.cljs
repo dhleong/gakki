@@ -147,10 +147,12 @@
   :<- [:page]
   :<- [::home-categories]
   :<- [:artists]
-  (fn [[page home-categories artists] _]
+  :<- [:search/results]
+  (fn [[page home-categories artists search-results] _]
     (case (first page)
       :home home-categories
       :artist (get-in artists [(second page) :categories])
+      :search/results search-results
 
       nil)))
 
@@ -244,3 +246,45 @@
   :<- [:integration-vars]
   (fn [vars [_ var-name]]
     (get vars var-name)))
+
+
+; ======= Search ==========================================
+
+(reg-sub
+  ::search
+  (fn [db]
+    (:search db)))
+
+(reg-sub
+  ::search-raw-page-state
+  :<- [:page]
+  :<- [::search]
+  (fn [[[_ query] search] _]
+    (get search query)))
+
+(reg-sub
+  :search/results
+  :<- [::search-raw-page-state]
+  (fn [state _]
+    (if (vector? state)
+      state
+      [])))
+
+(reg-sub
+  :search/state
+  :<- [::search-raw-page-state]
+  (fn [state _]
+    (cond
+      (vector? state) :ready
+      (keyword? state) state
+      (nil? state) :empty
+      :else :error)))
+
+(reg-sub
+  :search/error
+  :<- [::search-raw-page-state]
+  (fn [state _]
+    (cond
+      (vector? state) nil
+      (keyword? state) nil
+      :else state)))

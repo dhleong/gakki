@@ -62,7 +62,9 @@
             :return (let [query (if-some [idx @selected-index]
                                   (:query (nth suggestions idx))
                                   input)]
-                      (println "TODO: search for " query))
+                      (when-not (empty? query)
+                        (>evt [:search/reload! query])
+                        (>evt [:navigate! [:search/results query]])))
             :tab (swap! selected-index (length-wrapped
                                          (fnil inc -1)
                                          (count suggestions)))
@@ -72,8 +74,10 @@
 
       [frame
        [header {:padding-bottom 1} "Search"]
-       [:> k/Box {:height 1}
+       [:> k/Box {:height 1
+                  :border-bottom :round}
         [:> TextInput {:on-change set-input!
+                       :placeholder "Search for something"
                        :show-cursor (nil? @selected-index)
                        :value input}]]
        [vertical-list

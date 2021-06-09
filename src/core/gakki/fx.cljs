@@ -3,7 +3,7 @@
             [re-frame.core :refer [reg-fx]]
             [promesa.core :as p]
             [gakki.accounts.core :as ap]
-            [gakki.accounts :refer [providers]]
+            [gakki.accounts :as accounts :refer [providers]]
             [gakki.integrations :as integrations]
             [gakki.native :as native]
             [gakki.player.remote :as remote]
@@ -151,6 +151,17 @@
 
         (println "[err: " k "] Invalid provider or no account")))))
 
+(reg-fx
+  :providers/search
+  (fn [[accounts query]]
+    ; NOTE: kind must be eg: :playlist, :album
+    ; NOTE: entity must have :provider and :id keys
+    (-> (p/let [results (accounts/search accounts query)]
+          (>evt [:search/on-loaded query results]))
+        (p/catch (fn [e]
+                   ; TODO logging...
+                   (println "[err] " e)
+                   (>evt [:search/on-loaded query e]))))))
 
 ; ======= Player ==========================================
 

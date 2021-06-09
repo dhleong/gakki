@@ -420,3 +420,19 @@
   (fn [{{vars :integration-vars} :db volume :player/volume-percent} _]
     {:fx [(when-not (nil? (:voice-connected vars))
             [:player/set-volume! volume])]}))
+
+
+; ======= Search ==========================================
+
+(reg-event-fx
+  :search/reload!
+  [trim-v]
+  (fn [{:keys [db]} [query]]
+    {:db (assoc-in db [:search query] :loading)
+     :providers/search [(:accounts db) query]}))
+
+(reg-event-db
+  :search/on-loaded
+  [trim-v (path :search)]
+  (fn [{search :db} [query result]]
+    (assoc search query result)))
