@@ -44,7 +44,7 @@
 (defn- logged-out []
   (r/with-let [state (r/atom nil)]
     (use-input
-      (fn [k]
+      (fn logged-out-input [k]
         (case k
           :return (when (let [s @state]
                           (or (nil? s)
@@ -86,7 +86,7 @@
 
 (defn view []
   (use-input
-    (fn [k]
+    (fn ytm-input [k]
       (case k
         :escape (>evt [:navigate/replace! [:auth]])
         nil)))

@@ -83,26 +83,22 @@
                               available-height))]
 
       (use-input
-        (fn [k]
-          (case k
-            "j" (swap! selected-index (length-wrapped
-                                        (fnil inc -1)
-                                        (count items)))
-            "k" (swap! selected-index (length-wrapped
-                                        (fnil dec 1)
-                                        (count items)))
+        {"j" #(swap! selected-index (length-wrapped
+                                      (fnil inc -1)
+                                      (count items)))
+         "k" #(swap! selected-index (length-wrapped
+                                      (fnil dec 1)
+                                      (count items)))
 
-            :escape (if (nil? @selected-index)
-                      (>evt [:navigate/back!])
-                      (reset! selected-index nil))
+         :escape #(if (nil? @selected-index)
+                    (>evt [:navigate/back!])
+                    (reset! selected-index nil))
 
-            :return (if-some [index @selected-index]
-                      (on-index-selected index)
+         :return #(if-some [index @selected-index]
+                    (on-index-selected index)
 
-                      (when on-whole-list-selected
-                        (on-whole-list-selected)))
-
-            nil)))
+                    (when on-whole-list-selected
+                      (on-whole-list-selected)))})
 
       [frame
        header

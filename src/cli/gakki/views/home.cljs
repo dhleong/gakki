@@ -6,14 +6,9 @@
             [gakki.components.carousels :refer [carousels]]
             [gakki.views.splash :as splash]))
 
-(defn- handle-input [k]
-  (case k
-    "r" (>evt [:providers/refresh!])
-
-    nil))
-
 (defn- initialized []
-  (use-input handle-input)
+  (use-input
+    {"r" #(>evt [:providers/refresh!])})
 
   [frame
    [header "Gakki Home"]

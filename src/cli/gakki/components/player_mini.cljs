@@ -6,14 +6,10 @@
 
 (defn- player-ui [playing volume playing?]
   (use-input
-    (fn [k]
-      (case k
-        "q" (>evt [:navigate! [:queue]])
-        " " (>evt [:player/play-pause])
-        "[" (>evt [:player/volume-inc -1])
-        "]" (>evt [:player/volume-inc 1])
-
-        nil)))
+    {"q" #(>evt [:navigate! [:queue]])
+     " " #(>evt [:player/play-pause])
+     "[" #(>evt [:player/volume-inc -1])
+     "]" #(>evt [:player/volume-inc 1])})
 
   [:> k/Box {:flex-grow 1
              :flex-direction :row

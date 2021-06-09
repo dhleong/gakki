@@ -8,7 +8,7 @@
       (f (first coll)) i
 
       :else (recur (inc i)
-                (next coll)))))
+                   (next coll)))))
 
 (defn nth-or-nil
   "Many collection accessors return nil if the item doesn't exist (eg `first`
@@ -18,3 +18,20 @@
   [coll n]
   (when (< n (count coll))
     (nth coll n)))
+
+(defn vec-dissoc [coll v]
+  (cond
+    ; Special optimizations for last...
+    (= v (peek coll))
+    (pop coll)
+
+    ; ... and first
+    (= v (first coll))
+    (subvec coll 1)
+
+    ; Expensive case
+    :else
+    (if-let [idx (index-of coll (partial = v))]
+      (into (subvec coll 0 idx)
+            (subvec coll (inc idx)))
+      coll)))

@@ -50,7 +50,7 @@
         rotate! (partial rotate-provider providers)
         accounts (<sub [:accounts])]
     (use-input
-      (fn [k]
+      (fn auth-input [k]
         (case k
           ; Switch "selected" account:
           "j" (swap! selected-atom rotate! 1)

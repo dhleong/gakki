@@ -3,6 +3,7 @@
             [gakki.theme :as theme]
             ["ink" :as k]
             [gakki.cli.dimen :refer [dimens-tracker]]
+            [gakki.cli.input :as input]
             [gakki.cli.nav :refer [global-nav]]
             [gakki.views.auth :as auth]
             [gakki.views.auth.ytm :as auth-ytm]
@@ -32,6 +33,7 @@
         page-form [:f> page-fn args]]
     [:<>
      [:f> dimens-tracker]
+     [:f> input/dispatcher]
 
      (when (seq accounts)
        [:f> global-nav])

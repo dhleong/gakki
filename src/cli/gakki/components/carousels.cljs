@@ -35,15 +35,12 @@
 
 (defn carousels []
   (use-input
-    (fn [k]
-      (case k
-        "j" (>evt [:carousel/navigate-categories :down])
-        "k" (>evt [:carousel/navigate-categories :up])
-        "h" (>evt [:carousel/navigate-row :left])
-        "l" (>evt [:carousel/navigate-row :right])
+    {"j" #(>evt [:carousel/navigate-categories :down])
+     "k" #(>evt [:carousel/navigate-categories :up])
+     "h" #(>evt [:carousel/navigate-row :left])
+     "l" #(>evt [:carousel/navigate-row :right])
 
-        :return (>evt [:carousel/open-selected])
-        nil)))
+     :return #(>evt [:carousel/open-selected])})
 
   (let [available-height (<sub [::subs/available-height])]
     [vertical-list

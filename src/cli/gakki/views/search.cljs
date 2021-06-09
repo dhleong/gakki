@@ -48,7 +48,7 @@
                         (assoc-in suggestions [idx :selected?] true)
                         suggestions)]
       (use-input
-        (fn [k]
+        (fn search-input [k]
           (case k
             :escape (cond
                       (some? @selected-index)

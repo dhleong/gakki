@@ -4,11 +4,8 @@
 
 (defn global-nav []
   (use-input
-    (fn [k]
-      (case k
-        "/" (>evt [:navigate! [:search]])
-
-        nil)))
+    {"/" #(>evt [:navigate! [:search]])
+     :escape #(>evt [:navigate/back!])})
 
   ; Nothing rendered here:
   nil)

@@ -65,23 +65,19 @@
                   (assoc-in items [selected-index :selected?] true)
                   items)]
       (use-input
-        (fn [k]
-          (case k
-            "j" (swap! state update :selected-index (length-wrapped
-                                                      (fnil inc -1)
-                                                      (count items)))
-            "k" (swap! state update :selected-index (length-wrapped
-                                                      (fnil dec 1)
-                                                      (count items)))
+        {"j" #(swap! state update :selected-index (length-wrapped
+                                                    (fnil inc -1)
+                                                    (count items)))
+         "k" #(swap! state update :selected-index (length-wrapped
+                                                    (fnil dec 1)
+                                                    (count items)))
 
-            :return (if-let [index (:selected-index @state)]
-                      (>evt [:player/play-items (:items album)
-                             index])
-                      (>evt [:player/play-items (:items album)]))
-            :escape (if @state
-                      (reset! state nil)
-                      (>evt [:navigate/back!]))
-            nil)))
+         :return #(if-let [index (:selected-index @state)]
+                    (>evt [:player/play-items (:items album) index])
+                    (>evt [:player/play-items (:items album)]))
+         :escape #(if @state
+                    (reset! state nil)
+                    (>evt [:navigate/back!]))})
 
       [frame
        [album-header album]
