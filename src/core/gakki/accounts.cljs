@@ -11,4 +11,4 @@
                                         (when-let [provider (get providers k)]
                                           (ap/search-suggest provider account input))))
                                 p/all)]
-    (apply interleave all-result-lists)))
+    (vec (apply interleave all-result-lists))))

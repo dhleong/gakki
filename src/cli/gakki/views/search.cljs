@@ -5,10 +5,14 @@
             [promesa.core :as p]
             ["react" :rename {useEffect use-effect
                               useState use-state}]
+            [reagent.core :as r]
             [gakki.accounts :as accounts]
+            [gakki.cli.format :as format]
             [gakki.cli.input :refer [use-input]]
             [gakki.components.frame :refer [frame]]
-            [gakki.components.header :refer [header]]))
+            [gakki.components.header :refer [header]]
+            [gakki.components.scrollable :refer [vertical-list]]
+            [gakki.util.functional :refer [length-wrapped]]))
 
 (defn- use-debounced
   ([f args] (use-debounced f 750 args))
@@ -28,19 +32,51 @@
 
     suggestions))
 
+(defn- suggestion-row [{:keys [selected?] hiccup :formatted}]
+  [:> k/Box {:flex-direction :row}
+   [:> k/Text {:inverse selected?}
+    (format/hiccup hiccup)]])
+
 (defn view []
   ; NOTE: use-state seems *slightly* faster here than using a ratom for typing
-  (let [[input set-input!] (use-state "")
-        suggestions (use-suggestions (<sub [:accounts]) input)]
-    (use-input
-      (fn [k]
-        (case k
-          :escape (if (empty? input)
-                    (>evt [:navigate/back!])
-                    (set-input! ""))
-          nil)))
+  (r/with-let [selected-index (r/atom nil)]
+    (let [[input set-input!] (use-state "")
+          suggestions (use-suggestions
+                        (<sub [:accounts])
+                        input)
+          suggestions (if-some [idx @selected-index]
+                        (assoc-in suggestions [idx :selected?] true)
+                        suggestions)]
+      (use-input
+        (fn [k]
+          (case k
+            :escape (cond
+                      (some? @selected-index)
+                      (reset! selected-index nil)
 
-    [frame
-     [header "Search"]
-     [:> TextInput {:value input :on-change set-input!}]
-     [:> k/Text (str (first suggestions))]]))
+                      (empty? input)
+                      (>evt [:navigate/back!])
+
+                      :else
+                      (set-input! ""))
+            :return (let [query (if-some [idx @selected-index]
+                                  (:query (nth suggestions idx))
+                                  input)]
+                      (println "TODO: search for " query))
+            :tab (swap! selected-index (length-wrapped
+                                         (fnil inc -1)
+                                         (count suggestions)))
+
+            ; else, go back to typing
+            (reset! selected-index nil))))
+
+      [frame
+       [header {:padding-bottom 1} "Search"]
+       [:> k/Box {:height 1}
+        [:> TextInput {:on-change set-input!
+                       :show-cursor (nil? @selected-index)
+                       :value input}]]
+       [vertical-list
+        :items suggestions
+        :key-fn :query
+        :render suggestion-row]])))

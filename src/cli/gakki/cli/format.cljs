@@ -22,7 +22,8 @@
     [:i & bold] (into-text-with {:italic true} bold)
     [:u & bold] (into-text-with {:underline true} bold)
 
-    (s :guard primitive?) [:> k/Text s]))
+    (s :guard primitive?) [:> k/Text s]
+    _ [:> k/Text (str "UNEXPECTED: " (js/JSON.stringify form) form)]))
 
 (defn hiccup [input]
   (cond
