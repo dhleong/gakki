@@ -87,6 +87,8 @@
             (:down :tab) (move-down)
             (:up :shift/tab) (move-up)
 
+            ; NOTE: these don't actually work, because ink-text-input consumes
+            ; them uninterruptably right now, but... maybe in the future?
             :ctrl/p (when @selected-index
                       (move-up))
             :ctrl/n (when @selected-index
