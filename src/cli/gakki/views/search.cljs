@@ -96,13 +96,12 @@
             (reset! selected-index nil))))
 
       [frame
-       [header {:padding-bottom 1} "Search"]
-       [:> k/Box {:height 1
-                  :border-bottom :round}
+       [header {:padding-bottom 1}
         [:> TextInput {:on-change set-input!
-                       :placeholder "Search for something"
+                       :placeholder "> Search for something..."
                        :show-cursor (nil? @selected-index)
                        :value input}]]
+
        (if (nil? suggestions)
          [:> Spinner {:type "dots"}]
 

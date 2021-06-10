@@ -68,7 +68,6 @@
     (fn input-dispatcher [input k]
       (let [the-key (->key input k)
             handler @handler]
-        (println input k " -> " the-key)
         (if (fn? handler)
           (handler the-key)
 
