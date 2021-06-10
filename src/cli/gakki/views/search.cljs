@@ -1,6 +1,7 @@
 (ns gakki.views.search
   (:require [archetype.util :refer [>evt <sub]]
             ["ink" :as k]
+            ["ink-spinner" :default Spinner]
             ["ink-text-input" :default TextInput]
             [promesa.core :as p]
             ["react" :rename {useEffect use-effect
@@ -23,10 +24,18 @@
      args)))
 
 (defn- use-suggestions [accounts query]
-  (let [[suggestions set-suggestions!] (use-state nil)]
+  (let [[suggestions set-suggestions!] (use-state nil)
+        [default-suggestions set-default!] (use-state nil)]
+
+    (use-effect
+      #(set-suggestions! (when (empty? query)
+                           default-suggestions))
+      #js [query])
 
     (use-debounced
       #(p/let [results (accounts/search-suggest accounts query)]
+         (when (empty? query)
+           (set-default! results))
          (set-suggestions! results))
       #js [accounts query])
 
@@ -65,9 +74,10 @@
                       (when-not (empty? query)
                         (>evt [:search/reload! query])
                         (>evt [:navigate! [:search/results query]])))
-            :tab (swap! selected-index (length-wrapped
-                                         (fnil inc -1)
-                                         (count suggestions)))
+            :tab (when (seq suggestions)
+                   (swap! selected-index (length-wrapped
+                                           (fnil inc -1)
+                                           (count suggestions))))
 
             ; else, go back to typing
             (reset! selected-index nil))))
@@ -80,7 +90,10 @@
                        :placeholder "Search for something"
                        :show-cursor (nil? @selected-index)
                        :value input}]]
-       [vertical-list
-        :items suggestions
-        :key-fn :query
-        :render suggestion-row]])))
+       (if (nil? suggestions)
+         [:> Spinner {:type "dots"}]
+
+         [vertical-list
+          :items suggestions
+          :key-fn :query
+          :render suggestion-row])])))
