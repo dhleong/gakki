@@ -1,21 +1,9 @@
 (ns gakki.cli.input
-  (:require [applied-science.js-interop :as j]
-            ["ink" :as k]
+  (:require ["ink" :as k]
             ["react" :rename {useEffect use-effect}]
-            [gakki.util.coll :refer [vec-dissoc]]
-            [reagent.impl.component :as reagent-impl]))
-
-(def ^:private keyword-dispatchables
-  [:upArrow :downArrow :leftArrow :rightArrow
-   :pageDown :pageUp :return :escape :tab :backspace :delete])
-
-(def ^:private keyword-renames
-  {:upArrow :up
-   :downArrow :down
-   :leftArrow :left
-   :rightArrow :right
-   :pageUp :page-up
-   :pageDown :page-down})
+            [reagent.impl.component :as reagent-impl]
+            [gakki.cli.keys :refer [->key]]
+            [gakki.util.coll :refer [vec-dissoc]]))
 
 (defonce ^:private active-stack (atom []))
 (defonce ^:private handler (atom nil))
@@ -78,11 +66,9 @@
 (defn dispatcher []
   (k/useInput
     (fn input-dispatcher [input k]
-      (let [kw (some #(when (j/get k %) %) keyword-dispatchables)
-            kw (get keyword-renames kw kw)
-            the-key (or kw input)
-
+      (let [the-key (->key input k)
             handler @handler]
+        (println input k " -> " the-key)
         (if (fn? handler)
           (handler the-key)
 

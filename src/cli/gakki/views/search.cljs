@@ -10,6 +10,7 @@
             [gakki.accounts :as accounts]
             [gakki.cli.format :as format]
             [gakki.cli.input :refer [use-input]]
+            [gakki.cli.subs :as subs]
             [gakki.components.frame :refer [frame]]
             [gakki.components.header :refer [header]]
             [gakki.components.scrollable :refer [vertical-list]]
@@ -55,7 +56,15 @@
                         input)
           suggestions (if-some [idx @selected-index]
                         (assoc-in suggestions [idx :selected?] true)
-                        suggestions)]
+                        suggestions)
+          move-down #(when (seq suggestions)
+                       (swap! selected-index (length-wrapped
+                                               (fnil inc -1)
+                                               (count suggestions))))
+          move-up #(when (seq suggestions)
+                     (swap! selected-index (length-wrapped
+                                             (fnil dec (count suggestions))
+                                             (count suggestions))))]
       (use-input
         (fn search-input [k]
           (case k
@@ -74,10 +83,14 @@
                       (when-not (empty? query)
                         (>evt [:search/reload! query])
                         (>evt [:navigate! [:search/results query]])))
-            :tab (when (seq suggestions)
-                   (swap! selected-index (length-wrapped
-                                           (fnil inc -1)
-                                           (count suggestions))))
+
+            (:down :tab) (move-down)
+            (:up :shift/tab) (move-up)
+
+            :ctrl/p (when @selected-index
+                      (move-up))
+            :ctrl/n (when @selected-index
+                      (move-down))
 
             ; else, go back to typing
             (reset! selected-index nil))))
@@ -93,7 +106,15 @@
        (if (nil? suggestions)
          [:> Spinner {:type "dots"}]
 
-         [vertical-list
-          :items suggestions
-          :key-fn :query
-          :render suggestion-row])])))
+         (let [available-height (<sub [::subs/available-height])
+               rendered-height (when available-height
+                                 (min
+                                   (count suggestions)
+                                   available-height))]
+           [vertical-list
+            :items suggestions
+            :follow-selected? true
+            :height rendered-height
+            :per-page (or rendered-height 5)
+            :key-fn :query
+            :render suggestion-row]))])))
