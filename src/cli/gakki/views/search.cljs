@@ -16,7 +16,7 @@
             [gakki.util.functional :refer [length-wrapped]]))
 
 (defn- use-debounced
-  ([f args] (use-debounced f 750 args))
+  ([f args] (use-debounced f 350 args))
   ([f debounce-delay args]
    (use-effect
      #(let [timeout (js/setTimeout f debounce-delay)]
