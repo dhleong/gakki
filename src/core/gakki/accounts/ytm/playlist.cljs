@@ -1,4 +1,5 @@
 (ns gakki.accounts.ytm.playlist
+  (:refer-clojure :exclude [load])
   (:require [applied-science.js-interop :as j]
             [clojure.string :as str]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]

@@ -1,4 +1,5 @@
 (ns gakki.accounts.ytm.search-suggest
+  (:refer-clojure :exclude [load])
   (:require [applied-science.js-interop :as j]
             [promesa.core :as p]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
@@ -40,5 +41,5 @@
         (cljs.pprint/pprint result))
       (p/catch #(do (cljs.pprint/pprint (ex-data %))
                     (println (.-stack %)))))
-  
+
   )
