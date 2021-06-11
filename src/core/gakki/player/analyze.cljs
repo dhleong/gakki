@@ -8,6 +8,44 @@
 (def duration-regex #"Duration: (\d+):(\d+):(\d+).(\d+)")
 (def sample-rate-regex #"(\d+) Hz")
 (def stereo-mono-regex #"(stereo|mono)")
+(def container-regex #"Input #0, ([^ ]+), from")
+(def codec-specific #"Audio: .*?\(([a-z0-9]+) /")
+(def codec-simple #"Audio: ([^,]+),")
+
+(def ^:private accepted-containers #{"webm" "mp4"})
+
+(defn- parse-container [output]
+  (let [[_ formats] (re-find container-regex output)]
+    (some accepted-containers (str/split formats #","))))
+
+(defn- parse-codec [output]
+  (or (when-let [[_ specific] (re-find codec-specific output)]
+        specific)
+      (when-let [[_ simple] (re-find codec-simple output)]
+        simple)))
+
+(defn- parse-ffmpeg [output]
+  (let [[_ h m s fraction] (re-find duration-regex output)
+        [_ sample-rate] (re-find sample-rate-regex output)
+        [_ stereo-mono] (re-find stereo-mono-regex output)
+        codec (parse-codec output)]
+    (when sample-rate
+      {:duration (+ (* (->int h) 3600 1000)
+                    (* (->int m) 60000)
+                    (* (->int s) 1000)
+                    (* (/ (->int fraction) 100.0) 1000))
+       :sample-rate (->int sample-rate)
+       :channels (if (= "stereo" stereo-mono)
+                   2
+                   1)
+
+       :codec codec
+       :container (parse-container output)
+
+       ; TODO extract this:
+       :frame-size 960}
+
+      )))
 
 (defn analyze-audio [path]
   (p/create
@@ -16,30 +54,13 @@
                  (str/join " "))
 
             #js {:windowsHide true}
-            (fn calback [err _stdout stderr]
-              (let [[_ h m s fraction] (re-find duration-regex stderr)
-                    [_ sample-rate] (re-find sample-rate-regex stderr)
-                    [_ stereo-mono] (re-find stereo-mono-regex stderr)]
-                (if sample-rate
-                  (p-resolve
-                    {:duration (+ (* (->int h) 3600 1000)
-                                  (* (->int m) 60000)
-                                  (* (->int s) 1000)
-                                  (* (/ (->int fraction) 100.0) 1000))
-                     :sample-rate (->int sample-rate)
-                     :channels (if (= "stereo" stereo-mono)
-                                 2
-                                 1)
-
-                     ; TODO extract these:
-                     :codec "opus"
-                     :container "webm"
-                     :frame-size 960
-                     })
-
-                  (p-reject (or err
-                                (ex-info "Failed to extra audio info"
-                                         {:out stderr}))))))))))
+            (fn callback [err _stdout stderr]
+              (if-let [parsed (parse-ffmpeg stderr)]
+                (p-resolve parsed)
+                (p-reject (or err
+                              (ex-info "Failed to extra audio info"
+                                       {:out stderr}))))
+              )))))
 
 (defn audio-caching
   "This is a convenient, in-memory caching wrapper around `analyze-audio` that

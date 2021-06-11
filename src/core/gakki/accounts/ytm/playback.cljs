@@ -26,6 +26,7 @@
       {:config {:container container
                 :codec codec
 
+                :frame-size 960
                 :duration (->int (j/get json :approxDurationMs))
                 :loudness-db (->float (j/get json :loudnessDb))
                 :average-bitrate (->int (j/get json :averageBitrate))
