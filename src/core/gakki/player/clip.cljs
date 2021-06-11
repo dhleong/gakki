@@ -1,6 +1,7 @@
 (ns gakki.player.clip
   (:require [applied-science.js-interop :as j]
             ["audify" :refer [RtAudio RtAudioFormat]]
+            [gakki.const :as const]
             ["stream" :refer [Readable Writable]]
             [gakki.util.logging :as log]))
 
@@ -75,7 +76,7 @@
                      nil ; No input stream
                      (.-RTAUDIO_SINT16 RtAudioFormat)
                      sample-rate
-                     (or frame-size 960)
+                     (or frame-size const/default-frame-size)
                      "gakki" ; stream name
                      nil ; input callback
                      nil ; output callback

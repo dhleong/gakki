@@ -1,5 +1,6 @@
 (ns gakki.player.decode
   (:require [applied-science.js-interop :as j]
+            [gakki.const :as const]
             ["prism-media" :as prism]
             [gakki.player.stream.chunking :as chunking]
             [gakki.util.logging :as log]))
@@ -29,7 +30,7 @@
                   "opus" (prism/opus.Decoder.
                            #js {:rate (:sample-rate config)
                                 :channels (:channels config)
-                                :frameSize 960})
+                                :frameSize const/default-frame-size})
 
                   (do
                     (log/debug "No optimized decoder for " codec
@@ -50,9 +51,9 @@
 
     ; Ensure that the decoded data is chunked appropriately to match the
     ; configured :frame-size (important to make RtAudio/Audify happy)
-    (if (:frame-size config)
+    (if-let [frame-size (:frame-size config)]
       (-> decoded
           (chunking/nbytes (* (:channels config)
-                              2 ; 2 bytes for signed 16-bit format
-                              (:frame-size config))))
+                              const/bytes-per-sample
+                              frame-size)))
       decoded)))

@@ -6,6 +6,7 @@
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
                                                generateBody generate-body}]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
+            [gakki.const :as const]
             [gakki.util.convert :refer [->float ->int]]))
 
 
@@ -26,7 +27,7 @@
       {:config {:container container
                 :codec codec
 
-                :frame-size 960
+                :frame-size const/default-frame-size
                 :duration (->int (j/get json :approxDurationMs))
                 :loudness-db (->float (j/get json :loudnessDb))
                 :average-bitrate (->int (j/get json :averageBitrate))

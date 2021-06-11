@@ -3,6 +3,7 @@
             [clojure.string :as str]
             ["ffmpeg-static" :as ffmpeg-path]
             [promesa.core :as p]
+            [gakki.const :as const]
             [gakki.util.convert :refer [->int]]))
 
 (def duration-regex #"Duration: (\d+):(\d+):(\d+).(\d+)")
@@ -42,10 +43,7 @@
        :codec codec
        :container (parse-container output)
 
-       ; TODO extract this:
-       :frame-size 960}
-
-      )))
+       :frame-size const/default-frame-size})))
 
 (defn analyze-audio [path]
   (p/create
