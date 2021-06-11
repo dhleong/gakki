@@ -5,11 +5,13 @@
             ["ytmusic" :rename {YTMUSIC YTMusic}]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
             [gakki.accounts.core :refer [IAccountProvider]]
-            [gakki.accounts.ytm.creds :refer [account->cookies]]
+            [gakki.accounts.ytm.creds :refer [account->client]]
             [gakki.accounts.ytm.consts :refer [ytm-kinds]]
             [gakki.accounts.ytm.album :as album]
             [gakki.accounts.ytm.artist :as artist]
             [gakki.accounts.ytm.playlist :as playlist]
+            [gakki.accounts.ytm.search :as search]
+            [gakki.accounts.ytm.search-suggest :as search-suggest]
             [gakki.player.ytm :refer [youtube-id->playable]]
             [gakki.util.logging :as log]))
 
@@ -43,10 +45,6 @@
                (get ytm-kinds ytm-kind (keyword "unknown"
                                                 ytm-kind))))})
 
-
-(defn- account->client [account]
-  (p/let [cookies (account->cookies account)]
-    (YTMusic. cookies)))
 
 (defn- do-fetch-home [account]
   (log/with-timing-promise :ytm/parse-and-fetch-home
@@ -100,7 +98,14 @@
 
   (resolve-playlist [_ account playlist-id]
     (do-resolve-playlist account playlist-id))
-  )
+
+  (search [_ account query]
+    (p/let [^YTMusic ytm (account->client account)]
+      (search/perform ytm query)))
+
+  (search-suggest [_ account partial-query]
+    (p/let [^YTMusic ytm (account->client account)]
+      (search-suggest/load ytm partial-query))))
 
 #_:clj-kondo/ignore
 (comment

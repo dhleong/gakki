@@ -41,6 +41,7 @@
     "highlight.js": "9.18.1",
     "ink": "^3.0.8",
     "ink-spinner": "^4.0.2",
+    "ink-text-input": "^4.0.1",
     "ink-use-stdout-dimensions": "^1.0.5",
     "keytar": "^7.0.0",
     "node-fetch": "^2.6.1",

@@ -3,6 +3,7 @@
             [archetype.util :refer [>evt]]
             [promesa.core :as p]
             ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
+            ["ytmusic" :rename {YTMUSIC YTMusic}]
             [gakki.util.logging :as log]))
 
 (defonce ^:private created-creds (atom nil))
@@ -33,3 +34,7 @@
       (log/timing :ytm/cookie-refresh delta))
 
     (j/get cookies-obj :cookies)))
+
+(defn account->client [account]
+  (p/let [cookies (account->cookies account)]
+    (YTMusic. cookies)))

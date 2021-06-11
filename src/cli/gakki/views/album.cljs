@@ -4,6 +4,7 @@
             ["ink" :as k]
             [reagent.core :as r]
             [gakki.cli.input :refer [use-input]]
+            [gakki.components.frame :refer [frame]]
             [gakki.components.header :refer [header]]
             [gakki.components.limited-text :refer [limited-text]]
             [gakki.components.scrollable :refer [vertical-list]]
@@ -64,28 +65,21 @@
                   (assoc-in items [selected-index :selected?] true)
                   items)]
       (use-input
-        (fn [k]
-          (case k
-            "j" (swap! state update :selected-index (length-wrapped
-                                                      (fnil inc -1)
-                                                      (count items)))
-            "k" (swap! state update :selected-index (length-wrapped
-                                                      (fnil dec 1)
-                                                      (count items)))
+        {"j" #(swap! state update :selected-index (length-wrapped
+                                                    (fnil inc -1)
+                                                    (count items)))
+         "k" #(swap! state update :selected-index (length-wrapped
+                                                    (fnil dec 1)
+                                                    (count items)))
 
-            :return (if-let [index (:selected-index @state)]
-                      (>evt [:player/play-items (:items album)
-                             index])
-                      (>evt [:player/play-items (:items album)]))
-            :escape (if @state
-                      (reset! state nil)
-                      (>evt [:navigate/back!]))
-            nil)))
+         :return #(if-let [index (:selected-index @state)]
+                    (>evt [:player/play-items (:items album) index])
+                    (>evt [:player/play-items (:items album)]))
+         :escape #(if @state
+                    (reset! state nil)
+                    (>evt [:navigate/back!]))})
 
-      [:> k/Box {:flex-direction :column
-                 :border-color theme/text-color-on-background
-                 :border-style :round
-                 :padding-x 1}
+      [frame
        [album-header album]
 
        [description album]

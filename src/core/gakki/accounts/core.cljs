@@ -30,4 +30,10 @@
 
   (resolve-playlist
     [this account playlist-id]
-    "Return a promise..."))
+    "Return a promise...")
+
+  (search
+    [this account query])
+
+  (search-suggest
+    [this account partial-query]))
