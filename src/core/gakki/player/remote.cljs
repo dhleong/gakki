@@ -1,6 +1,7 @@
 (ns gakki.player.remote
   "Remote-control for the player subprocess"
-  (:require [archetype.util :refer [>evt]]
+  (:require [applied-science.js-interop :as j]
+            [archetype.util :refer [>evt]]
             ["child_process" :refer [fork]]
             [clojure.string :as str]
             [cognitect.transit :as t]
@@ -10,6 +11,14 @@
 (def ^:private writer (t/writer :json))
 (def ^:private reader (t/reader :json))
 (def ^:private debug-io? false)
+
+(def ^:private fork-stdio
+  {:stdin "ignore" ; always
+   :stdout (if (and debug-io? const/debug?)
+             "pipe"
+             "ignore")
+   :stderr "pipe" ; always print errors
+   })
 
 (defonce state (atom nil))
 
@@ -23,9 +32,10 @@
     existing
 
     (let [proc (fork "resources/player.js"
-                     #js {:stdio (if (and debug-io? const/debug?)
-                                   "pipe"
-                                   "ignore")})
+                     (j/lit {:stdio [(:stdin fork-stdio)
+                                     (:stdout fork-stdio)
+                                     (:stderr fork-stdio)
+                                     "ipc"]}))
           clear-state! (fn [e]
                          (println "Player Exit:" e)
                          (reset! state nil))]
@@ -33,10 +43,11 @@
       (when debug-io?
         (.on (.-stdout proc) "data"
              (fn [stdout]
-               (log/debug "[player] " (str/trim (.toString stdout)))))
-        (.on (.-stderr proc) "data"
-             (fn [stderr]
-               (log/debug "[player:err] " (str/trim (.toString stderr))))))
+               (log/debug "[player] " (str/trim (.toString stdout))))))
+
+      (.on (.-stderr proc) "data"
+           (fn [stderr]
+             (log/debug "[player:err] " (str/trim (.toString stderr)))))
 
       (doto proc
         (.on "exit" clear-state!)
