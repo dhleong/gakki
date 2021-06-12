@@ -16,7 +16,6 @@
     :codec \"opus\"}     ; eg
    "
   [{:keys [container codec] :as config} ^js stream]
-  (js/console.error "config = " (str config))
   (let [demuxer (case container
                   "ogg" (prism/opus.OggDemuxer.)
                   "webm" (case codec
