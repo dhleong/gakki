@@ -14,16 +14,9 @@
 
 (def ^:private re-mime-type #"audio/([^;]+); codecs=\"([a-z0-9]+)")
 
-(defn- unpack-url [_parts]
-  ; TODO: :signatureCipher is a querystring that contains :url and some other
-  ; things. We *may* be able to extra a usable download URL from it if we can
-  ; figure out what YTM is doing, and then remove the ytdl-core dependency
-  nil)
-
 (defn parse-audio-format [json]
   (when-let [[_ container codec] (re-find re-mime-type (j/get json :mimeType))]
-    (when-let [url (or (j/get json :url)
-                       (unpack-url (j/get json :signatureCipher)))]
+    (when-let [url (j/get json :url)]
       {:config {:container container
                 :codec codec
 
@@ -82,9 +75,11 @@
   (let [cookies (when client
                   (.-cookie client))]
     ; NOTE: Currently we request from both ytdl-core and ytm directly
-    ; *in parallel* for expediency. This is because we haven't yet figured
-    ; out how to extract an URL from YTM responses that don't explicitly
-    ; include an URL (which we only seem to get from uploaded tracks).
+    ; *in parallel* for expediency. It may be possible extract an URL from YTM
+    ; responses that don't explicitly include an URL (which we only seem to get
+    ; from uploaded tracks) but it's quite tricky. We would probably have to
+    ; reuse some parts of ytdl-core, but would need to submit a PR to refactor
+    ; some of ytdl-core to make it usable where we need it....
     (p/plet [from-ytm (load-ytm cookies id)
              from-ytdl (-> (load-ytdl-core cookies id)
                            (p/catch (constantly nil)))]
