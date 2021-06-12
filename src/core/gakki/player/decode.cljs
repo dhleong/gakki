@@ -1,5 +1,9 @@
 (ns gakki.player.decode
-  (:require ["prism-media" :as prism]))
+  (:require [applied-science.js-interop :as j]
+            [gakki.const :as const]
+            ["prism-media" :as prism]
+            [gakki.player.stream.chunking :as chunking]
+            [gakki.util.logging :as log]))
 
 (defn decode-stream
   "Given a config map and an encoded audio stream, return a stream that decodes
@@ -11,22 +15,44 @@
     :container \"webm\"  ; eg
     :codec \"opus\"}     ; eg
    "
-  [config ^js stream]
-  (let [demuxer (case (:container config)
+  [{:keys [container codec] :as config} ^js stream]
+  (let [demuxer (case container
                   "ogg" (prism/opus.OggDemuxer.)
-                  "webm" (case (:codec config)
+                  "webm" (case codec
                            "opus" (prism/opus.WebmDemuxer.)
                            "vorbis" (prism/vorbis.WebmDemuxer.))
-                  nil nil)
 
-        ; TODO we ought to be able to fall back to prism.Ffmpeg
-        decoder (case (:codec config)
+                  ; Assume no specific demuxer necessary:
+                  nil)
+
+        decoder (case codec
                   "opus" (prism/opus.Decoder.
                            #js {:rate (:sample-rate config)
                                 :channels (:channels config)
-                                :frameSize 960}))
+                                :frameSize const/default-frame-size})
+
+                  (do
+                    (log/debug "No optimized decoder for " codec
+                               "; falling back to ffmpeg")
+                    (-> (prism/FFmpeg.
+                          (j/lit
+                            {:args [:-loglevel "0"
+                                    :-ac (:channels config)
+                                    :-i "-"
+                                    :-f "s16le"
+                                    :-acodec "pcm_s16le"
+                                    :-ac (:channels config)]})))))
 
         demuxed (if demuxer
                   (.pipe stream demuxer)
-                  stream)]
-    (.pipe demuxed decoder)))
+                  stream)
+        decoded (.pipe demuxed decoder)]
+
+    ; Ensure that the decoded data is chunked appropriately to match the
+    ; configured :frame-size (important to make RtAudio/Audify happy)
+    (if-let [frame-size (:frame-size config)]
+      (-> decoded
+          (chunking/nbytes (* (:channels config)
+                              const/bytes-per-sample
+                              frame-size)))
+      decoded)))
