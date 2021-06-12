@@ -39,4 +39,8 @@
   "Create an IPCMSource instance that delegates to whatever IPCMSource
    the provided promise resolves to."
   [the-promise]
+  ; NOTE: Here we ensure that *something* is consuming the exception
+  ; immediately, so we don't crash the process if it takes a bit for the normal
+  ; handler to attach for whatever reason.
+  (p/catch the-promise (constantly nil))
   (->PromisedPCMSource the-promise (atom nil)))
