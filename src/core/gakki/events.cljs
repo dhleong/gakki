@@ -370,16 +370,16 @@
 (defmulti ^:private handle-player-event (fn [_ {what :type}] what))
 
 (defmethod handle-player-event :playable-end [_ _]
-  (log/debug "playable end")
+  ((log/of :player/events) "playable end")
   {:dispatch [:player/next-in-queue]})
 
 (defmethod handle-player-event :playable-ending [db _]
-  (log/debug "playable ending")
+  ((log/of :player/events) "playable ending")
   (let [{player-state :player accounts :accounts} db
         queue (:queue player-state)
         next-index (inc (:index queue))]
     (when-let [next-item (nth-or-nil (:items queue) next-index)]
-      (log/debug "... prepare " next-item)
+      ((log/of :player/events) "... prepare " next-item)
       {:player/prepare! {:item next-item
                          :account (get accounts (:provider next-item))}})))
 
@@ -390,7 +390,6 @@
   :player/event
   [trim-v]
   (fn [{:keys [db]} [event]]
-    (println "player event: " event)
     (handle-player-event db event)))
 
 
