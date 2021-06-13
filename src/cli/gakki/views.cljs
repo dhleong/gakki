@@ -9,6 +9,7 @@
             [gakki.views.auth.ytm :as auth-ytm]
             [gakki.views.album :as album]
             [gakki.views.artist :as artist]
+            [gakki.views.help :as help]
             [gakki.views.home :as home]
             [gakki.views.playlist :as playlist]
             [gakki.views.queue :as queue]
@@ -22,6 +23,7 @@
    :auth/ytm #'auth-ytm/view
    :album #'album/view
    :artist #'artist/view
+   :help #'help/view
    :playlist #'playlist/view
    :queue #'queue/view
    :search #'search/view

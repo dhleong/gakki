@@ -15,6 +15,9 @@
 (def ^:private preferred-max-queue-height 20)
 (def ^:private max-track-length-perc 0.4)
 
+(def ^:private help
+  {"j" "Move cursor down vertically"})
+
 (defn queue-item [{:keys [selected? current?] :as track}]
   ; subtract an extra 2 for the indicator space
   ; and 8 for the separators (the arrow is wider than it looks)
@@ -98,7 +101,9 @@
                     (on-index-selected index)
 
                     (when on-whole-list-selected
-                      (on-whole-list-selected)))})
+                      (on-whole-list-selected)))
+
+         :help (assoc help :header header)})
 
       [frame
        header

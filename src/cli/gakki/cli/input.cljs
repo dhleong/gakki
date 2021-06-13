@@ -1,10 +1,11 @@
 (ns gakki.cli.input
-  (:require [gakki.util.logging :as log]
+  (:require [archetype.util :refer [>evt]]
             ["ink" :as k]
             ["react" :rename {useEffect use-effect}]
             [reagent.impl.component :as reagent-impl]
             [gakki.cli.keys :refer [->key]]
-            [gakki.util.coll :refer [vec-dissoc]]))
+            [gakki.util.coll :refer [vec-dissoc]]
+            [gakki.util.logging :as log]))
 
 (defonce ^:private active-stack (atom []))
 (defonce ^:private handler (atom nil))
@@ -72,7 +73,7 @@
         (if (fn? handler)
           (handler the-key)
 
-          (when-let [[owner f] (get handler the-key)]
+          (if-let [[owner f] (get handler the-key)]
             (cond
               (and (fn? f) (= 0 (.-length f)))
               (f)
@@ -80,7 +81,11 @@
               :else
               (log/error "Handler to " the-key " was not a zero-arity fn."
                          "\n  Value: " f
-                         "\n  Registered: " owner)))))))
+                         "\n  Registered: " owner))
+
+            (when (and (= "?" the-key)
+                       (:help handler))
+              (>evt [:navigate! [:help (second (:help handler))]])))))))
 
   ; This is a functional component that doesn't render anything
   nil)

@@ -6,9 +6,13 @@
             [gakki.components.carousels :refer [carousels]]
             [gakki.views.splash :as splash]))
 
+(def ^:private help
+  {"r" "Reload home screen items"})
+
 (defn- initialized []
   (use-input
-    {"r" #(>evt [:providers/refresh!])})
+    {"r" #(>evt [:providers/refresh!])
+     :help (assoc help :header [header "Gakki Home"])})
 
   [frame
    [header "Gakki Home"]
