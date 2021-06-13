@@ -4,12 +4,17 @@
             [gakki.cli.input :refer [use-input]]
             [gakki.theme :as theme]))
 
+(def ^:private help
+  {"q" "Show the queue"
+   :header "Player UI"})
+
 (defn- player-ui [playing volume playing?]
   (use-input
     {"q" #(>evt [:navigate! [:queue]])
      " " #(>evt [:player/play-pause])
      "[" #(>evt [:player/volume-inc -1])
-     "]" #(>evt [:player/volume-inc 1])})
+     "]" #(>evt [:player/volume-inc 1])
+     :help help})
 
   [:> k/Box {:flex-grow 1
              :flex-direction :row

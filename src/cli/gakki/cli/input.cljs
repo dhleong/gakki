@@ -24,7 +24,12 @@
                 :else
                 (reduce-kv
                   (fn [m k v]
-                    (assoc m k [name v]))
+                    (if (and (= :help k) (:help m))
+                      ; Special case: merge :help maps
+                      (update-in m [k 1] merge v)
+
+                      ; Normal case:
+                      (assoc m k [name v])))
                   h
                   owned)))
             {}
