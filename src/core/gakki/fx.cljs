@@ -6,7 +6,7 @@
             [gakki.accounts :as accounts :refer [providers]]
             [gakki.integrations :as integrations]
             [gakki.native :as native]
-            [gakki.player.remote :as remote]
+            [gakki.player :as player]
             [gakki.util.logging :as log]))
 
 
@@ -165,19 +165,11 @@
 
 ; ======= Player ==========================================
 
-(reg-fx
-  :player/play!
-  (fn [{:keys [item account config]}]
-    (remote/play! (:provider item) account item config)))
-
-(reg-fx
-  :player/prepare!
-  (fn [{:keys [item account]}]
-    (remote/prepare! (:provider item) account item)))
-
-(reg-fx :player/unpause!  remote/unpause!)
-(reg-fx :player/pause!  remote/pause!)
-(reg-fx :player/set-volume!  remote/set-volume!)
+(reg-fx :player/pause! player/pause!)
+(reg-fx :player/play! player/play!)
+(reg-fx :player/prepare! player/prepare!)
+(reg-fx :player/set-volume! player/set-volume!)
+(reg-fx :player/unpause! player/unpause!)
 
 
 ; ======= Integrations ====================================

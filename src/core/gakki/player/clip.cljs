@@ -1,8 +1,8 @@
 (ns gakki.player.clip
   (:require [applied-science.js-interop :as j]
             ["audify" :refer [RtAudio RtAudioFormat]]
-            [gakki.const :as const]
             ["stream" :refer [Readable Writable]]
+            [gakki.const :as const]
             [gakki.util.logging :as log]))
 
 (defn- ->writable-stream [^RtAudio speaker]
@@ -64,8 +64,7 @@
                                              start-time-seconds]
                                       :or {start-time-seconds 0}}]
   (let [on-error (fn on-error [kind e]
-                   ; TODO log?
-                   (log/debug "PCM Stream Error [" kind "] " e))
+                   ((log/of :player/pcm) "PCM Stream Error [" kind "] " e))
         instance (RtAudio.)
         device-id (.getDefaultOutputDevice instance)
         instance (doto instance

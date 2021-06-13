@@ -20,14 +20,16 @@
 
 (declare ^:private pipe-temp-into)
 
+(def ^:private log (log/of :player/caching))
+
 (defn- restart-pipe [id source-state-atom, ^Writable destination-stream
                      & {:keys [path new-offset]}]
   (let [{:keys [bytes-written disk]} @source-state-atom
         completed? (some? disk)]
     (if (or completed? (> bytes-written new-offset))
       (do
-        (log/debug "Partial pipe #" id " has more data (completed? " completed?
-                   "; " bytes-written " > " new-offset "); resuming!")
+        (log "Partial pipe #" id " has more data (completed? " completed?
+             "; " bytes-written " > " new-offset "); resuming!")
 
         ; remove the old watch; we're about to create a new one
         (remove-watch source-state-atom [id :still-current-partial?])
@@ -44,7 +46,7 @@
 
       ; wait patiently for more bytes to be written to the file
       (do
-        (log/debug "Partial pipe #" id " waiting for more data...")
+        (log "Partial pipe #" id " waiting for more data...")
         (add-watch source-state-atom [id :more-bytes-available?]
                    (fn [_k _r _old {:keys [bytes-written] completed? :disk}]
                      (when (or completed? (> bytes-written new-offset))
@@ -64,9 +66,9 @@
                           identity ; nothing to do; we're done downloading!
 
                           #(let [new-offset (+ offset @bytes-read)]
-                             (log/debug "Partial pipe #" id
-                                        " reached end of stream @" new-offset
-                                        " ...")
+                             (log "Partial pipe #" id
+                                  " reached end of stream @" new-offset
+                                  " ...")
                              (restart-pipe
                                id source-state-atom destination-stream
                                :path path
@@ -77,8 +79,8 @@
                        (j/fn [^:js {:keys [code] :as e}]
                          (if (and (= "ENOENT" code)
                                   (not end?))
-                           (do (log/debug "Partial pipe #" id
-                                          "hit ENOENT; the download may have completed?")
+                           (do (log "Partial pipe #" id
+                                    "hit ENOENT; the download may have completed?")
                                (restart-pipe
                                  id source-state-atom destination-stream
                                  :path path
@@ -101,7 +103,7 @@
                    ; The download has finished; we should switch to it:
                    (:disk new-state)
                    (let [new-offset (+ offset @bytes-read)]
-                     (log/debug "Partial pipe #" id " is switching to the complete file")
+                     (log "Partial pipe #" id " is switching to the complete file")
                      (cleanup)
                      (restart-pipe
                        id source-state-atom destination-stream
@@ -111,11 +113,11 @@
                    ; We're no longer the current partial stream:
                    (not= id (:current-partial-stream new-state))
                    (do
-                     (log/debug "Partial pipe #" id " is no longer current; cleaning up")
+                     (log "Partial pipe #" id " is no longer current; cleaning up")
                      (cleanup)
                      (remove-watch source-state-atom [id :more-bytes-available?])))))
 
-    (log/debug "Partial pipe #" id " writing @ " offset "; end? " end?)
+    (log "Partial pipe #" id " writing @ " offset "; end? " end?)
     (doto input-stream
       (.once "end" handle-file-end)
       (.once "error" handle-error)

@@ -11,7 +11,7 @@
   (-> pcm-source
       (pcm/prepare)
       (p/catch (fn [e]
-                 (log/debug "Error preparing " pcm-source ": " e)
+                 ((log/of :track) "Error preparing " pcm-source ": " e)
                  (.emit events "end"))))
   (events/wrap
     (track/create pcm-source)
@@ -28,7 +28,7 @@
 
   (swap! test-track (fn [old]
                  (when old
-                   (log/debug "Closing old " old)
+                   ((log/logger :track) "Closing old " old)
                    (track/close old))
 
                  (doto

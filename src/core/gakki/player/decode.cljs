@@ -32,8 +32,9 @@
                                 :frameSize const/default-frame-size})
 
                   (do
-                    (log/debug "No optimized decoder for " codec
-                               "; falling back to ffmpeg")
+                    ((log/of :player/decode)
+                     "No optimized decoder for " codec
+                     "; falling back to ffmpeg")
                     (-> (prism/FFmpeg.
                           (j/lit
                             {:args [:-loglevel "0"

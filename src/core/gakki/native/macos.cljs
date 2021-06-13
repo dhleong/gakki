@@ -48,7 +48,7 @@
 (defn- handle-message [{kind :type :as message}]
   (case kind
     :ready nil ; ignore
-    :log (log/debug "[log:native]" (:message message))
+    :log ((log/of :native) (:message message))
     :media (handle-media-event message)
 
     :auth-result (swap! requests update :auth

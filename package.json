@@ -7,7 +7,7 @@
     "gakki": "resources/cli.js"
   },
   "scripts": {
-    "dev": "shadow-cljs start && shadow-cljs watch :cli :player",
+    "dev": "shadow-cljs start && shadow-cljs watch :cli",
     "cli": "node resources/cli.js",
     "start": "shadow-cljs start",
     "stop": "shadow-cljs stop",
