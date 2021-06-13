@@ -1,24 +1,59 @@
 (ns gakki.util.logging
-  (:require [clojure.string :as str]
+  (:require ["chalk" :as chalk]
+            [clojure.string :as str]
             [promesa.core :as p]
             [re-frame.core :as re-frame]
             [gakki.const :as const]))
 
-(def ^:private print-timings? false)
+(declare compile-config)
 
-(defn debug [& args]
-  (when const/debug?
-    (apply println args)))
+(def ^:private config-enables?
+  (delay (compile-config (or js/process.env.DEBUG ""))))
+
+(defn enabled? [tag]
+  (or (@config-enables? tag)
+
+      ; The core (debug) method is always enabled for debug builds
+      (and const/debug? (= "gakki" tag))))
+
+; ======= Log factories ===================================
+
+(defn- colorizer [^String tag]
+  (let [h (mod (hash tag) 360)
+        s 40
+        v 100]
+    (chalk/hsv h s v)))
+
+(def of
+  (memoize
+    (fn log-creator [tag]
+      (let [string-tag (if (string? tag)
+                         tag
+                         (str/replace (str "gakki" tag) #"[./]" ":"))
+            colorized-tag ((colorizer string-tag) string-tag)]
+        (fn log [& args]
+          (when (enabled? string-tag)
+            (apply println colorized-tag args)))))))
+
+(def debug (of nil))
+(def player (of :player))
+
+
+; ======= Timing ==========================================
+
+(def ^:private colorize-timing (colorizer ":timing"))
 
 (defn timing [event ms]
-  (when (and const/debug? print-timings?)
-    (println "[ timing" event "]: " ms "ms")))
+  ((of :timing) "[" (colorize-timing event) "]: " ms "ms"))
 
 (defn with-timing-promise [event promise-obj]
   (p/let [start (js/Date.now)
           result promise-obj]
     (timing event (- (js/Date.now) start))
     result))
+
+
+; ======= stdout patching =================================
 
 (defn patch
   "Patch various logging methods to avoid messing up the CLI UI"
@@ -52,3 +87,47 @@
                        :set (fn [replacement]
                               (when replacement
                                 (reset! console-error replacement)))}})))
+
+
+
+; ======= debug-style enable/disable configs ==============
+; See logging-test for some examples
+
+(defn- compile-check [check]
+  (let [raw-regex (-> check
+                      (str/replace "*" ".*?"))
+        regex (re-pattern (str "^" raw-regex "$"))]
+    (fn compiled-check [tag]
+      (when (re-matches regex tag)
+        true))))
+
+(defn- compile-config-part [part]
+  (if (= \- (first part))
+    (let [to-invert (compile-check (subs part 1))]
+      #(when (true? (to-invert %))
+         false))
+    (compile-check part)))
+
+(defn- enabled-checks-pass? [checks tag]
+  (loop [checks checks
+         enabled nil]
+    (if-let [check (first checks)]
+      (recur (next checks)
+             (if-some [result (check tag)]
+               ; Subsequent rules overwrite earlier rules
+               result
+               enabled))
+
+      ; No more checks; return the last-computed state;
+      ; "unknown" via nil is coerced to "false"
+      (true? enabled))))
+
+(defn compile-config [^String config]
+  (if (= "*" config)
+    ; easy case:
+    (constantly true)
+
+    (let [checks (->> (str/split config #"\s*,\s*")
+                      (map compile-config-part))]
+      (memoize
+        (partial enabled-checks-pass? checks)))))

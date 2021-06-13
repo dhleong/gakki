@@ -6,6 +6,8 @@
             [gakki.util.logging :as log]
             [promesa.core :as p]))
 
+(def ^:private log (log/of :player.track/events))
+
 (defn- enqueue-end-notification [^EventEmitter events config ^IAudioClip clip]
   (let [end-timeout (max 0
                          (- (:duration config)
@@ -21,9 +23,9 @@
         ending-timer (js/setTimeout
                        #(.emit events "ending")
                        ending-timeout) ]
-    (log/debug "Notifying end of file after " (/ end-timeout 1000) "s"
-               "; ending after " (/ ending-timeout 1000) "s"
-               "(duration=" (:duration config) ")")
+    (log "Notifying end of file after " (/ end-timeout 1000) "s"
+         "; ending after " (/ ending-timeout 1000) "s"
+         "(duration=" (:duration config) ")")
     (fn clear-timer []
       (js/clearTimeout end-timer)
       (js/clearTimeout ending-timer))))

@@ -5,6 +5,8 @@
             [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
             [gakki.player.stream.seek :as seek]))
 
+(def ^:private log (log/of :player/track))
+
 (defprotocol IAudioTrack
   (close [this])
   (read-config [this])
@@ -84,8 +86,9 @@
                     clip (clip/from-stream
                            (seek/nbytes-chunkwise stream (or seek-bytes 0))
                            full-config)]
-                (log/debug "playing " stream " with " full-config
-                           "; seek-bytes=" seek-bytes)
+                ((log/of :player/track)
+                 "playing " stream " with " full-config
+                 "; seek-bytes=" seek-bytes)
                 (doto clip
                   (clip/set-volume (:volume current-state 1.0))
                   (clip/play))
@@ -93,14 +96,14 @@
 
   (pause [this]
     (when-let [clip (:clip @state)]
-      (log/debug "Pausing clip " clip " from " this)
+      (log "Pausing clip " clip " from " this)
 
       (if-not (clip/default-output-device? clip)
         (do
           ; NOTE: As noted in the AudioClip implementation, if we try to
           ; just pause the clip when its output device no longer exists, the
           ; process will hang, so we have to just close it in this case.
-          (log/debug this " closing clip (no longer default device)")
+          (log this " closing clip (no longer default device)")
           (clip/close clip)
           (swap! state dissoc :clip))
 
