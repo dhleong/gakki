@@ -2,8 +2,7 @@
   (:require [archetype.util :refer [>evt]]
             [gakki.accounts.core :as ap]
             [gakki.accounts :refer [providers]]
-            [gakki.player.core :as player]
-            [gakki.util.logging :as log]))
+            [gakki.player.core :as player]))
 
 (defonce ^:private state (atom nil))
 
@@ -54,14 +53,11 @@
 
       (let [{{:keys [playable]} :prepared
              :as snapshot} (prepare-snapshot snapshot item account)]
-        (log/debug "playing prepared: " playable)
         (doto playable
           (listen-for-events)
           (apply-config config)
           (player/play))
-        (println "playable <- " playable)
-        (assoc snapshot :playable playable))))
-  (println "playing!"))
+        (assoc snapshot :playable playable)))))
 
 (defn unpause! []
   (on-playable player/play))
