@@ -2,7 +2,8 @@
   (:require [archetype.util :refer [>evt]]
             [gakki.accounts.core :as ap]
             [gakki.accounts :refer [providers]]
-            [gakki.player.core :as player]))
+            [gakki.player.core :as player]
+            [gakki.util.logging :as log]))
 
 (defonce ^:private state (atom nil))
 
@@ -17,47 +18,67 @@
   (when-let [volume (:volume-percent config)]
     (player/set-volume playable volume)))
 
+(defn- on-playable [f & args]
+  (when-let [playable (:playable @state)]
+    (apply f playable args)))
 
-; ======= Public interface ================================
-
-(defn prepare! [{{provider :provider :as item} :item :keys [account]}]
+(defn- prepare-snapshot [snapshot {provider :provider :as item} account]
   (if-let [provider-obj (get providers provider)]
-    (let [{existing-info :info existing-playable :playable} (:prepared @state)]
+    (let [{existing-info :info} (:prepared snapshot)]
       (if (= existing-info item)
         ; Reuse the existing, prepared playable for this (it may be prefetching
         ; and or have started prefetching)
-        existing-playable
+        snapshot
 
         ; New playable
-        (let [new-playable (ap/create-playable provider-obj account item)]
-          (swap! state assoc :prepared {:info item
-                                        :playable new-playable})
-          new-playable)))
+        (assoc snapshot :prepared
+               {:info item
+                :playable (ap/create-playable provider-obj account item)})))
 
     (throw (ex-info "No such provider" {:id provider}))))
 
-(defn play! [{:keys [_item _account config] :as args}]
-  (swap! state update :playable
 
-         (fn [old]
-           (when old
-             (.removeAllListeners
-               (player/events old))
-             (player/close old))
+; ======= Public interface ================================
 
-           (doto (prepare! args)
-             (listen-for-events)
-             (apply-config config)
-             (player/play)))))
+(defn prepare! [{:keys [account item]}]
+  (swap! state prepare-snapshot item account))
+
+(defn play! [{:keys [item account config]}]
+  (swap!
+    state
+    (fn [{old :playable :as snapshot}]
+      (when old
+        (.removeAllListeners
+          (player/events old))
+        (player/close old))
+
+      (let [{{:keys [playable]} :prepared
+             :as snapshot} (prepare-snapshot snapshot item account)]
+        (log/debug "playing prepared: " playable)
+        (doto playable
+          (listen-for-events)
+          (apply-config config)
+          (player/play))
+        (println "playable <- " playable)
+        (assoc snapshot :playable playable))))
+  (println "playing!"))
 
 (defn unpause! []
-  (when-let [playable (:playable @state)]
-    (player/play playable)))
+  (on-playable player/play))
 
 (defn pause! []
-  (when-let [playable (:playable @state)]
-    (player/pause playable)))
+  (on-playable player/pause))
 
 (defn set-volume! [volume-percent]
-  (when-let [playable (:playable @state)]
-    (player/set-volume playable volume-percent)))
+  (on-playable player/set-volume volume-percent))
+
+(comment
+  (prepare! {:item {:id "8FV4gcs-MNA"
+                    :provider :ytm}})
+
+  (play! {:item {:id "8FV4gcs-MNA"
+                 :provider :ytm}})
+
+  (pause!)
+
+  )
