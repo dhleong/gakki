@@ -47,7 +47,6 @@
                        @(re-frame.core/subscribe [:account :ytm]))
               result (perform client "last of us")]
         (cljs.pprint/pprint result))
-      (p/catch #(do (cljs.pprint/pprint (ex-data %))
-                    (println (.-stack %)))))
-  
+      (p/catch log/error))
+
   )

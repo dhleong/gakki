@@ -32,8 +32,10 @@
         (update :type keyword)
         process-message)
     (catch :default e
-      (println "[err:native] Failed to parse: "
-               raw-message "\n" e))))
+      (log/error :native
+                 "Failed to parse: "
+                 raw-message
+                 e))))
 
 (defn- handle-media-event [{:keys [event]}]
   (case event
@@ -43,7 +45,7 @@
     :pause (>evt [:player/pause])
     :play (>evt [:player/play])
 
-    (println "TODO: handle media event: " event)))
+    (log/error :native "TODO: handle media event: " event)))
 
 (defn- handle-message [{kind :type :as message}]
   (case kind
@@ -57,7 +59,7 @@
                             (handler (:auth message)))
                           nil))
 
-    (println "Unhandled native event: " message)))
+    (log/error "Unhandled native event: " message)))
 
 (defn- observe-events [^ChildProcess proc]
   (doto ^Readable (.-stdout proc)
@@ -69,8 +71,7 @@
                (try
                  (handle-message message)
                  (catch :default e
-                   (println "[err:native] Failed to handle " (str message)
-                            "\n" e)))))))))
+                   (log/error :native "Failed to handle " (str message) e)))))))))
 
 (defn- init-native []
   (let [full-path (path-join js/__dirname
@@ -78,7 +79,7 @@
                              native-exe-path)]
 
     (doto (spawn full-path)
-      (.on "error" #(println "Failed to launch native components" %))
+      (.on "error" #(log/error :native "Failed to launch native components" %))
       observe-events)))
 
 
@@ -91,8 +92,10 @@
              (.write message)
              (.write "\n"))
            (catch :default e
-             (println "ERR: Failed to write native message:" message
-                      "\n: " e))))))
+             (log/error :native
+                        (ex-info "Failed to write native message"
+                                 {:message message}
+                                 e)))))))
 
 
 ; ======= public interface ================================

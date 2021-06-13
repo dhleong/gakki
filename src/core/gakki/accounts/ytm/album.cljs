@@ -72,7 +72,6 @@
 
 (defn- inflate-like-playlist [id response]
   (let [like-playlist (playlist/inflate id :album response)]
-    (println "LIKE PL: " like-playlist)
     (when (seq (:items like-playlist))
       like-playlist)))
 

@@ -195,7 +195,7 @@
   (-> (fs/rename tmp-path destination-path)
       (p/catch
         (fn [err]
-          (println "Error completing download:" err)))))
+          (log/error "Unable to 'complete' download:" err)))))
 
 (defn create [^Readable stream, config destination-path]
   (let [tmp-path (str destination-path ".progress")

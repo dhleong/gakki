@@ -3,7 +3,8 @@
             [clojure.string :as str]
             [gakki.accounts.ytm.util :as util :refer [->seconds
                                                       runs->text
-                                                      unpack-navigation-endpoint]]))
+                                                      unpack-navigation-endpoint]]
+            [gakki.util.logging :as log]))
 
 (def ^:private ignored-section-titles #{"Videos"})
 
@@ -140,5 +141,5 @@
 
 (defmethod music-shelf->section :default
   [^js section]
-  (println "Unexpected music shelf section: " section)
+  (log/error "Unexpected music shelf section: " section)
   nil)

@@ -229,7 +229,7 @@
 
                   {:providers/resolve-and-open [:artist (:accounts db) item]})
 
-        (println "TODO support opening: " item)))))
+        (log/error "TODO support opening: " item)))))
 
 (defn- clean-entity [entity]
   (if (and (seq (:items entity))
@@ -384,7 +384,7 @@
                          :account (get accounts (:provider next-item))}})))
 
 (defmethod handle-player-event :default [_ {what :type}]
-  (println "WARN: Unexpected player event type: " what))
+  (log/error "Unexpected player event type: " what))
 
 (reg-event-fx
   :player/event
