@@ -39,6 +39,24 @@
 (def player (of :player))
 
 
+; ======= Error logging ===================================
+
+(defn error? [e]
+  (instance? js/Error e))
+
+(defn error [& message]
+  (let [ex (some #(when (error? %) %) message)
+        without-ex (remove error? message)]
+    ; NOTE: Error logs cannot be disabled
+    (apply println ((chalk/inverse.hsv 0 40 100)
+                    (str " ERROR "))
+           (if-some [m (ex-message ex)]
+             (concat without-ex [m])
+             without-ex))
+    (when-let [stack (when ex (.-stack ex))]
+      (println (chalk/gray stack)))))
+
+
 ; ======= Timing ==========================================
 
 (def ^:private colorize-timing (colorizer ":timing"))
