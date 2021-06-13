@@ -1,15 +1,18 @@
 (ns gakki.player.stream.chunking
   (:require ["stream" :refer [Transform Readable]]))
 
+(defn- concat-buffer [original to-concat]
+  (js/Buffer.concat #js [original to-concat]))
+
 (defn- create-nbytes-chunking-transform [n]
   (let [storage (atom (js/Buffer.alloc 0))]
     (Transform.
       #js {:transform
            (fn transform [chnk _encoding callback]
-             (let [b (swap! storage #(js/Buffer.concat #js [% chnk]))]
+             (let [b (swap! storage concat-buffer chnk)]
                (loop [start 0
                       end n]
-                 (if (< end (.-length chnk))
+                 (if (<= end (.-length b))
                    (do (this-as this (.push this (.slice b start end)))
                        (recur (+ start n)
                               (+ end n)))
