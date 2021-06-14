@@ -10,30 +10,49 @@
 (defonce ^:private active-stack (atom []))
 (defonce ^:private handler (atom nil))
 
+(defn apply-help-map [existing-help-entry source v]
+  (let [stack-top-index (when existing-help-entry
+                          (dec (count (second existing-help-entry))))]
+    (cond
+      ; First :help map
+      (not existing-help-entry)
+      [source [v]]
+
+      ; New section: inputs are registered in reverse order (with the container
+      ; registering last) due to how React renders them
+      (get-in existing-help-entry [1 stack-top-index :header])
+      (update existing-help-entry 1 conj v)
+
+      ; Merge into existing section
+      :else
+      (update-in existing-help-entry [1 stack-top-index] merge v))))
+
+(defn- compute-handler [stack]
+  (reduce
+    (fn [h {:keys [f name owned]}]
+      (cond
+        ; fn inputs override all maps
+        (nil? owned) f
+
+        ; Map inputs cannot override fn inputs for now
+        (fn? h) h
+
+        :else
+        (reduce-kv
+          (fn [m k v]
+            (if (= :help k)
+              ; :help maps are a special case
+              (update m k apply-help-map name v)
+
+              ; Normal case:
+              (assoc m k [name v])))
+          h
+          owned)))
+    {}
+    stack))
+
 (defn- recompute-handler [stack]
-  (reset! handler
-          (reduce
-            (fn [h {:keys [f name owned]}]
-              (cond
-                ; fn inputs override all maps
-                (nil? owned) f
-
-                ; Map inputs cannot override fn inputs for now
-                (fn? h) h
-
-                :else
-                (reduce-kv
-                  (fn [m k v]
-                    (if (and (= :help k) (:help m))
-                      ; Special case: merge :help maps
-                      (update-in m [k 1] merge v)
-
-                      ; Normal case:
-                      (assoc m k [name v])))
-                  h
-                  owned)))
-            {}
-            stack)))
+  (reset! handler (compute-handler stack)))
 
 (defn- component-name []
   (or (when-let [^js c reagent-impl/*current-component*]

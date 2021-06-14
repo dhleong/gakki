@@ -12,7 +12,7 @@
 (defn- initialized []
   (use-input
     {"r" #(>evt [:providers/refresh!])
-     :help (assoc help :header [header "Gakki Home"])})
+     :help (assoc help :header "Gakki Home")})
 
   [frame
    [header "Gakki Home"]
