@@ -111,8 +111,7 @@
                           (when results
                             (>evt [:home/replace k results])))
                         (p/catch (fn [e]
-                                   ; TODO logging
-                                   (println "[err: " k "] " e)))))))
+                                   (log/error "Loading home from " k ":" e)))))))
            p/all
            (p/map (fn []
                     (>evt [:loading/update-count dec])))))))
@@ -139,17 +138,15 @@
               (if (or (seq (:items result))
                       (seq (:categories result)))
                 (>evt [:player/on-resolved kind result :action/open])
-                (println "[err: " k "] Empty " kind result)))
+                (log/error "Empty " kind " from " k " = " result)))
 
             (p/catch (fn [e]
-                       ; TODO logging...
-                       (println "[err: " k "] " e)))
+                       (log/error "Resolving " kind " from " e ": " e)))
 
             (p/finally (fn []
-                         (>evt [:loading/update-count dec])))
-            )
+                         (>evt [:loading/update-count dec]))))
 
-        (println "[err: " k "] Invalid provider or no account")))))
+        (log/error "Invalid provider or no account: " k)))))
 
 (reg-fx
   :providers/search
@@ -159,8 +156,7 @@
     (-> (p/let [results (accounts/search accounts query)]
           (>evt [:search/on-loaded query results]))
         (p/catch (fn [e]
-                   ; TODO logging...
-                   (println "[err] " e)
+                   (log/error "Performing search:" e)
                    (>evt [:search/on-loaded query e]))))))
 
 ; ======= Player ==========================================

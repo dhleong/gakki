@@ -1,5 +1,6 @@
 (ns gakki.cli.input
-  (:require ["ink" :as k]
+  (:require [gakki.util.logging :as log]
+            ["ink" :as k]
             ["react" :rename {useEffect use-effect}]
             [reagent.impl.component :as reagent-impl]
             [gakki.cli.keys :refer [->key]]
@@ -77,9 +78,9 @@
               (f)
 
               :else
-              (println "ERROR: Handler to " the-key " was not a zero-arity fn."
-                       "\n  Value: " f
-                       "\n  Registered: " owner)))))))
+              (log/error "Handler to " the-key " was not a zero-arity fn."
+                         "\n  Value: " f
+                         "\n  Registered: " owner)))))))
 
   ; This is a functional component that doesn't render anything
   nil)

@@ -90,11 +90,10 @@
                     (retry-connect (inc retry-count))
 
                     :else
-                    (do (println "Error connecting to Discord"
-                                 "\ncode:" code
-                                 "\nretry-count: " retry-count
-                                 "\n" e)
-                        (js/console.log e))))))))
+                    (log/error "Connecting to Discord"
+                               "\ncode:" code
+                               "\nretry-count: " retry-count
+                               e)))))))
 
 (defn- retry-connect [retry-count]
   (when (> retry-count 0)

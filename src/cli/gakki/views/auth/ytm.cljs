@@ -1,6 +1,7 @@
 (ns gakki.views.auth.ytm
   (:require [archetype.util :refer [<sub >evt]]
             [applied-science.js-interop :as j]
+            [gakki.util.logging :as log]
             ["node-fetch" :default fetch]
             ["ink" :as k]
             ["ink-spinner" :default Spinner]
@@ -38,7 +39,7 @@
         (>evt [:auth/save :ytm account]))
 
       (p/catch (fn [e]
-                 (println e)
+                 (log/error "Failed to login to YTM:" e)
                  (reset! state :error)))))
 
 (defn- logged-out []

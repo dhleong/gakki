@@ -39,7 +39,6 @@
                        @(re-frame.core/subscribe [:account :ytm]))
               result (load client "last")]
         (cljs.pprint/pprint result))
-      (p/catch #(do (cljs.pprint/pprint (ex-data %))
-                    (println (.-stack %)))))
+      (p/catch log/error))
 
   )

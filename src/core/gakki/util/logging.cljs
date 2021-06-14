@@ -1,6 +1,7 @@
 (ns gakki.util.logging
   (:require ["chalk" :as chalk]
             [clojure.string :as str]
+            [cljs.pprint :refer [pprint]]
             [promesa.core :as p]
             [re-frame.core :as re-frame]
             [gakki.const :as const]))
@@ -37,6 +38,41 @@
 
 (def debug (of nil))
 (def player (of :player))
+
+
+; ======= Error logging ===================================
+
+(defn error? [e]
+  (instance? js/Error e))
+
+(defn error [& message]
+  (let [tag (if (keyword? (first message))
+              (first message)
+              nil)
+        message (if tag
+                  (next message)
+                  message)
+        ex (some #(when (error? %) %) message)
+        without-ex (remove error? message)
+
+        last-map (when (map? (last without-ex))
+                   (last without-ex))
+        without-ex (if (some? last-map)
+                  (butlast without-ex)
+                  without-ex)]
+
+    ; NOTE: Error logs cannot be disabled
+    (apply println ((chalk/inverse.hsv 0 40 100)
+                    (str " ERROR" tag " "))
+           (if-some [m (ex-message ex)]
+             (concat without-ex [m])
+             without-ex))
+    (when (some? last-map)
+      (pprint last-map))
+    (when-let [data (ex-data ex)]
+      (pprint data))
+    (when-let [stack (when ex (.-stack ex))]
+      (println (chalk/gray stack)))))
 
 
 ; ======= Timing ==========================================
