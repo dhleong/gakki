@@ -9,9 +9,10 @@
 (def ^:private log (log/of :player.track/events))
 
 (defn- enqueue-end-notification [^EventEmitter events config ^IAudioClip clip]
-  (let [end-timeout (max 0
+  (let [current-time-ms (* (clip/current-time clip) 1000)
+        end-timeout (max 0
                          (- (:duration config)
-                            (clip/current-time clip)
+                            current-time-ms
                             500))
 
         ending-timeout (max 0
@@ -25,7 +26,8 @@
                        ending-timeout) ]
     (log "Notifying end of file after " (/ end-timeout 1000) "s"
          "; ending after " (/ ending-timeout 1000) "s"
-         "(duration=" (:duration config) ")")
+         "(duration=" (/ (:duration config) 1000) "s"
+         "; current-time" (/ current-time-ms 1000) "s)")
     (fn clear-timer []
       (js/clearTimeout end-timer)
       (js/clearTimeout ending-timer))))

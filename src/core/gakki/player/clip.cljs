@@ -19,7 +19,8 @@
   "An AudioClip represents a forward-only stream of audio starting
    from *some* point in time"
   (close [this])
-  (current-time [this])
+  (current-time [this]
+    "Returns the current playback time of this clip in seconds")
   (default-output-device? [this]
     "Returns true if this clip is configured to play on the system's
      *current* default output device.")
