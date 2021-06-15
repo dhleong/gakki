@@ -26,12 +26,10 @@
 
 (defn- help-section [{:keys [header] :as section}]
   [:<>
-   [:> k/Box {:flex-direction :row
-              :padding-bottom 1}
-    (if (string? header)
-      [:> k/Text header]
-      header)
-    [:> k/Text {:color theme/text-color-disabled} " / Help"]]
+   [:> k/Box {:flex-direction :row}
+    [:> k/Text {:underline true}
+     header
+     [:> k/Text {:color theme/text-color-disabled} " / Help"]]]
    [help-items (dissoc section :header)]
    [:> k/Newline]])
 
