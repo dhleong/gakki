@@ -64,7 +64,7 @@
                                              start-time-seconds]
                                       :or {start-time-seconds 0}}]
   (let [on-error (fn on-error [kind e]
-                   ((log/of :player/pcm) "PCM Stream Error [" kind "] " e))
+                   ((log/of :player/clip) "PCM Stream Error [" kind "] " e))
         instance (RtAudio.)
         device-id (.getDefaultOutputDevice instance)
         instance (doto instance

@@ -167,3 +167,11 @@
                       (map compile-config-part))]
       (memoize
         (partial enabled-checks-pass? checks)))))
+
+(comment
+
+  #_:clj-kondo/ignore
+  (def ^:private config-enables?
+    (delay (compile-config "gakki:*")))
+
+  )
