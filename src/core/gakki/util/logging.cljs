@@ -79,14 +79,20 @@
 
 (def ^:private colorize-timing (colorizer ":timing"))
 
-(defn timing [event ms]
-  ((of :timing) "[" (colorize-timing event) "]: " ms "ms"))
+(defn timing
+  ([event ms] (timing event ms nil))
+  ([event ms extra]
+   (apply (of :timing) "[" (colorize-timing event) "]: " ms "ms" extra)))
 
 (defn with-timing-promise [event promise-obj]
-  (p/let [start (js/Date.now)
-          result promise-obj]
-    (timing event (- (js/Date.now) start))
-    result))
+  (let [start (js/Date.now)]
+    (-> promise-obj
+        (p/handle (fn [result err]
+                    (timing event (- (js/Date.now) start)
+                            (when err [" ERROR"]))
+                    (if err
+                      (p/rejected err)
+                      (p/resolved result)))))))
 
 
 ; ======= stdout patching =================================

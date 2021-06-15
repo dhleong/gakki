@@ -1,6 +1,7 @@
 (ns gakki.player.pcm
   (:require ["path" :as path]
             [promesa.core :as p]
+            [gakki.util.loading :refer [with-loading-promise]]
             [gakki.util.logging :as log]
             [gakki.util.paths :as paths]
             [gakki.player.pcm.caching :as caching]
@@ -30,6 +31,8 @@
 
               ; probably, we don't have it cached
               ; TODO we could potentially resume a partial download?
-              (p/let [{:keys [stream config]} (promise-factory)]
+              (p/let [{:keys [stream config]} (with-loading-promise
+                                                :player.pcm/resolve-caching
+                                                (promise-factory))]
                 (log/player "downloading to " destination-path)
                 (caching/create stream config destination-path))))))))

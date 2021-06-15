@@ -7,6 +7,7 @@
             [gakki.integrations :as integrations]
             [gakki.native :as native]
             [gakki.player :as player]
+            [gakki.util.loading :refer [with-loading-promise]]
             [gakki.util.logging :as log]))
 
 
@@ -103,7 +104,6 @@
   :providers/load!
   (fn [accounts]
     (when (seq accounts)
-      (>evt [:loading/update-count inc])
       (->> accounts
            (map (fn [[k account]]
                   (when-let [provider (get providers k)]
@@ -113,8 +113,7 @@
                         (p/catch (fn [e]
                                    (log/error "Loading home from " k ":" e)))))))
            p/all
-           (p/map (fn []
-                    (>evt [:loading/update-count dec])))))))
+           (with-loading-promise :providers/load!)))))
 
 (reg-fx
   :providers/resolve-and-open
@@ -126,9 +125,7 @@
           account (get accounts k)]
 
       (if (and provider account)
-        (-> (p/let [_ (>evt [:loading/update-count inc]) ; start by loading
-
-                    f (case kind
+        (-> (p/let [f (case kind
                         :album ap/resolve-album
                         :artist ap/resolve-artist
                         :playlist ap/resolve-playlist)
@@ -140,11 +137,10 @@
                 (>evt [:player/on-resolved kind result :action/open])
                 (log/error "Empty " kind " from " k " = " result)))
 
-            (p/catch (fn [e]
-                       (log/error "Resolving " kind " from " e ": " e)))
+            (with-loading-promise :providers/resolve-and-open)
 
-            (p/finally (fn []
-                         (>evt [:loading/update-count dec]))))
+            (p/catch (fn [e]
+                       (log/error "Resolving " kind " from " e ": " e))))
 
         (log/error "Invalid provider or no account: " k)))))
 
