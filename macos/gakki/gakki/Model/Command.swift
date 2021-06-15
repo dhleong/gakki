@@ -35,6 +35,7 @@ struct Command: Codable {
     var title: String?
     var artist: String?
     var imageUrl: String?
+    var duration: Int?
 }
 
 extension Command {

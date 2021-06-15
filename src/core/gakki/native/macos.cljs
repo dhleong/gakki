@@ -140,10 +140,12 @@
 
      {:title 'title'
       :artist 'artist name'
+      :duration duartion-seconds
       :image-url 'optional url'}"
   [now-playing]
-  (send! (assoc now-playing
-                :type :set-now-playing))
+  (log/debug "set-now-playing!" now-playing)
+  (send! (-> now-playing
+             (assoc :type :set-now-playing)))
   (set-state! :playing))
 
 

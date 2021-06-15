@@ -76,6 +76,10 @@ struct CommandHandler {
             MPMediaItemPropertyArtist: command.artist ?? "",
         ]
 
+        if let duration = command.duration, duration > 0 {
+            info[MPMediaItemPropertyPlaybackDuration] = duration
+        }
+
         if let rawImageUrl = command.imageUrl,
         let imageUrl = URL(string: rawImageUrl) {
 
