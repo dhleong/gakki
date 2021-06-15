@@ -62,25 +62,32 @@
 
 (defn from-stream [^Readable stream, {:keys [channels sample-rate frame-size
                                              start-time-seconds]
-                                      :or {start-time-seconds 0}}]
-  (let [on-error (fn on-error [kind e]
-                   ((log/of :player/clip) "PCM Stream Error [" kind "] " e))
-        instance (RtAudio.)
-        device-id (.getDefaultOutputDevice instance)
-        instance (doto instance
-                   (.openStream
-                     ; Output stream:
-                     #js {:deviceId device-id
-                          :nChannels channels}
-                     nil ; No input stream
-                     (.-RTAUDIO_SINT16 RtAudioFormat)
-                     sample-rate
-                     (or frame-size const/default-frame-size)
-                     "gakki" ; stream name
-                     nil ; input callback
-                     nil ; output callback
-                     0 ; stream flags
-                     on-error)
-                   (j/assoc! :streamTime start-time-seconds))
-        device (device-by-id instance device-id)]
-    (->AudioClip stream instance device (->writable-stream instance))))
+                                      :or {start-time-seconds 0}
+                                      :as config}]
+  (try
+    (let [on-error (fn on-error [kind e]
+                     ((log/of :player/clip) "PCM Stream Error [" kind "] " e))
+          instance (RtAudio.)
+          device-id (.getDefaultOutputDevice instance)
+          instance (doto instance
+                     (.openStream
+                       ; Output stream:
+                       #js {:deviceId device-id
+                            :nChannels channels}
+                       nil ; No input stream
+                       (.-RTAUDIO_SINT16 RtAudioFormat)
+                       sample-rate
+                       (or frame-size const/default-frame-size)
+                       "gakki" ; stream name
+                       nil ; input callback
+                       nil ; output callback
+                       0 ; stream flags
+                       on-error)
+                     (j/assoc! :streamTime start-time-seconds))
+          device (device-by-id instance device-id)]
+      (->AudioClip stream instance device (->writable-stream instance)))
+    (catch :default e
+      (log/error "Failed to initialize AudioClip" {:config config} e)
+
+      ; Re-throw... for now
+      (throw e))))
