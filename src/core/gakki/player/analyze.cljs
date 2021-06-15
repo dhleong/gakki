@@ -53,12 +53,13 @@
 
             #js {:windowsHide true}
             (fn callback [err _stdout stderr]
-              (if-let [parsed (parse-ffmpeg stderr)]
-                (p-resolve parsed)
-                (p-reject (or err
-                              (ex-info "Failed to extra audio info"
-                                       {:out stderr}))))
-              )))))
+              (if err
+                (p-reject err)
+
+                (if-let [parsed (parse-ffmpeg stderr)]
+                  (p-resolve parsed)
+                  (p-reject (ex-info "Failed to extra audio info"
+                                     {:out stderr})))))))))
 
 (defn audio-caching
   "This is a convenient, in-memory caching wrapper around `analyze-audio` that
