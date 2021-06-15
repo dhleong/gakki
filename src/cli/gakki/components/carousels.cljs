@@ -10,6 +10,11 @@
                                                  vertical-list]]
             [gakki.theme :as theme]))
 
+(def ^:private help
+  {"j k" "Navigate cursor down / up"
+   "h l" "Navigate cursor left / right"
+   :return "Open/play the selected item."})
+
 (defn- category-item [{:keys [title selected?]}]
   [:> k/Box {:width :20%
              :padding-x 1}
@@ -40,7 +45,8 @@
      "h" #(>evt [:carousel/navigate-row :left])
      "l" #(>evt [:carousel/navigate-row :right])
 
-     :return #(>evt [:carousel/open-selected])})
+     :return #(>evt [:carousel/open-selected])
+     :help help})
 
   (let [available-height (<sub [::subs/available-height])]
     [vertical-list

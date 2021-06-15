@@ -1,6 +1,7 @@
 (ns gakki.views.playlist
   (:require [archetype.util :refer [>evt <sub]]
             ["ink" :as k]
+            [gakki.cli.input :refer [use-input]]
             [gakki.components.header :refer [header]]
             [gakki.theme :as theme]
             [gakki.views.queue :refer [track-list]]))
@@ -12,6 +13,7 @@
    (:title playlist)])
 
 (defn view [id]
+  (use-input {:help {:header "Playlist"}})
   (let [playlist (<sub [:playlist id])]
     [:f> track-list
      :items (<sub [:playlist/items-with-state id])

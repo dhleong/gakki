@@ -15,6 +15,12 @@
 (def max-album-title-length 20)
 (def max-artist-name-length 20)
 
+(def ^:private help
+  {"j k" "Navigate cursor down / up"
+   :return "Play the album"
+
+   :header "Album Page"})
+
 (defn track-row [{:keys [title selected?]}]
   [:> k/Box {:flex-direction :row}
    (if selected?
@@ -77,7 +83,8 @@
                     (>evt [:player/play-items (:items album)]))
          :escape #(if @state
                     (reset! state nil)
-                    (>evt [:navigate/back!]))})
+                    (>evt [:navigate/back!]))
+         :help help})
 
       [frame
        [album-header album]
