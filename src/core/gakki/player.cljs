@@ -57,7 +57,9 @@
           (listen-for-events)
           (apply-config config)
           (player/play))
-        (assoc snapshot :playable playable)))))
+        (-> snapshot
+            (assoc :playable playable)
+            (dissoc :prepared))))))
 
 (defn unpause! []
   (on-playable player/play))
