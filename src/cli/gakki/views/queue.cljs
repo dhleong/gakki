@@ -16,7 +16,9 @@
 (def ^:private max-track-length-perc 0.4)
 
 (def ^:private help
-  {"j" "Move cursor down vertically"})
+  {"j" "Move cursor down vertically"
+   "k" "Move cursor up vertically"
+   :return "Start playing the playlist"})
 
 (defn queue-item [{:keys [selected? current?] :as track}]
   ; subtract an extra 2 for the indicator space
@@ -103,7 +105,7 @@
                     (when on-whole-list-selected
                       (on-whole-list-selected)))
 
-         :help (assoc help :header header)})
+         :help help})
 
       [frame
        header
@@ -117,6 +119,7 @@
         ]])))
 
 (defn view []
+  (use-input {:help {:header "Queue"}})
   (let [queue (<sub [:queue/items-with-state])]
     [:f> track-list
      :items queue

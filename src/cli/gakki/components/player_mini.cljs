@@ -6,6 +6,9 @@
 
 (def ^:private help
   {"q" "Show the queue"
+   :space "Play/Pause the current item"
+   "[ ]" "Decrease / Increase volume"
+
    :header "Player UI"})
 
 (defn- player-ui [playing volume playing?]

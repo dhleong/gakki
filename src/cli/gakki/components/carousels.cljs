@@ -11,7 +11,9 @@
             [gakki.theme :as theme]))
 
 (def ^:private help
-  {"j" "Navigate cursor downward"})
+  {"j k" "Navigate cursor down / up"
+   "h l" "Navigate cursor left / right"
+   :return "Open/play the selected item."})
 
 (defn- category-item [{:keys [title selected?]}]
   [:> k/Box {:width :20%

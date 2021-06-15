@@ -2,6 +2,7 @@
   (:require [archetype.util :refer [<sub]]
             ["ink" :as k]
             ["ink-spinner" :default Spinner]
+            [gakki.cli.input :refer [use-input]]
             [gakki.components.carousels :refer [carousels]]
             [gakki.components.frame :refer [frame]]
             [gakki.components.header :refer [header]]
@@ -32,6 +33,8 @@
   [:f> carousels])
 
 (defn view [query]
+  (use-input {:help {:header "Search"}})
+
   [frame
    [header
     [:> k/Text {:color theme/text-color-disabled} "Search / "]
