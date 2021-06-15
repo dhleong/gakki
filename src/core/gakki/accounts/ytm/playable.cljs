@@ -1,10 +1,9 @@
-(ns gakki.player.ytm
+(ns gakki.accounts.ytm.playable
   (:require [applied-science.js-interop :as j]
             ["node-fetch" :as fetch]
             [promesa.core :as p]
             [gakki.accounts.ytm.creds :refer [account->client]]
             [gakki.accounts.ytm.playback :as playback]
-            [gakki.player.core :as gp]
             [gakki.player.pcm :as pcm]
             [gakki.player.track :as track]))
 
@@ -17,13 +16,15 @@
     {:config config
      :stream stream}))
 
-(defn youtube-id->playable
-  ([id] (youtube-id->playable nil id))
-  ([account id]
-   (track/create-playable
-     (pcm/create-caching-source
-       (str "ytm." id)
-       #(youtube-id->stream account id)))))
+(defn from-id
+  "Create a Playable from a YouTube (music) video ID.
+   `account` *should* be a Google account map for best compatibility, but
+   *may* be nil for public (not auth-required) videos."
+  [account id]
+  (track/create-playable
+    (pcm/create-caching-source
+      (str "ytm." id)
+      #(youtube-id->stream account id))))
 
 #_:clj-kondo/ignore
 (comment
@@ -45,12 +46,13 @@
 
   (def playable
     (doto (youtube-id->playable "8FV4gcs-MNA")
-      (gp/set-volume 0.25)
-      (gp/play)))
+      (gakki.player.core/set-volume 0.25)
+      (gakki.player.core/play)))
 
-  (gp/set-volume playable 0.05)
-  (gp/play playable)
-  (gp/pause playable)
+  (gakki.player.core/set-volume playable 0.05)
+  (gakki.player.core/play playable)
+  (gakki.player.core/pause playable)
   )
+
 
 

@@ -9,10 +9,10 @@
             [gakki.accounts.ytm.consts :refer [ytm-kinds]]
             [gakki.accounts.ytm.album :as album]
             [gakki.accounts.ytm.artist :as artist]
+            [gakki.accounts.ytm.playable :as playable]
             [gakki.accounts.ytm.playlist :as playlist]
             [gakki.accounts.ytm.search :as search]
             [gakki.accounts.ytm.search-suggest :as search-suggest]
-            [gakki.player.ytm :refer [youtube-id->playable]]
             [gakki.util.logging :as log]))
 
 
@@ -84,7 +84,7 @@
       (str email)))
 
   (create-playable [_this account info]
-    (youtube-id->playable account (:id info)))
+    (playable/from-id account (:id info)))
 
   (fetch-home [_ account]
     ; NOTE: this is pulled out to a separate fn to facilitate hot-reload dev

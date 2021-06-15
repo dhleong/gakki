@@ -32,7 +32,7 @@
                    (track/close old))
 
                  (doto
-                   (gakki.player.ytm/youtube-id->playable nil "2mqi6Vqfhh8")
+                   (gakki.accounts.ytm.playable/from-id nil "2mqi6Vqfhh8")
                    (clip/play))))
 
 
