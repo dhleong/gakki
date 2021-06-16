@@ -110,8 +110,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return .success
         }
 
-        commandCenter.skipForwardCommand.handleSeekEvent(seekDirection: 1.0)
-        commandCenter.skipBackwardCommand.handleSeekEvent(seekDirection: -1.0)
+        // NOTE: This code is kept around for reference, but is disabled for
+        // now. If we enable these commands, we seem to lose the next/prev
+        // track buttons in the UI, and there are also some issues around
+        // updating the current timestamp when they fire... so it's easiest
+        // to just not use them, and rely on the absolute seek command.
+        // commandCenter.skipForwardCommand.handleSeekEvent(seekDirection: 1.0)
+        // commandCenter.skipBackwardCommand.handleSeekEvent(seekDirection: -1.0)
     }
 }
 
