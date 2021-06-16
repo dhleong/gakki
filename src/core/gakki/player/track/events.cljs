@@ -66,6 +66,8 @@
   (read-config [_this] (track/read-config base))
   (seek [this timestamp-seconds]
     (track/seek base timestamp-seconds)
+    ; NOTE: clip/current-time doesn't seem to be reliable here for some reason,
+    ; so we just pass the exact timestamp to use:
     (restart-event-timers this timestamp-seconds))
 
   IPlayable

@@ -100,6 +100,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         seek.isEnabled = true
         seek.addTarget { event in
             if let ev = event as? MPChangePlaybackPositionCommandEvent {
+                MPNowPlayingInfoCenter.default().setCurrentTime(ev.positionTime)
                 IPC.send([
                     "type": "media",
                     "event": "seek",
