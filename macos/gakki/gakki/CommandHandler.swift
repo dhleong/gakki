@@ -111,6 +111,12 @@ struct CommandHandler {
         if let inputState = command.state,
         let state = commandToPlaybackState[inputState] {
             MPNowPlayingInfoCenter.default().playbackState = state
+
+            if let time = command.currentTime {
+                MPNowPlayingInfoCenter.default().nowPlayingInfo?.merge([
+                    MPNowPlayingInfoPropertyElapsedPlaybackTime: time,
+                ], uniquingKeysWith: { _, new in new })
+            }
         }
     }
 

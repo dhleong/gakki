@@ -332,6 +332,18 @@
        :native/set-state! :paused})))
 
 (reg-event-fx
+  :player/seek-by
+  [trim-v]
+  (fn [_ [relative-seconds]]
+    {:player/seek-by! relative-seconds}))
+
+(reg-event-fx
+  :player/seek-to
+  [trim-v]
+  (fn [_ [timestamp-seconds]]
+    {:player/seek-to! timestamp-seconds}))
+
+(reg-event-fx
   :player/set-volume
   [trim-v
    (path :player)

@@ -95,5 +95,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             IPC.send(["type": "media", "event": "next-track"])
             return .success
         })
+
+        let seek = commandCenter.changePlaybackPositionCommand
+        seek.isEnabled = true
+        seek.addTarget { event in
+            if let ev = event as? MPChangePlaybackPositionCommandEvent {
+                IPC.send([
+                    "type": "media",
+                    "event": "seek",
+                    "time": ev.positionTime,
+                ])
+            }
+
+            return .success
+        }
+
+        commandCenter.skipForwardCommand.handleSeekEvent(seekDirection: 1.0)
+        commandCenter.skipBackwardCommand.handleSeekEvent(seekDirection: -1.0)
+    }
+}
+
+extension MPSkipIntervalCommand {
+    func handleSeekEvent(seekDirection: Double) {
+        isEnabled = true
+        addTarget(handler: { event in
+            if let ev = event as? MPSkipIntervalCommandEvent {
+                IPC.send([
+                    "type": "media",
+                    "event": "seek",
+                    "relative": seekDirection * ev.interval,
+                ])
+            }
+            return .success
+        })
     }
 }

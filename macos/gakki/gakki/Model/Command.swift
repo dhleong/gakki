@@ -30,6 +30,7 @@ struct Command: Codable {
 
     // .setState:
     var state: State?
+    var currentTime: Float?
 
     // .setNowPlaying:
     var title: String?
