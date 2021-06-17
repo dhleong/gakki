@@ -1,5 +1,6 @@
 (ns gakki.player.stream.chunking
-  (:require ["stream" :refer [Transform Readable]]))
+  (:require ["stream" :refer [Transform Readable]]
+            [gakki.const :as const]))
 
 (defn- concat-buffer [original to-concat]
   (js/Buffer.concat #js [original to-concat]))
@@ -26,3 +27,15 @@
    which chunks its input into Buffers of size divisible by `n`."
   [^Readable input, n]
   (.pipe input (create-nbytes-chunking-transform n)))
+
+(defn ^Readable nbytes-from-config
+  "Uses the :frame-size of `config` (if provided) to chunk via `nbytes`"
+  [^Readable input, config]
+  (if-let [frame-size (:frame-size config)]
+    (-> input
+        (nbytes (* (:channels config)
+                   const/bytes-per-sample
+                   frame-size)))
+    input))
+
+

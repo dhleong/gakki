@@ -2,6 +2,7 @@
   (:require ["fs" :rename {createReadStream create-read-stream}]
             ["fs/promises" :as fs]
             ["path" :as path]
+            ["stream" :refer [Readable]]
             [promesa.core :as p]
             [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
             [gakki.player.analyze :as analyze]
@@ -10,7 +11,7 @@
 (defn- open-stream [path]
   (p/create
     (fn [p-resolve p-reject]
-      (let [s (create-read-stream path)]
+      (let [^Readable s (create-read-stream path)]
         (doto s
           (.on "error" p-reject)
           (.on "open" #(p-resolve s)))))))

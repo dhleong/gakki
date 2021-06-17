@@ -3,7 +3,8 @@
             ["audify" :refer [RtAudio RtAudioFormat]]
             ["stream" :refer [Readable Writable]]
             [gakki.const :as const]
-            [gakki.util.logging :as log]))
+            [gakki.util.logging :as log]
+            [gakki.player.stream.resampling :as resampling]))
 
 (defn- ->writable-stream [^RtAudio speaker]
   (Writable. #js {:write (fn write [chnk _encoding callback]
@@ -61,34 +62,61 @@
   (set-volume [_this volume-percent]
     (j/assoc! speaker .-outputVolume volume-percent)))
 
-(defn from-stream [^Readable stream, {:keys [channels sample-rate frame-size
-                                             start-time-seconds]
-                                      :or {start-time-seconds 0}
-                                      :as config}]
+(defn- resample-if-needed
+  [{available-rates :sampleRates preferred-rate :preferredSampleRate}
+   {:keys [sample-rate] :as config}
+   ^Readable stream]
+  (if (some (partial = sample-rate) available-rates)
+    [config stream]
+
+    (if-let [desired-rate (or preferred-rate
+                              (peek available-rates))]
+      (let [new-config (assoc config :sample-rate desired-rate)]
+        ((log/of :player/clip) "Resampling " sample-rate " to " desired-rate)
+        [new-config
+         (resampling/convert-pcm-config stream config new-config)])
+
+      (throw (ex-info "No sample rate available?"
+                      {:available-rates available-rates
+                       :preferred-rate preferred-rate
+                       :config config})))))
+
+(defn- on-error [kind e]
+  ((log/of :player/clip) "PCM Stream Error [" kind "] " e))
+
+(defn- open-stream [^RtAudio instance, device-id,
+                    {:keys [channels sample-rate
+                            frame-size]
+                     :as config}]
   (try
-    (let [on-error (fn on-error [kind e]
-                     ((log/of :player/clip) "PCM Stream Error [" kind "] " e))
-          instance (RtAudio.)
-          device-id (.getDefaultOutputDevice instance)
-          instance (doto instance
-                     (.openStream
-                       ; Output stream:
-                       #js {:deviceId device-id
-                            :nChannels channels}
-                       nil ; No input stream
-                       (.-RTAUDIO_SINT16 RtAudioFormat)
-                       sample-rate
-                       (or frame-size const/default-frame-size)
-                       "gakki" ; stream name
-                       nil ; input callback
-                       nil ; output callback
-                       0 ; stream flags
-                       on-error)
-                     (j/assoc! :streamTime start-time-seconds))
-          device (device-by-id instance device-id)]
-      (->AudioClip stream instance device (->writable-stream instance)))
+    (doto instance
+      (.openStream
+        ; Output stream:
+        #js {:deviceId device-id
+             :nChannels channels}
+        nil ; No input stream
+        (.-RTAUDIO_SINT16 RtAudioFormat)
+        sample-rate
+        (or frame-size const/default-frame-size)
+        "gakki" ; stream name
+        nil ; input callback
+        nil ; output callback
+        0 ; stream flags
+        on-error))
     (catch :default e
       (log/error "Failed to initialize AudioClip" {:config config} e)
 
       ; Re-throw... for now
       (throw e))))
+
+(defn from-stream [^Readable stream, {:keys [start-time-seconds]
+                                      :or {start-time-seconds 0}
+                                      :as config}]
+  (let [instance (RtAudio.)
+        device-id (.getDefaultOutputDevice instance)
+        device (device-by-id instance device-id)
+        [config stream] (resample-if-needed device config stream)
+        instance (doto instance
+                   (open-stream device-id config)
+                   (j/assoc! :streamTime start-time-seconds)) ]
+    (->AudioClip stream instance device (->writable-stream instance))))

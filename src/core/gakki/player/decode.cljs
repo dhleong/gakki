@@ -1,7 +1,8 @@
 (ns gakki.player.decode
   (:require [applied-science.js-interop :as j]
-            [gakki.const :as const]
             ["prism-media" :as prism]
+            ["stream" :refer [Readable]]
+            [gakki.const :as const]
             [gakki.player.stream.chunking :as chunking]
             [gakki.util.logging :as log]))
 
@@ -15,7 +16,7 @@
     :container \"webm\"  ; eg
     :codec \"opus\"}     ; eg
    "
-  [{:keys [container codec] :as config} ^js stream]
+  [{:keys [container codec] :as config} ^Readable stream]
   (let [demuxer (case container
                   "ogg" (prism/opus.OggDemuxer.)
                   "webm" (case codec
@@ -35,14 +36,14 @@
                     ((log/of :player/decode)
                      "No optimized decoder for " codec
                      "; falling back to ffmpeg")
-                    (-> (prism/FFmpeg.
-                          (j/lit
-                            {:args [:-loglevel "0"
-                                    :-ac (:channels config)
-                                    :-i "-"
-                                    :-f "s16le"
-                                    :-acodec "pcm_s16le"
-                                    :-ac (:channels config)]})))))
+                    (prism/FFmpeg.
+                      (j/lit
+                        {:args [:-loglevel "0"
+                                :-ac (:channels config)
+                                :-i "-"
+                                :-f "s16le"
+                                :-acodec "pcm_s16le"
+                                :-ac (:channels config)]}))))
 
         demuxed (if demuxer
                   (.pipe stream demuxer)
@@ -51,9 +52,4 @@
 
     ; Ensure that the decoded data is chunked appropriately to match the
     ; configured :frame-size (important to make RtAudio/Audify happy)
-    (if-let [frame-size (:frame-size config)]
-      (-> decoded
-          (chunking/nbytes (* (:channels config)
-                              const/bytes-per-sample
-                              frame-size)))
-      decoded)))
+    (chunking/nbytes-from-config decoded config)))
