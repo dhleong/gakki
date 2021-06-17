@@ -1,7 +1,8 @@
 (ns gakki.player.decode
   (:require [applied-science.js-interop :as j]
-            [gakki.const :as const]
             ["prism-media" :as prism]
+            ["stream" :refer [Readable]]
+            [gakki.const :as const]
             [gakki.player.stream.chunking :as chunking]
             [gakki.util.logging :as log]))
 
@@ -15,7 +16,7 @@
     :container \"webm\"  ; eg
     :codec \"opus\"}     ; eg
    "
-  [{:keys [container codec] :as config} ^js stream]
+  [{:keys [container codec] :as config} ^Readable stream]
   (let [demuxer (case container
                   "ogg" (prism/opus.OggDemuxer.)
                   "webm" (case codec
