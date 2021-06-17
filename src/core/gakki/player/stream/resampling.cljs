@@ -2,8 +2,7 @@
   (:require [applied-science.js-interop :as j]
             [gakki.player.stream.chunking :as chunking]
             ["prism-media" :as prism]
-            ["stream" :refer [Readable]]
-    ))
+            ["stream" :refer [Readable]]))
 
 (defn convert-pcm-config [^Readable stream, old-config new-config]
   (let [transform (prism/FFmpeg.
