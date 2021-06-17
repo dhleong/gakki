@@ -51,9 +51,4 @@
 
     ; Ensure that the decoded data is chunked appropriately to match the
     ; configured :frame-size (important to make RtAudio/Audify happy)
-    (if-let [frame-size (:frame-size config)]
-      (-> decoded
-          (chunking/nbytes (* (:channels config)
-                              const/bytes-per-sample
-                              frame-size)))
-      decoded)))
+    (chunking/nbytes-from-config decoded config)))
