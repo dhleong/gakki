@@ -35,14 +35,14 @@
                     ((log/of :player/decode)
                      "No optimized decoder for " codec
                      "; falling back to ffmpeg")
-                    (-> (prism/FFmpeg.
-                          (j/lit
-                            {:args [:-loglevel "0"
-                                    :-ac (:channels config)
-                                    :-i "-"
-                                    :-f "s16le"
-                                    :-acodec "pcm_s16le"
-                                    :-ac (:channels config)]})))))
+                    (prism/FFmpeg.
+                      (j/lit
+                        {:args [:-loglevel "0"
+                                :-ac (:channels config)
+                                :-i "-"
+                                :-f "s16le"
+                                :-acodec "pcm_s16le"
+                                :-ac (:channels config)]}))))
 
         demuxed (if demuxer
                   (.pipe stream demuxer)

@@ -6,16 +6,16 @@
     ))
 
 (defn convert-pcm-config [^Readable stream, old-config new-config]
-  (let [transform (-> (prism/FFmpeg.
-                        (j/lit
-                          {:args [:-loglevel "0"
-                                  :-f "s16le"
-                                  :-ac (:channels old-config)
-                                  :-ar (:sample-rate old-config)
-                                  :-i "-"
-                                  :-ac (:channels new-config)
-                                  :-ar (:sample-rate new-config)
-                                  :-f "s16le"]})))]
+  (let [transform (prism/FFmpeg.
+                    (j/lit
+                      {:args [:-loglevel "0"
+                              :-f "s16le"
+                              :-ac (:channels old-config)
+                              :-ar (:sample-rate old-config)
+                              :-i "-"
+                              :-ac (:channels new-config)
+                              :-ar (:sample-rate new-config)
+                              :-f "s16le"]}))]
     (-> stream
         (.pipe transform)
         (chunking/nbytes-from-config new-config))))
