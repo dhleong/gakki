@@ -37,7 +37,7 @@
 (defn- rotate-provider [providers current delta]
   (let [idx (->> providers
                  (map-indexed vector)
-                 (filter (fn [_i [k _]]
+                 (filter (fn [[_i [k _]]]
                            (= current k)))
                  ffirst)
         next-idx (mod (+ idx delta) (count providers))]
