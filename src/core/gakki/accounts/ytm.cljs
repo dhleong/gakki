@@ -13,6 +13,7 @@
             [gakki.accounts.ytm.playlist :as playlist]
             [gakki.accounts.ytm.search :as search]
             [gakki.accounts.ytm.search-suggest :as search-suggest]
+            [gakki.accounts.ytm.util :as util]
             [gakki.util.logging :as log]))
 
 
@@ -29,11 +30,12 @@
 
       (str obj)))
 
-(j/defn ^:private ->home-item [^:js {:keys [title navigationEndpoint]}]
+(j/defn ^:private ->home-item [^:js {:keys [title navigationEndpoint] :as item}]
   {:title (->text title)
    :provider :ytm
    :id (or (j/get-in navigationEndpoint [:watchEndpoint :videoId])
            (j/get-in navigationEndpoint [:browseEndpoint :browseId]))
+   :image-url (util/pick-thumbnail item)
    :kind (or (when (j/get-in navigationEndpoint [:watchEndpoint :videoId])
                :track)
 
