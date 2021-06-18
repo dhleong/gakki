@@ -426,13 +426,14 @@
   :cache/download-completed
   [trim-v (inject-sub [:prefs :cache.size])]
   (fn [{cache-size :prefs} [path]]
-    (println "TODO check cache vs " cache-size
-             "downloaded: " path)))
+    {:cache/download-completed {:cache-size cache-size
+                                :path path}}))
 
 (reg-event-fx
   :cache/file-accessed
   [trim-v]
-  (fn [_ [path]]))
+  (fn [_ [path]]
+    {:cache/file-accessed path}))
 
 
 ; ======= Integrations ====================================

@@ -3,6 +3,7 @@
   (:require [applied-science.js-interop :as j]
             [clojure.string :as str]
             ["fs/promises" :as fs]
+            [goog.structs.LinkedMap]
             [goog.structs :refer [LinkedMap]]
             ["path" :as path]
             [promesa.core :as p]
@@ -19,7 +20,7 @@
 
 (defn- create-state [max-size-bytes on-evicted]
   (atom {:files (LinkedMap.
-                  0 ; max entries
+                  0 ; max entries (0 = don't limit count)
                   true) ; evict in insertion order ("cache mode")
          :max-size max-size-bytes
          :on-evicted on-evicted
@@ -42,8 +43,10 @@
         state
 
         (let [evicted (.pop files)]
-          (on-evicted (:path evicted))
-          (recur (update state :bytes - (:size evicted))))))))
+          (recur (-> state
+                     (update :bytes - (:size evicted))
+                     (update :promises (fnil conj [])
+                             (on-evicted (:path evicted))))))))))
 
 
 ; ======= FS implementation ===============================
@@ -70,15 +73,20 @@
                                   [path stat])))
                        p/all)]
       ((log/of :cache) "Initializing... " root-path)
-      (swap! state initialize-state-with-stats stats))))
+      (let [{:keys [promises]} (swap! state initialize-state-with-stats stats)]
+        (swap! state dissoc :promises)
+        (p/all promises)))))
 
 (deftype ^:private StatePoweredPromiseSizingCache [state]
   ICache
   (size [_this] (:max-size @state))
 
   (on-file-created [_this path]
-    (-> (p/let [stat (fs/stat path)]
-          (swap! state put-with-size path (j/get stat :size)))
+    (-> (p/let [stat (fs/stat path)
+                {:keys [promises]} (swap! state put-with-size
+                                          path (j/get stat :size))]
+          (swap! state dissoc :promises)
+          (p/all promises))
         (p/catch (partial
                    log/error
                    "Unable to update cache for download of" path))))
@@ -91,7 +99,7 @@
 
 (defn- on-evict-file [path]
   ((log/of :cache) "Evicting" path "...")
-  (println "TODO evict" path))
+  (fs/rm path))
 
 ; ======= Public interface ================================
 
@@ -101,7 +109,8 @@
    (let [state (create-state
                  cache-size
                  on-evict-file)]
-     (initialize-fs-cache root-path state)
+     (-> (initialize-fs-cache root-path state)
+         (p/catch (partial log/error "Error initializing fs-cache")))
      (create-fs-with-state state))))
 
 (defn ensure-sized
