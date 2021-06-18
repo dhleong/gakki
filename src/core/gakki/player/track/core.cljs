@@ -1,9 +1,10 @@
 (ns gakki.player.track.core
-  (:require [gakki.util.logging :as log]
+  (:require [archetype.util :refer [>evt]]
             [promesa.core :as p]
             [gakki.player.clip :as clip :refer [IAudioClip]]
             [gakki.player.pcm.core :as pcm :refer [IPCMSource]]
-            [gakki.player.stream.seek :as seek]))
+            [gakki.player.stream.seek :as seek]
+            [gakki.util.logging :as log]))
 
 (def ^:private log (log/of :player/track))
 
@@ -12,10 +13,10 @@
   (read-config [this])
   (seek [this timestamp-seconds]))
 
-(deftype AudioTrack [^IPCMSource source, state]
+(deftype AudioTrack [id, ^IPCMSource source, state]
   Object
   (toString [_this]
-    (str "AudioTrack(" source ")"))
+    (str "AudioTrack(" id ": " source ")"))
 
   IPrintWithWriter
   (-pr-writer [this writer _]
@@ -75,6 +76,7 @@
         :else
         (p/plet [stream (pcm/open-read-stream source)
                  config (pcm/read-config source)]
+          (>evt [:player/on-playback-config-resolved id config])
           (swap!
             state
             (fn create-clip [{:keys [clip seek-time seek-bytes] :as current-state}]
@@ -116,7 +118,7 @@
     (when-let [clip (:clip @state)]
       (clip/set-volume clip volume-percent))))
 
-(defn create [^IPCMSource source]
-  (->AudioTrack source (atom nil)))
+(defn create [id, ^IPCMSource source]
+  (->AudioTrack id source (atom nil)))
 
 

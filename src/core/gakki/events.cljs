@@ -246,6 +246,19 @@
             [:dispatch [:player/open entity]])]}))
 
 (reg-event-fx
+  :player/on-playback-config-resolved
+  [trim-v (path :player :current)]
+  (fn [{current :db} [id {duration-ms :duration}]]
+    (let [duration-seconds (js/Math.ceil (/ duration-ms 1000))]
+      (when (and (= id (:id current))
+                 (not= duration-seconds (:duration current)))
+        (log/player "Providing duration" duration-seconds
+                    " (was " (:duration current) ") for track #" id)
+        (let [with-duration (assoc current :duration duration-seconds)]
+          {:db with-duration
+           :native/set-now-playing! with-duration})))))
+
+(reg-event-fx
   :player/play-items
   [trim-v (path :player :queue)]
   (fn [_ [items ?selected-index]]
