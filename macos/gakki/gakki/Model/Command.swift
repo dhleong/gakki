@@ -30,11 +30,13 @@ struct Command: Codable {
 
     // .setState:
     var state: State?
+    var currentTime: Double?
 
     // .setNowPlaying:
     var title: String?
     var artist: String?
     var imageUrl: String?
+    var duration: Int?
 }
 
 extension Command {

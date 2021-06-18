@@ -246,6 +246,19 @@
             [:dispatch [:player/open entity]])]}))
 
 (reg-event-fx
+  :player/on-playback-config-resolved
+  [trim-v (path :player :current)]
+  (fn [{current :db} [id {duration-ms :duration}]]
+    (let [duration-seconds (js/Math.ceil (/ duration-ms 1000))]
+      (when (and (= id (:id current))
+                 (not= duration-seconds (:duration current)))
+        (log/player "Providing duration" duration-seconds
+                    " (was " (:duration current) ") for track #" id)
+        (let [with-duration (assoc current :duration duration-seconds)]
+          {:db with-duration
+           :native/set-now-playing! with-duration})))))
+
+(reg-event-fx
   :player/play-items
   [trim-v (path :player :queue)]
   (fn [_ [items ?selected-index]]
@@ -330,6 +343,18 @@
       ; nothing more in the queue
       {:db (assoc player-state :state :paused)
        :native/set-state! :paused})))
+
+(reg-event-fx
+  :player/seek-by
+  [trim-v]
+  (fn [_ [relative-seconds]]
+    {:player/seek-by! relative-seconds}))
+
+(reg-event-fx
+  :player/seek-to
+  [trim-v]
+  (fn [_ [timestamp-seconds]]
+    {:player/seek-to! timestamp-seconds}))
 
 (reg-event-fx
   :player/set-volume

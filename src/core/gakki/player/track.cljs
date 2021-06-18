@@ -7,19 +7,19 @@
             [gakki.player.track.events :as events]
             [promesa.core :as p]))
 
-(defn create-with-events [^IPCMSource pcm-source, ^EventEmitter events]
+(defn create-with-events [id, ^IPCMSource pcm-source, ^EventEmitter events]
   (-> pcm-source
       (pcm/prepare)
       (p/catch (fn [e]
                  ((log/of :track) "Error preparing " pcm-source ": " e)
                  (.emit events "end"))))
   (events/wrap
-    (track/create pcm-source)
+    (track/create id pcm-source)
     events))
 
 ; TODO: We probably want to refactor this out and use AudioTrack directly...
-(defn create-playable [^IPCMSource pcm-source]
-  (create-with-events pcm-source (EventEmitter.)))
+(defn create-playable [id ^IPCMSource pcm-source]
+  (create-with-events id pcm-source (EventEmitter.)))
 
 (defonce ^:private test-track (atom nil))
 

@@ -3,10 +3,11 @@
             ["child_process" :refer [ChildProcess spawn]]
             [clojure.string :as str]
             [cognitect.transit :as t]
-            [gakki.util.logging :as log]
             ["path" :rename {join path-join}]
             [promesa.core :as p]
-            ["stream" :refer [Readable]]))
+            ["stream" :refer [Readable]]
+            [gakki.player :as player]
+            [gakki.util.logging :as log]))
 
 (def ^:private native-exe-path
   "./macos/gakki/build/Release/gakki.app/Contents/MacOS/gakki")
@@ -37,13 +38,18 @@
                  raw-message
                  e))))
 
-(defn- handle-media-event [{:keys [event]}]
+(defn- handle-media-event [{:keys [event] :as ev}]
   (case event
     :toggle (>evt [:player/play-pause])
     :next-track (>evt [:player/next-in-queue])
     :previous-track (>evt [:player/rewind-or-prev-in-queue])
     :pause (>evt [:player/pause])
     :play (>evt [:player/play])
+    :seek (cond
+            ; NOTE: macOS times/intervals are all in seconds
+            (:relative ev) (>evt [:player/seek-by (:relative ev)])
+            (:time ev) (>evt [:player/seek-to (:time ev)])
+            :else (log/error :native "Unexpected seek mechanism: " ev))
 
     (log/error :native "TODO: handle media event: " event)))
 
@@ -133,6 +139,7 @@
 
 (defn set-state! [state]
   (send! {:type :set-state
+          :current-time (player/current-time)
           :state state}))
 
 (defn set-now-playing!
@@ -140,10 +147,12 @@
 
      {:title 'title'
       :artist 'artist name'
+      :duration duration-seconds
       :image-url 'optional url'}"
   [now-playing]
-  (send! (assoc now-playing
-                :type :set-now-playing))
+  (log/debug "set-now-playing!" now-playing)
+  (send! (-> now-playing
+             (assoc :type :set-now-playing)))
   (set-state! :playing))
 
 

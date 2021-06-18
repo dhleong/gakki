@@ -8,8 +8,13 @@
 
 (def ^:private log (log/of :player.track/events))
 
-(defn- enqueue-end-notification [^EventEmitter events config ^IAudioClip clip]
-  (let [current-time-ms (* (clip/current-time clip) 1000)
+(declare EventfulAudioTrack)
+
+(defn- enqueue-end-notification
+  [^EventEmitter events config ^IAudioClip clip current-timestamp-seconds]
+  (let [current-time-ms (* (or current-timestamp-seconds
+                               (clip/current-time clip))
+                           1000)
         end-timeout (max 0
                          (- (:duration config)
                             current-time-ms
@@ -32,6 +37,21 @@
       (js/clearTimeout end-timer)
       (js/clearTimeout ending-timer))))
 
+(defn- restart-event-timers
+  ([^EventfulAudioTrack eventful-track] (restart-event-timers eventful-track nil))
+  ([^EventfulAudioTrack eventful-track current-timestamp-seconds]
+   (p/let [config (track/read-config eventful-track)]
+     (swap! (.-state eventful-track)
+            (fn [{:keys [clear-timer] :as old-state}]
+              (when clear-timer
+                (clear-timer))
+              (assoc old-state :clear-timer
+                     (enqueue-end-notification
+                       (.-events eventful-track)
+                       config
+                       eventful-track
+                       current-timestamp-seconds)))))))
+
 (deftype EventfulAudioTrack [^IAudioTrack base, ^EventEmitter events, state]
   Object
   (toString [_this]
@@ -42,9 +62,14 @@
     (-write writer (.toString this)))
 
   IAudioTrack
+  (id [_this] (track/id base))
   (close [_this] (track/close base))
   (read-config [_this] (track/read-config base))
-  (seek [_this timestamp-seconds] (track/seek base timestamp-seconds))
+  (seek [this timestamp-seconds]
+    (track/seek base timestamp-seconds)
+    ; NOTE: clip/current-time doesn't seem to be reliable here for some reason,
+    ; so we just pass the exact timestamp to use:
+    (restart-event-timers this timestamp-seconds))
 
   IPlayable
   (close [this] (clip/close this))
@@ -62,15 +87,7 @@
 
   (play [this]
     (when-not (clip/playing? this)
-      (p/let [config (track/read-config this)]
-        (swap! state (fn [{:keys [clear-timer] :as old-state}]
-                       (when clear-timer
-                         (clear-timer))
-                       (assoc old-state :clear-timer
-                              (enqueue-end-notification
-                                events
-                                config
-                                this)))))
+      (restart-event-timers this)
       (clip/play base)))
 
   (pause [this]

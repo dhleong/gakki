@@ -2,6 +2,8 @@
   (:require [archetype.util :refer [>evt]]
             [gakki.accounts.core :as ap]
             [gakki.accounts :refer [providers]]
+            [gakki.player.clip :as clip]
+            [gakki.player.track.core :as track :refer [IAudioTrack]]
             [gakki.player.core :as player]))
 
 (defonce ^:private state (atom nil))
@@ -36,8 +38,17 @@
 
     (throw (ex-info "No such provider" {:id provider}))))
 
+(defn- seek-relative [^IAudioTrack track, relative-seconds]
+  (let [from (clip/current-time track)]
+    (track/seek track (-> (+ from relative-seconds)
+                          (max 0)))))
 
 ; ======= Public interface ================================
+
+(defn current-time []
+  (or (when-let [playable (:playable @state)]
+        (clip/current-time playable))
+      0))
 
 (defn prepare! [{:keys [account item]}]
   (swap! state prepare-snapshot item account))
@@ -66,6 +77,12 @@
 
 (defn pause! []
   (on-playable player/pause))
+
+(defn seek-by! [relative-seconds]
+  (on-playable seek-relative relative-seconds))
+
+(defn seek-to! [timestamp-seconds]
+  (on-playable track/seek timestamp-seconds))
 
 (defn set-volume! [volume-percent]
   (on-playable player/set-volume volume-percent))

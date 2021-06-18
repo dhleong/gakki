@@ -95,5 +95,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             IPC.send(["type": "media", "event": "next-track"])
             return .success
         })
+
+        let seek = commandCenter.changePlaybackPositionCommand
+        seek.isEnabled = true
+        seek.addTarget { event in
+            if let ev = event as? MPChangePlaybackPositionCommandEvent {
+                MPNowPlayingInfoCenter.default().setCurrentTime(ev.positionTime)
+                IPC.send([
+                    "type": "media",
+                    "event": "seek",
+                    "time": ev.positionTime,
+                ])
+            }
+
+            return .success
+        }
+
+        // NOTE: This code is kept around for reference, but is disabled for
+        // now. If we enable these commands, we seem to lose the next/prev
+        // track buttons in the UI, and there are also some issues around
+        // updating the current timestamp when they fire... so it's easiest
+        // to just not use them, and rely on the absolute seek command.
+        // commandCenter.skipForwardCommand.handleSeekEvent(seekDirection: 1.0)
+        // commandCenter.skipBackwardCommand.handleSeekEvent(seekDirection: -1.0)
+    }
+}
+
+extension MPSkipIntervalCommand {
+    func handleSeekEvent(seekDirection: Double) {
+        isEnabled = true
+        addTarget(handler: { event in
+            if let ev = event as? MPSkipIntervalCommandEvent {
+                IPC.send([
+                    "type": "media",
+                    "event": "seek",
+                    "relative": seekDirection * ev.interval,
+                ])
+            }
+            return .success
+        })
     }
 }

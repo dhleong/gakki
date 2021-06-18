@@ -160,6 +160,8 @@
 (reg-fx :player/pause! player/pause!)
 (reg-fx :player/play! player/play!)
 (reg-fx :player/prepare! player/prepare!)
+(reg-fx :player/seek-by! player/seek-by!)
+(reg-fx :player/seek-to! player/seek-to!)
 (reg-fx :player/set-volume! player/set-volume!)
 (reg-fx :player/unpause! player/unpause!)
 

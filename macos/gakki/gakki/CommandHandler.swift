@@ -76,6 +76,10 @@ struct CommandHandler {
             MPMediaItemPropertyArtist: command.artist ?? "",
         ]
 
+        if let duration = command.duration, duration > 0 {
+            info[MPMediaItemPropertyPlaybackDuration] = duration
+        }
+
         if let rawImageUrl = command.imageUrl,
         let imageUrl = URL(string: rawImageUrl) {
 
@@ -107,6 +111,10 @@ struct CommandHandler {
         if let inputState = command.state,
         let state = commandToPlaybackState[inputState] {
             MPNowPlayingInfoCenter.default().playbackState = state
+
+            if let time = command.currentTime {
+                MPNowPlayingInfoCenter.default().setCurrentTime(time)
+            }
         }
     }
 

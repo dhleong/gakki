@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6565346C267A442600679CA5 /* MPNowPlayingInfoCenter+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6565346B267A442600679CA5 /* MPNowPlayingInfoCenter+Extensions.swift */; };
 		65C58C7F265862B2001C4796 /* Command.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C58C7E265862B1001C4796 /* Command.swift */; };
 		65C58C812658652F001C4796 /* convertFromKebabCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C58C802658652F001C4796 /* convertFromKebabCase.swift */; };
 		65C58C84265868AE001C4796 /* CommandHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C58C83265868AE001C4796 /* CommandHandler.swift */; };
@@ -39,6 +40,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		6565346B267A442600679CA5 /* MPNowPlayingInfoCenter+Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "MPNowPlayingInfoCenter+Extensions.swift"; sourceTree = "<group>"; };
 		65C58C7E265862B1001C4796 /* Command.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Command.swift; sourceTree = "<group>"; };
 		65C58C802658652F001C4796 /* convertFromKebabCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = convertFromKebabCase.swift; sourceTree = "<group>"; };
 		65C58C83265868AE001C4796 /* CommandHandler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CommandHandler.swift; sourceTree = "<group>"; };
@@ -85,6 +87,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6565346A267A442600679CA5 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				6565346B267A442600679CA5 /* MPNowPlayingInfoCenter+Extensions.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
 		65C58C8226586536001C4796 /* Parsing */ = {
 			isa = PBXGroup;
 			children = (
@@ -125,6 +135,7 @@
 			isa = PBXGroup;
 			children = (
 				B6B19AC2265ABF88008635AC /* Commands */,
+				6565346A267A442600679CA5 /* Extensions */,
 				65C58C85265868B7001C4796 /* Model */,
 				65C58C8226586536001C4796 /* Parsing */,
 				65C58C83265868AE001C4796 /* CommandHandler.swift */,
@@ -311,6 +322,7 @@
 				B6B19AC4265ABF88008635AC /* Auth.swift in Sources */,
 				65C58C8726586B0C001C4796 /* IPC.swift in Sources */,
 				65C58C812658652F001C4796 /* convertFromKebabCase.swift in Sources */,
+				6565346C267A442600679CA5 /* MPNowPlayingInfoCenter+Extensions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

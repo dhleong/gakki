@@ -22,6 +22,7 @@
    *may* be nil for public (not auth-required) videos."
   [account id]
   (track/create-playable
+    id
     (pcm/create-caching-source
       (str "ytm." id)
       #(youtube-id->stream account id))))
