@@ -3,6 +3,7 @@
    from *somewhere* and caches them to a file on disk, providing seekable
    access to however much of the input stream has been written."
   (:require [applied-science.js-interop :as j]
+            [archetype.util :refer [>evt]]
             [clojure.string :as str]
             ["fs" :rename {createWriteStream create-write-stream
                            createReadStream create-read-stream}]
@@ -210,6 +211,7 @@
                    (log/debug "Completed download of " destination-path)
                    (-> (complete-download tmp-path destination-path)
                        (p/then (fn []
+                                 (>evt [:cache/download-completed])
                                  (swap! state assoc
                                         :disk (disk/create destination-path))))))))
 
