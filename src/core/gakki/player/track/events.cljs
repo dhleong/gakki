@@ -62,6 +62,7 @@
     (-write writer (.toString this)))
 
   IAudioTrack
+  (id [_this] (track/id base))
   (close [_this] (track/close base))
   (read-config [_this] (track/read-config base))
   (seek [this timestamp-seconds]

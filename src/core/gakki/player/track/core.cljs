@@ -9,6 +9,7 @@
 (def ^:private log (log/of :player/track))
 
 (defprotocol IAudioTrack
+  (id [this])
   (close [this])
   (read-config [this])
   (seek [this timestamp-seconds]))
@@ -23,6 +24,8 @@
     (-write writer (.toString this)))
 
   IAudioTrack
+  (id [_this] id)
+
   (close [_this]
     (swap! state (fn [{:keys [clip] :as state}]
                    (when clip
