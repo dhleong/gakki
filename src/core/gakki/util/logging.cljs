@@ -74,6 +74,20 @@
     (when-let [stack (when ex (.-stack ex))]
       (println (chalk/gray stack)))))
 
+(defn with-error-warn
+  "Wraps a function f with a new function that caches errors thrown by `f` and
+   logs them, returning `fallback-value`. Logs may optionally be prefixed"
+  ([f fallback-value] (with-error-warn "" f fallback-value))
+  ([log-prefix f fallback-value]
+   (fn wrap-error [& args]
+     (try
+       (apply f args)
+       (catch :default e
+         ; NOTE: We probably don't need the stack trace, so just show the
+         ; message and any data attached:
+         (error log-prefix (ex-message e) (ex-data e))
+         fallback-value)))))
+
 
 ; ======= Timing ==========================================
 
