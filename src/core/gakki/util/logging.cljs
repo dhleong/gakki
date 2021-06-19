@@ -25,16 +25,38 @@
         v 100]
     (chalk/hsv h s v)))
 
+(defn- error? [e]
+  (instance? js/Error e))
+
+(defn- perform-log [parts]
+  (let [ex (some #(when (error? %) %) parts)
+        without-extras (remove error? parts)
+
+        last-map (when (map? (last without-extras))
+                   (last without-extras))
+        without-extras (if (some? last-map)
+                         (butlast without-extras)
+                         without-extras)]
+    (apply println (if-some [m (ex-message ex)]
+                     (concat without-extras [m])
+                     without-extras))
+    (when (some? last-map)
+      (pprint last-map))
+    (when-let [data (ex-data ex)]
+      (pprint data))
+    (when-let [stack (when ex (.-stack ex))]
+      (println (chalk/gray stack)))))
+
 (def of
   (memoize
     (fn log-creator [tag]
       (let [string-tag (if (string? tag)
                          tag
-                         (str/replace (str "gakki" tag) #"[./]" ":"))
+                         (str/replace (str "uv" tag) #"[./]" ":"))
             colorized-tag ((colorizer string-tag) string-tag)]
         (fn log [& args]
           (when (enabled? string-tag)
-            (apply println colorized-tag args)))))))
+            (perform-log (cons colorized-tag args))))))))
 
 (def debug (of nil))
 (def player (of :player))
@@ -42,37 +64,18 @@
 
 ; ======= Error logging ===================================
 
-(defn error? [e]
-  (instance? js/Error e))
-
 (defn error [& message]
   (let [tag (if (keyword? (first message))
               (first message)
               nil)
         message (if tag
                   (next message)
-                  message)
-        ex (some #(when (error? %) %) message)
-        without-ex (remove error? message)
-
-        last-map (when (map? (last without-ex))
-                   (last without-ex))
-        without-ex (if (some? last-map)
-                  (butlast without-ex)
-                  without-ex)]
+                  message)]
 
     ; NOTE: Error logs cannot be disabled
-    (apply println ((chalk/inverse.hsv 0 40 100)
-                    (str " ERROR" tag " "))
-           (if-some [m (ex-message ex)]
-             (concat without-ex [m])
-             without-ex))
-    (when (some? last-map)
-      (pprint last-map))
-    (when-let [data (ex-data ex)]
-      (pprint data))
-    (when-let [stack (when ex (.-stack ex))]
-      (println (chalk/gray stack)))))
+    (perform-log (cons ((chalk/inverse.hsv 0 40 100)
+                        (str " ERROR" tag " "))
+                       message))))
 
 
 ; ======= Timing ==========================================
