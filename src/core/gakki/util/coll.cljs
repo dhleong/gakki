@@ -19,6 +19,20 @@
   (when (< n (count coll))
     (nth coll n)))
 
+(defn update-present
+  "Like `update` but is a no-op (IE: returns `m` unchanged) if the key does not
+   exist in the map"
+  ([m k f]
+   (if-not (contains? m k) m (update m k f)))
+  ([m k f x]
+   (if-not (contains? m k) m (update m k f x)))
+  ([m k f x y]
+   (if-not (contains? m k) m (update m k f x y)))
+  ([m k f x y z]
+   (if-not (contains? m k) m (update m k f x y z)))
+  ([m k f x y z & more]
+   (if-not (contains? m k) m (apply update m k f x y z more))))
+
 (defn vec-dissoc [coll v]
   (cond
     ; Special optimizations for last...

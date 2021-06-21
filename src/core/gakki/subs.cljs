@@ -1,5 +1,6 @@
 (ns gakki.subs
   (:require [re-frame.core :refer [reg-sub]]
+            [gakki.db :as db]
             [gakki.const :as const :refer [max-volume-int]]
             [gakki.util.media :refer [category-id]]))
 
@@ -8,6 +9,7 @@
 (reg-sub :artists :artist)
 (reg-sub :playlists :playlist)
 (reg-sub ::carousel-data ::carousel-data)
+(reg-sub ::prefs :prefs)
 
 (reg-sub
   :loading?
@@ -34,6 +36,19 @@
   :<- [:accounts]
   (fn [accounts [_ provider-id]]
     (get accounts provider-id)))
+
+
+; ======= prefs ===========================================
+
+(reg-sub
+  :prefs
+  :<- [::prefs]
+  (fn [prefs [_ ?pref]]
+    (if ?pref
+      (if-some [pref (get prefs ?pref)]
+        pref
+        (get db/default-prefs ?pref))
+      prefs)))
 
 
 ; ======= player ==========================================

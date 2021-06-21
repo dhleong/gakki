@@ -1,5 +1,6 @@
 (ns gakki.player.pcm
-  (:require ["path" :as path]
+  (:require [archetype.util :refer [>evt]]
+            ["path" :as path]
             [promesa.core :as p]
             [gakki.util.loading :refer [with-loading-promise]]
             [gakki.util.logging :as log]
@@ -23,6 +24,10 @@
               ; read-config to ensure it's not only *there* but *valid*
               (pcm/read-config source)
               (log/player "opening cached @" destination-path)
+
+              ; The file seems fine; let's mark it as accessed for cache
+              ; management purposes
+              (>evt [:cache/file-accessed destination-path])
               source))
 
           (p/catch

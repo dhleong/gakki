@@ -1,9 +1,12 @@
-(ns gakki.const)
+(ns gakki.const
+  (:require [gakki.util.bytesize :as bytesize]))
 
 (def debug? goog/DEBUG)
 
 (def max-volume-int 10)
 (def suppressed-volume-percent 0.20)
+
+(def default-cache-size (bytesize/parse "1G"))
 
 ; TODO Not sure how this should be determined; maybe it's just a buffer size and
 ; doesn't really matter what value it is...

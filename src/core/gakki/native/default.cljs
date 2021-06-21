@@ -5,6 +5,9 @@
             ["keytar" :refer [deletePassword findCredentials setPassword]]
             ["path" :as path]
             [promesa.core :as p]
+            [gakki.const :as const]
+            [gakki.util.bytesize :as bytesize]
+            [gakki.util.coll :refer [update-present]]
             [gakki.util.logging :as log]
             [gakki.util.paths :as paths]))
 
@@ -40,7 +43,13 @@
               raw (fs/readFile path)]
         (-> raw
             (js/JSON.parse)
-            (js->clj :keywordize-keys true)))
+            (js->clj :keywordize-keys true)
+
+            ; Parse typed config values
+            (update-present :cache.size (log/with-error-warn
+                                          "Invalid cache.size config:"
+                                          bytesize/parse
+                                          const/default-cache-size))))
       (p/catch (j/fn [^:js {:keys [code] :as e}]
                  (when-not (= "ENOENT" code)
                    (log/debug e))

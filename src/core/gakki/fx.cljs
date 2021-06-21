@@ -7,6 +7,7 @@
             [gakki.integrations :as integrations]
             [gakki.native :as native]
             [gakki.player :as player]
+            [gakki.player.cache :as cache]
             [gakki.util.loading :refer [with-loading-promise]]
             [gakki.util.logging :as log]))
 
@@ -164,6 +165,23 @@
 (reg-fx :player/seek-to! player/seek-to!)
 (reg-fx :player/set-volume! player/set-volume!)
 (reg-fx :player/unpause! player/unpause!)
+
+
+; ======= Cache ===========================================
+
+(defonce ^:private player-cache (atom nil))
+
+(reg-fx
+  :cache/file-accessed
+  (fn [path]
+    (when-let [cache @player-cache]
+      (cache/on-file-accessed cache path))))
+
+(reg-fx
+  :cache/download-completed
+  (fn [{:keys [cache-size path]}]
+    (let [cache (swap! player-cache cache/ensure-sized cache-size)]
+      (cache/on-file-created cache path))))
 
 
 ; ======= Integrations ====================================

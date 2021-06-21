@@ -11,6 +11,8 @@
             [gakki.util.logging :as log]
             [gakki.util.media :refer [category-id]]))
 
+(def ^:private inject-sub (partial inject-cofx ::inject/sub))
+
 (reg-event-fx
   ::initialize-db
   (fn [_ _]
@@ -152,7 +154,7 @@
 (reg-event-fx
   :carousel/navigate-categories
   [trim-v carousel-path
-   (inject-cofx ::inject/sub [:carousel/categories])]
+   (inject-sub [:carousel/categories])]
   (fn [{categories :carousel/categories} [direction]]
     (let [delta (case direction
                   :up -1
@@ -168,8 +170,8 @@
 (reg-event-fx
   :carousel/navigate-row
   [trim-v carousel-path
-   (inject-cofx ::inject/sub [:carousel/selection])
-   (inject-cofx ::inject/sub [:carousel/categories])]
+   (inject-sub [:carousel/selection])
+   (inject-sub [:carousel/categories])]
   (fn [{categories :carousel/categories selections :carousel/selection}
        [direction]]
     (let [{:keys [items] :as category} (or (when-let [id (:category selections)]
@@ -191,7 +193,7 @@
 
 (reg-event-fx
   :carousel/open-selected
-  [trim-v carousel-path (inject-cofx ::inject/sub [:page])]
+  [trim-v carousel-path (inject-sub [:page])]
   (fn [{{:keys [selected]} :carousel} _]
     (when selected
       {:dispatch [:player/open selected]})))
@@ -273,7 +275,7 @@
 
 (reg-event-fx
   ::set-current-playable
-  [trim-v (inject-cofx ::inject/sub [:player/volume-percent])]
+  [trim-v (inject-sub [:player/volume-percent])]
   (fn [{:keys [db] volume-percent :player/volume-percent} [playable]]
     ((log/of :events/set-current-playable) "set playable <- " playable "@" volume-percent)
     {:db (-> db
@@ -360,7 +362,7 @@
   :player/set-volume
   [trim-v
    (path :player)
-   (inject-cofx ::inject/sub [:player/volume-suppress-amount])]
+   (inject-sub [:player/volume-suppress-amount])]
   (fn [{player :db suppress-amount :player/volume-suppress-amount} [new-volume]]
     ; NOTE: new-volume should be in [0..max-volume-int]
     (let [new-volume (-> new-volume
@@ -416,6 +418,22 @@
   [trim-v]
   (fn [{:keys [db]} [event]]
     (handle-player-event db event)))
+
+
+; ======= Cache management ================================
+
+(reg-event-fx
+  :cache/download-completed
+  [trim-v (inject-sub [:prefs :cache.size])]
+  (fn [{cache-size :prefs} [path]]
+    {:cache/download-completed {:cache-size cache-size
+                                :path path}}))
+
+(reg-event-fx
+  :cache/file-accessed
+  [trim-v]
+  (fn [_ [path]]
+    {:cache/file-accessed path}))
 
 
 ; ======= Integrations ====================================
