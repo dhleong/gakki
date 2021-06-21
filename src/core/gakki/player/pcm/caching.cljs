@@ -211,7 +211,7 @@
                    (log/debug "Completed download of " destination-path)
                    (-> (complete-download tmp-path destination-path)
                        (p/then (fn []
-                                 (>evt [:cache/download-completed])
+                                 (>evt [:cache/download-completed destination-path])
                                  (swap! state assoc
                                         :disk (disk/create destination-path))))))))
 
