@@ -52,7 +52,7 @@
     (fn log-creator [tag]
       (let [string-tag (if (string? tag)
                          tag
-                         (str/replace (str "uv" tag) #"[./]" ":"))
+                         (str/replace (str "gakki" tag) #"[./]" ":"))
             colorized-tag ((colorizer string-tag) string-tag)]
         (fn log [& args]
           (when (enabled? string-tag)
