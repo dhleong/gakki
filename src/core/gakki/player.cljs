@@ -26,7 +26,10 @@
 (defn- catch-error [p playable f]
   (p/catch p (fn [e]
                (log/error "Failed to " f " with " playable e)
-               (on-playable-end))))
+               (let [events (player/events playable)]
+                 (when (> (.listenerCount events "end") 0)
+                   (.removeAllListeners events "end")
+                   (on-playable-end))))))
 
 (defn- on-playable [f & args]
   (when-let [playable (:playable @state)]
