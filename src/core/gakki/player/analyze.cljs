@@ -1,7 +1,9 @@
 (ns gakki.player.analyze
-  (:require ["child_process" :refer [exec]]
+  (:require [applied-science.js-interop :as j]
+            ["child_process" :refer [execFile]]
             [clojure.string :as str]
             ["ffmpeg-static" :as ffmpeg-path]
+            [gakki.util.logging :as log]
             [promesa.core :as p]
             [gakki.const :as const]
             [gakki.util.convert :refer [->int]]))
@@ -12,6 +14,8 @@
 (def container-regex #"Input #0, ([^ ]+), from")
 (def codec-specific #"Audio: .*?\(([a-z0-9]+) /")
 (def codec-simple #"Audio: ([^,]+),")
+
+(def error-message-regex #"(?m)^([^:]+): (.+)$")
 
 (def ^:private accepted-containers #{"webm" "mp4"})
 
@@ -45,19 +49,31 @@
 
        :frame-size const/default-frame-size})))
 
+(defn- extract-error-message [path output]
+  (or (when-let [[_ message] (re-find (re-pattern
+                                        (str "(?m)^" path ": (.+)$"))
+                                      output)]
+        {:path path
+         :error message})
+      {:unparsed output}))
+
 (defn analyze-audio [path]
+  ((log/of :player/analyze) "Analyzing " path "...")
   (p/create
     (fn [p-resolve p-reject]
-      (exec (->> [ffmpeg-path "-i" (str "\"" path "\"")]
-                 (str/join " "))
-
-            #js {:windowsHide true}
-            (fn callback [err _stdout stderr]
-              (if-let [parsed (parse-ffmpeg stderr)]
-                (p-resolve parsed)
-                (p-reject (or err
-                              (ex-info "Failed to extra audio info"
-                                       {:out stderr})))))))))
+      (execFile
+        ffmpeg-path
+        #js ["-i" path]
+        #js {:windowsHide true}
+        (fn callback [err _stdout stderr]
+          ((log/of :player/analyze) "Callback returned.")
+          (if-let [parsed (parse-ffmpeg stderr)]
+            (p-resolve parsed)
+            (p-reject (ex-info "Failed to analyze audio file"
+                               {:err {:code (j/get err .-code)
+                                      :cmd (j/get err .-cmd)
+                                      :signal (j/get err .-signal)}
+                                :message (extract-error-message path stderr)}))))))))
 
 (defn audio-caching
   "This is a convenient, in-memory caching wrapper around `analyze-audio` that
@@ -79,7 +95,7 @@
   (p/handle
     (analyze-audio
       (str js/process.env.HOME
-           "/Library/Caches/gakki/ytm.NdYkoDHq9eM"))
-    println)
+           "/Library/Caches/gakki/ytm.iZcjm4WDdbg"))
+    log/error)
 
   )
