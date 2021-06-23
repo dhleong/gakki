@@ -66,10 +66,11 @@
   (close [_this] (track/close base))
   (read-config [_this] (track/read-config base))
   (seek [this timestamp-seconds]
-    (track/seek base timestamp-seconds)
-    ; NOTE: clip/current-time doesn't seem to be reliable here for some reason,
-    ; so we just pass the exact timestamp to use:
-    (restart-event-timers this timestamp-seconds))
+    (p/do!
+      (track/seek base timestamp-seconds)
+      ; NOTE: clip/current-time doesn't seem to be reliable here for some reason,
+      ; so we just pass the exact timestamp to use:
+      (restart-event-timers this timestamp-seconds)))
 
   IPlayable
   (close [this] (clip/close this))
@@ -87,8 +88,9 @@
 
   (play [this]
     (when-not (clip/playing? this)
-      (restart-event-timers this)
-      (clip/play base)))
+      (p/do!
+        (restart-event-timers this)
+        (clip/play base))))
 
   (pause [this]
     (when (clip/playing? this)

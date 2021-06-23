@@ -4,24 +4,38 @@
             [gakki.accounts :refer [providers]]
             [gakki.player.clip :as clip]
             [gakki.player.track.core :as track :refer [IAudioTrack]]
-            [gakki.player.core :as player]))
+            [gakki.player.core :as player]
+            [gakki.util.logging :as log]
+            [promesa.core :as p]))
 
 (defonce ^:private state (atom nil))
+
+(defn- on-playable-end []
+  (>evt [:player/event {:type :playable-end}]))
 
 (defn- listen-for-events [playable]
   (doto (player/events playable)
     (.once "ending" (fn on-ending []
                       (>evt [:player/event {:type :playable-ending}])))
-    (.once "end" (fn on-end []
-                   (>evt [:player/event {:type :playable-end}])))))
+    (.once "end" on-playable-end)))
 
 (defn- apply-config [playable config]
   (when-let [volume (:volume-percent config)]
     (player/set-volume playable volume)))
 
+(defn- catch-error [p playable f]
+  (p/catch p (fn [e]
+               (log/error "Failed to " f " with " playable e)
+               (on-playable-end))))
+
 (defn- on-playable [f & args]
   (when-let [playable (:playable @state)]
-    (apply f playable args)))
+    (-> (apply f playable args)
+        (catch-error playable f))))
+
+(defn- play-catching [playable]
+  (-> (player/play playable)
+      (catch-error playable "play")))
 
 (defn- prepare-snapshot [snapshot {provider :provider :as item} account]
   (if-let [provider-obj (get providers provider)]
@@ -60,14 +74,15 @@
       (when old
         (.removeAllListeners
           (player/events old))
-        (player/close old))
+        (-> (player/close old)
+            (catch-error old "close")))
 
       (let [{{:keys [playable]} :prepared
              :as snapshot} (prepare-snapshot snapshot item account)]
         (doto playable
           (listen-for-events)
           (apply-config config)
-          (player/play))
+          (play-catching))
         (-> snapshot
             (assoc :playable playable)
             (dissoc :prepared))))))

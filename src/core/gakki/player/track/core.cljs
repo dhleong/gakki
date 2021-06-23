@@ -73,8 +73,9 @@
         (let [seek-time (clip/current-time this)]
           ; Close this clip, seek to where we were, and start again
           (close this)
-          (seek this seek-time)
-          (clip/play this))
+          (p/do!
+            (seek this seek-time)
+            (clip/play this)))
 
         :else
         (p/plet [stream (pcm/open-read-stream source)
@@ -91,9 +92,8 @@
                     clip (clip/from-stream
                            (seek/nbytes-chunkwise stream (or seek-bytes 0))
                            full-config)]
-                ((log/of :player/track)
-                 "playing " stream " with " full-config
-                 "; seek-bytes=" seek-bytes)
+                (log "playing " stream " with " full-config
+                     "; seek-bytes=" seek-bytes)
                 (doto clip
                   (clip/set-volume (:volume current-state 1.0))
                   (clip/play))
