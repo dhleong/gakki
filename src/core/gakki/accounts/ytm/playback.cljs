@@ -73,18 +73,26 @@
 
 (defn load [^YTMusic client, id]
   (let [cookies (when client
-                  (.-cookie client))]
+                  (.-cookie client))
+        errors (atom nil)
+        catch-errors (fn [p tag]
+                       (p/catch p (fn [e]
+                                    (swap! errors assoc tag e)
+                                    nil)))]
     ; NOTE: Currently we request from both ytdl-core and ytm directly
     ; *in parallel* for expediency. It may be possible extract an URL from YTM
     ; responses that don't explicitly include an URL (which we only seem to get
     ; from uploaded tracks) but it's quite tricky. We would probably have to
     ; reuse some parts of ytdl-core, but would need to submit a PR to refactor
     ; some of ytdl-core to make it usable where we need it....
-    (p/plet [from-ytm (load-ytm cookies id)
+    (p/plet [from-ytm (-> (load-ytm cookies id)
+                          (catch-errors :ytm))
              from-ytdl (-> (load-ytdl-core cookies id)
-                           (p/catch (constantly nil)))]
+                           (catch-errors :ytdl))]
       (or from-ytm
-          from-ytdl))))
+          from-ytdl
+          (throw (ex-info "Failed to load URL for " {:ytm-id id
+                                                     :errors @errors}))))))
 
 #_:clj-kondo/ignore
 (comment
