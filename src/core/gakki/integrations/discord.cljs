@@ -70,9 +70,11 @@
                     (log/debug "Lost connection to discord; reconnecting later")
                     (retry-connect 0)))
 
-           (.subscribe "VOICE_CONNECTION_STATUS"
-                       (fn on-voice-state [ev]
-                         (on-voice-connect-status-update ev))))
+           (.on "VOICE_CONNECTION_STATUS"
+                (fn on-voice-state [ev]
+                  (on-voice-connect-status-update ev)))
+
+           (.subscribe "VOICE_CONNECTION_STATUS"))
 
          (when-let [last-state (:last-state @client-state)]
            (set-state! last-state)))
