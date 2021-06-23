@@ -64,18 +64,21 @@
 
 ; ======= Error logging ===================================
 
-(defn error [& message]
-  (let [tag (if (keyword? (first message))
-              (first message)
-              nil)
-        message (if tag
+(defn- with-colorized-tag [tag color & message]
+  (let [user-tag (if (keyword? (first message))
+                   (first message)
+                   nil)
+        message (if user-tag
                   (next message)
                   message)]
 
-    ; NOTE: Error logs cannot be disabled
-    (perform-log (cons ((chalk/inverse.hsv 0 40 100)
-                        (str " ERROR" tag " "))
+    ; NOTE: These kinds of logs cannot be disabled
+    (perform-log (cons (color
+                        (str " " tag user-tag " "))
                        message))))
+
+(def error (partial with-colorized-tag "ERROR" (chalk/inverse.hsv 0 40 100)))
+(def fixed (partial with-colorized-tag "FIXED" (chalk/inverse.hsv 90 40 100)))
 
 (defn with-error-warn
   "Wraps a function f with a new function that caches errors thrown by `f` and

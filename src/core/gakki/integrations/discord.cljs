@@ -45,8 +45,8 @@
 (declare ^:private retry-connect)
 
 (defn- try-connect
-  ([] (try-connect 0))
-  ([retry-count]
+  ([] (try-connect 0 nil))
+  ([retry-count state]
    (disconnect {:connecting? true})
 
    (-> (p/let [^DiscordClient client (DiscordClient. #js {:transport "ipc"})
@@ -57,6 +57,8 @@
                                    :redirectUri redirect-uri
                                    :scopes scopes})]
          (log/debug "Discord logged in: " result)
+         (when (= :rpc-timed-out state)
+           (log/fixed "Discord connection established!"))
          (swap! client-state assoc
                 :connecting? false
                 :ready? true
@@ -80,14 +82,21 @@
                     ; Probably, Discord is just not running
                     (or (= "ECONNREFUSED" code)
                         (= "Could not connect" message))
-                    (retry-connect 0)
+                    (retry-connect 0 state)
+
+                    (= "RPC_CONNECTION_TIMEOUT" message)
+                    (do (log/debug "Discord: RPC_CONNECTION_TIMEOUT")
+                        (when-not (= :rpc-timed-out state)
+                          (log/error "Discord connection timed out;"
+                                     "consider restarting it? Retrying..."))
+                        (retry-connect 0 :rpc-timed-out))
 
                     ; This is thrown by the RPC client if the connection was
                     ; closed before receiving any READY payload; *probably*
                     ; the app is still starting up.
                     (and (< retry-count max-retries)
                          (= "connection closed" message))
-                    (retry-connect (inc retry-count))
+                    (retry-connect (inc retry-count) state)
 
                     :else
                     (log/error "Connecting to Discord"
@@ -95,18 +104,20 @@
                                "\nretry-count: " retry-count
                                e)))))))
 
-(defn- retry-connect [retry-count]
-  (when (> retry-count 0)
-    (log/debug "Retry connection @ attempt" retry-count))
+(defn- retry-connect
+  ([retry-count] (retry-connect retry-count nil))
+  ([retry-count state]
+   (when (> retry-count 0)
+     (log/debug "Retry connection @ attempt" retry-count "; state=" state))
 
-  (swap! client-state assoc
-         :connecting? false
-         :client nil
-         :retry-timeout (js/setTimeout
-                          #(try-connect retry-count)
-                          (if (= 0 retry-count)
-                            not-running-retry-delay
-                            connect-error-retry-delay))))
+   (swap! client-state assoc
+          :connecting? false
+          :client nil
+          :retry-timeout (js/setTimeout
+                           #(try-connect retry-count state)
+                           (if (= 0 retry-count)
+                             not-running-retry-delay
+                             connect-error-retry-delay)))))
 
 
 ; ======= public interface ================================
