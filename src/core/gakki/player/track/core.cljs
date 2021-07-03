@@ -8,6 +8,23 @@
 
 (def ^:private log (log/of :player/track))
 
+(defn- create-clip [{:keys [clip seek-time seek-bytes] :as current-state}
+                    config stream]
+  ; Just in case, if there's any old clip lingering, close it:
+  (when clip
+    (clip/close clip))
+
+  (let [full-config (assoc config :start-time-seconds (or seek-time 0))
+        clip (clip/from-stream
+               (seek/nbytes-chunkwise stream (or seek-bytes 0))
+               full-config)]
+    (log "playing " stream " with " full-config
+         "; seek-bytes=" seek-bytes)
+    (doto clip
+      (clip/set-volume (:volume current-state 1.0))
+      (clip/play))
+    (assoc current-state :clip clip)))
+
 (defprotocol IAudioTrack
   (id [this])
   (close [this])
@@ -30,7 +47,9 @@
     (swap! state (fn [{:keys [clip] :as state}]
                    (when clip
                      (clip/close clip))
-                   (dissoc state :clip))))
+                   (-> state
+                       (dissoc :clip)
+                       (assoc :closed? true)))))
 
   (read-config [_this]
     (pcm/read-config source))
@@ -63,41 +82,29 @@
       false))
 
   (play [this]
-    (let [clip (:clip @state)]
-      (cond
-        (and clip (clip/default-output-device? clip))
-        (clip/play clip)
+    (let [{:keys [clip closed?]} @state]
+      (when-not closed?
+        (cond
+          (and clip (clip/default-output-device? clip))
+          (clip/play clip)
 
-        ; We have a clip, but it's targeting the wrong device
-        clip
-        (let [seek-time (clip/current-time this)]
-          ; Close this clip, seek to where we were, and start again
-          (close this)
-          (p/do!
-            (seek this seek-time)
-            (clip/play this)))
+          ; We have a clip, but it's targeting the wrong device
+          clip
+          (let [seek-time (clip/current-time this)]
+            ; Close this clip, seek to where we were, and start again
+            (close this)
+            (p/do!
+              (seek this seek-time)
+              (clip/play this)))
 
-        :else
-        (p/plet [stream (pcm/open-read-stream source)
-                 config (pcm/read-config source)]
-          (>evt [:player/on-playback-config-resolved id config])
-          (swap!
-            state
-            (fn create-clip [{:keys [clip seek-time seek-bytes] :as current-state}]
-              ; Just in case, if there's any old clip lingering, close it:
-              (when clip
-                (clip/close clip))
-
-              (let [full-config (assoc config :start-time-seconds (or seek-time 0))
-                    clip (clip/from-stream
-                           (seek/nbytes-chunkwise stream (or seek-bytes 0))
-                           full-config)]
-                (log "playing " stream " with " full-config
-                     "; seek-bytes=" seek-bytes)
-                (doto clip
-                  (clip/set-volume (:volume current-state 1.0))
-                  (clip/play))
-                (assoc current-state :clip clip))))))))
+          :else
+          (p/plet [stream (pcm/open-read-stream source)
+                   config (pcm/read-config source)]
+            (if (:closed? @state)
+              (log this " Resolved stream and config when already closed")
+              (do
+                (>evt [:player/on-playback-config-resolved id config])
+                (swap! state create-clip config stream))))))))
 
   (pause [this]
     (when-let [clip (:clip @state)]
@@ -112,8 +119,7 @@
           (clip/close clip)
           (swap! state dissoc :clip))
 
-        (clip/pause clip))
-      ))
+        (clip/pause clip))))
 
   (set-volume [_this volume-percent]
     (swap! state assoc :volume volume-percent)
