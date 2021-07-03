@@ -62,18 +62,31 @@
   (set-volume [_this volume-percent]
     (j/assoc! speaker .-outputVolume volume-percent)))
 
+(defn- pick-desired-rate [{available-rates :sampleRates
+                           available-channels :outputChannels
+                           preferred-rate :preferredSampleRate}]
+  ; NOTE: This is a bit of a kludge, but experimentally if a device supports only
+  ; mono output, it *may not* actually support its advertised preferred sample rate,
+  ; resulting in a "timeout waiting for sample rate update for device" error. In
+  ; this case, we prefer the lowest available sample rate, which seems to work.
+  (if (= 1 available-channels)
+    (first available-rates)
+
+    (or preferred-rate
+        (peek available-rates))))
+
 (defn- resample-if-needed
   [{available-rates :sampleRates
     available-channels :outputChannels
-    preferred-rate :preferredSampleRate}
+    preferred-rate :preferredSampleRate
+    :as device}
    {:keys [channels sample-rate] :as config}
    ^Readable stream]
   (if (and (some (partial = sample-rate) available-rates)
            (<= channels available-channels))
     [config stream]
 
-    (if-let [desired-rate (or preferred-rate
-                              (peek available-rates))]
+    (if-let [desired-rate (pick-desired-rate device)]
       (let [new-config (assoc config
                               :sample-rate desired-rate
                               :channels (min available-channels channels))]
