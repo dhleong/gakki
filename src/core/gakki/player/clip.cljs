@@ -63,16 +63,24 @@
     (j/assoc! speaker .-outputVolume volume-percent)))
 
 (defn- resample-if-needed
-  [{available-rates :sampleRates preferred-rate :preferredSampleRate}
-   {:keys [sample-rate] :as config}
+  [{available-rates :sampleRates
+    available-channels :outputChannels
+    preferred-rate :preferredSampleRate}
+   {:keys [channels sample-rate] :as config}
    ^Readable stream]
-  (if (some (partial = sample-rate) available-rates)
+  (if (and (some (partial = sample-rate) available-rates)
+           (<= channels available-channels))
     [config stream]
 
     (if-let [desired-rate (or preferred-rate
                               (peek available-rates))]
-      (let [new-config (assoc config :sample-rate desired-rate)]
-        ((log/of :player/clip) "Resampling " sample-rate " to " desired-rate)
+      (let [new-config (assoc config
+                              :sample-rate desired-rate
+                              :channels (min available-channels channels))]
+        ((log/of :player/clip)
+         "Resampling:"
+         " SR " sample-rate " -> " desired-rate
+         " CH " channels " -> " available-channels)
         [new-config
          (resampling/convert-pcm-config stream config new-config)])
 
@@ -84,9 +92,8 @@
 (defn- on-error [kind e]
   ((log/of :player/clip) "PCM Stream Error [" kind "] " e))
 
-(defn- open-stream [^RtAudio instance, device-id,
-                    {:keys [channels sample-rate
-                            frame-size]
+(defn- open-stream [^RtAudio instance, device, device-id,
+                    {:keys [channels sample-rate frame-size]
                      :as config}]
   (try
     (doto instance
@@ -104,7 +111,10 @@
         0 ; stream flags
         on-error))
     (catch :default e
-      (log/error "Failed to initialize AudioClip" {:config config} e)
+      (log/error "Failed to initialize AudioClip"
+                 {:config config
+                  :device device}
+                 e)
 
       ; Re-throw... for now
       (throw e))))
@@ -117,6 +127,6 @@
         device (device-by-id instance device-id)
         [config stream] (resample-if-needed device config stream)
         instance (doto instance
-                   (open-stream device-id config)
+                   (open-stream device device-id config)
                    (j/assoc! :streamTime start-time-seconds)) ]
     (->AudioClip stream instance device (->writable-stream instance))))
