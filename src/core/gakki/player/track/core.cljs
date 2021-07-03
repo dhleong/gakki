@@ -25,6 +25,15 @@
       (clip/play))
     (assoc current-state :clip clip)))
 
+(defn- swap-close! [state & {:keys [closed?]
+                             :or {closed? true}}]
+  (swap! state (fn [{:keys [clip] :as state}]
+                 (when clip
+                   (clip/close clip))
+                 (-> state
+                     (dissoc :clip)
+                     (assoc :closed? closed?)))))
+
 (defprotocol IAudioTrack
   (id [this])
   (close [this])
@@ -43,13 +52,9 @@
   IAudioTrack
   (id [_this] id)
 
-  (close [_this]
-    (swap! state (fn [{:keys [clip] :as state}]
-                   (when clip
-                     (clip/close clip))
-                   (-> state
-                       (dissoc :clip)
-                       (assoc :closed? true)))))
+  (close [this]
+    (log this " .close")
+    (swap-close! state))
 
   (read-config [_this]
     (pcm/read-config source))
@@ -61,11 +66,12 @@
             was-playing? (clip/playing? this)]
       ; Simply close any existing clip, reconfigure our start-time,
       ; and start again:
-      (close this)
+      (swap-close! state :closed? false)
       (swap! state assoc
              :seek-time timestamp-seconds
              :seek-bytes bytes-to-skip)
-      (when was-playing?
+      (when (and was-playing?
+                 (not (:closed? @state)))
         (clip/play this))))
 
   IAudioClip
@@ -83,16 +89,18 @@
 
   (play [this]
     (let [{:keys [clip closed?]} @state]
-      (when-not closed?
+      (if-not closed?
         (cond
           (and clip (clip/default-output-device? clip))
-          (clip/play clip)
+          (do (log this " Still default device; resume")
+              (clip/play clip))
 
           ; We have a clip, but it's targeting the wrong device
           clip
           (let [seek-time (clip/current-time this)]
-            ; Close this clip, seek to where we were, and start again
-            (close this)
+            ; Close this clip (without marking this Track as closed),
+            ; seek to where we were, and start again
+            (swap-close! state :closed? false)
             (p/do!
               (seek this seek-time)
               (clip/play this)))
@@ -104,7 +112,8 @@
               (log this " Resolved stream and config when already closed")
               (do
                 (>evt [:player/on-playback-config-resolved id config])
-                (swap! state create-clip config stream))))))))
+                (swap! state create-clip config stream)))))
+        (log this " Received (play) while closed"))))
 
   (pause [this]
     (when-let [clip (:clip @state)]
