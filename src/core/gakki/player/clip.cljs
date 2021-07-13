@@ -6,9 +6,13 @@
             [gakki.util.logging :as log]
             [gakki.player.stream.resampling :as resampling]))
 
-(defn- ->writable-stream [^RtAudio speaker]
+(defn- ->writable-stream [^RtAudio speaker on-error]
   (Writable. #js {:write (fn write [chnk _encoding callback]
-                           (.write speaker chnk)
+                           (try
+                             (.write speaker chnk)
+                             (catch :default e
+                               (on-error e)
+                               (throw e)))
                            (callback))}))
 
 (defn- device-by-id [^RtAudio speaker, id]
@@ -141,5 +145,9 @@
         [config stream] (resample-if-needed device config stream)
         instance (doto instance
                    (open-stream device device-id config)
-                   (j/assoc! :streamTime start-time-seconds)) ]
-    (->AudioClip stream instance device (->writable-stream instance))))
+                   (j/assoc! :streamTime start-time-seconds))
+        on-error (fn [e]
+                   (log/error "Error in Clip Writable stream"
+                              {:config config}
+                              e))]
+    (->AudioClip stream instance device (->writable-stream instance on-error))))

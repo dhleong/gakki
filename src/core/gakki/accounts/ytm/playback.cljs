@@ -14,18 +14,20 @@
 
 (def ^:private re-mime-type #"audio/([^;]+); codecs=\"([a-z0-9]+)")
 
+(defn- parse-core-config [json]
+  {:frame-size const/default-frame-size
+   :duration (->int (j/get json :approxDurationMs))
+   :loudness-db (->float (j/get json :loudnessDb))
+   :average-bitrate (->int (j/get json :averageBitrate))
+   :sample-rate (->int (j/get json :audioSampleRate))
+   :channels (->int (j/get json :audioChannels))})
+
 (defn parse-audio-format [json]
   (when-let [[_ container codec] (re-find re-mime-type (j/get json :mimeType))]
     (when-let [url (j/get json :url)]
-      {:config {:container container
-                :codec codec
-
-                :frame-size const/default-frame-size
-                :duration (->int (j/get json :approxDurationMs))
-                :loudness-db (->float (j/get json :loudnessDb))
-                :average-bitrate (->int (j/get json :averageBitrate))
-                :sample-rate (->int (j/get json :audioSampleRate))
-                :channels (->int (j/get json :audioChannels))}
+      {:config (assoc (parse-core-config json)
+                      :container container
+                      :codec codec)
        :url url})))
 
 (defn- load-ytm [cookies id]
@@ -56,15 +58,9 @@
                 (j/get info :formats)
                 #js {:quality "highestaudio"})
 
-          config {:container (j/get fmt :container)
-                  :codec (j/get fmt :audioCodec)
-
-                  ; NOTE: You'd think these would be integers, but...
-                  ; they might not be.
-                  :duration (->int (j/get fmt :approxDurationMs))
-                  :loudness-db (->int (j/get fmt :loudnessDb))
-                  :sample-rate (->int (j/get fmt :audioSampleRate))
-                  :channels (->int (j/get fmt :audioChannels))}]
+          config (assoc (parse-core-config fmt)
+                        :container (j/get fmt :container)
+                        :codec (j/get fmt :audioCodec))]
 
     {:config config
      :url (j/get fmt :url)}))
