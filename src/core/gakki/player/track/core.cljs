@@ -8,6 +8,12 @@
 
 (def ^:private log (log/of :player/track))
 
+(defprotocol IAudioTrack
+  (id [this])
+  (close [this])
+  (read-config [this])
+  (seek [this timestamp-seconds]))
+
 (defn- create-clip [{:keys [clip seek-time seek-bytes] :as current-state}
                     config stream]
   ; Just in case, if there's any old clip lingering, close it:
@@ -34,11 +40,24 @@
                      (dissoc :clip)
                      (assoc :closed? closed?)))))
 
-(defprotocol IAudioTrack
-  (id [this])
-  (close [this])
-  (read-config [this])
-  (seek [this timestamp-seconds]))
+(defn- restart-clip! [track]
+  (let [seek-time (clip/current-time track)]
+    ; Close this clip (without marking this Track as closed),
+    ; seek to where we were, and start again
+    (swap-close! (.-state track) :closed? false)
+    (p/do!
+      (seek track seek-time)
+      (clip/play track))))
+
+(defn- play! [this clip]
+  (-> (clip/play clip)
+      (p/catch
+        (fn [e]
+          (case (:kind (ex-data e))
+            :system (do (log "SYSTEM error playing clip; possible device change")
+                        (restart-clip! this))
+            :warning nil ; ignore
+            (log "Error playing clip: " (ex-message e) (ex-data e)))))))
 
 (deftype AudioTrack [id, ^IPCMSource source, state]
   Object
@@ -93,17 +112,11 @@
         (cond
           (and clip (clip/default-output-device? clip))
           (do (log this " Still default device; resume")
-              (clip/play clip))
+              (play! this clip))
 
           ; We have a clip, but it's targeting the wrong device
           clip
-          (let [seek-time (clip/current-time this)]
-            ; Close this clip (without marking this Track as closed),
-            ; seek to where we were, and start again
-            (swap-close! state :closed? false)
-            (p/do!
-              (seek this seek-time)
-              (clip/play this)))
+          (restart-clip! this)
 
           :else
           (p/plet [stream (pcm/open-read-stream source)

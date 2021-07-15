@@ -1,10 +1,25 @@
 (ns gakki.player.clip
   (:require [applied-science.js-interop :as j]
-            ["audify" :refer [RtAudio RtAudioFormat]]
+            ["audify" :refer [RtAudio RtAudioFormat RtAudioErrorType]]
+            ["events" :refer [EventEmitter]]
             ["stream" :refer [Readable Writable]]
             [gakki.const :as const]
             [gakki.util.logging :as log]
-            [gakki.player.stream.resampling :as resampling]))
+            [gakki.player.stream.resampling :as resampling]
+            [gakki.player.util :refer-macros [with-consuming-error]]))
+
+(def ^:private error-kinds
+  {(.-WARNING RtAudioErrorType) :warning
+   (.-DEBUG_WARNING RtAudioErrorType) :warning
+   (.-UNSPECIFIED RtAudioErrorType) :other
+   (.-NO_DEVICES_FOUND RtAudioErrorType) :no-device
+   (.-INVALID_DEVICE RtAudioErrorType) :invalid-device
+   (.-INVALID_PARAMETER RtAudioErrorType) :parameter
+   (.-INVALID_USE RtAudioErrorType) :use
+   (.-MEMORY_ERROR RtAudioErrorType) :memory
+   (.-DRIVER_ERROR RtAudioErrorType) :driver
+   (.-SYSTEM_ERROR RtAudioErrorType) :system
+   (.-THREAD_ERROR RtAudioErrorType) :thread})
 
 (defn- ->writable-stream [^RtAudio speaker on-error]
   (Writable. #js {:write (fn write [chnk _encoding callback]
@@ -34,7 +49,11 @@
   (pause [this])
   (set-volume [this volume-percent]))
 
-(deftype AudioClip [^Readable input, ^RtAudio speaker, device, ^Writable output]
+(deftype AudioClip [^Readable input,
+                    ^RtAudio speaker,
+                    ^EventEmitter speaker-events,
+                    device,
+                    ^Writable output]
   IAudioClip
   (close [_this]
     ; NOTE: If the output device has gone away (eg: disconnecting a bluetooth
@@ -52,8 +71,9 @@
 
   (play [this]
     (when-not (playing? this)
-      (.pipe input output)
-      (.start speaker)))
+      (with-consuming-error speaker-events
+        (.pipe input output)
+        (.start speaker))))
 
   (playing? [_this]
     (.isStreamRunning speaker))
@@ -106,13 +126,21 @@
                        :preferred-rate preferred-rate
                        :config config})))))
 
-(defn- on-error [kind e]
-  ((log/of :player/clip) "PCM Stream Error [" kind "] " e))
+(defn- on-error [^EventEmitter events, kind ^String error-message]
+  (let [has-consumer? (> (.listenerCount events "error") 0)]
+    ((log/of :player/clip)
+     "PCM Stream Error [" kind "] "
+     "( consumed?" has-consumer? ")"
+     error-message)
+    (when has-consumer?
+      (.emit events "error" (ex-info error-message
+                                     {:kind (get error-kinds kind :other)})))))
 
-(defn- open-stream [^RtAudio instance, device, device-id,
+(defn- open-stream [^RtAudio instance, ^EventEmitter events, device, device-id,
                     {:keys [channels sample-rate frame-size]
                      :as config}]
   (try
+    ((log/of :player/clip) "opening stream for " config " @ " device)
     (doto instance
       (.openStream
         ; Output stream:
@@ -126,7 +154,7 @@
         nil ; input callback
         nil ; output callback
         0 ; stream flags
-        on-error))
+        (partial on-error events)))
     (catch :default e
       (log/error "Failed to initialize AudioClip"
                  {:config config
@@ -143,11 +171,13 @@
         device-id (.getDefaultOutputDevice instance)
         device (device-by-id instance device-id)
         [config stream] (resample-if-needed device config stream)
+        events (EventEmitter.)
         instance (doto instance
-                   (open-stream device device-id config)
+                   (open-stream events device device-id config)
                    (j/assoc! :streamTime start-time-seconds))
-        on-error (fn [e]
-                   (log/error "Error in Clip Writable stream"
-                              {:config config}
-                              e))]
-    (->AudioClip stream instance device (->writable-stream instance on-error))))
+        on-write-error (fn [e]
+                         (log/error "Error in Clip Writable stream"
+                                    {:config config}
+                                    e))]
+    (->AudioClip stream instance events device
+                 (->writable-stream instance on-write-error))))
