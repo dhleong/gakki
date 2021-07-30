@@ -10,15 +10,14 @@
             [gakki.const :as const]))
 
 (defn- unpack-playlist [header button-key title]
-  (when-let [radio-id (-> header
-                          (j/get-in [button-key
-                                     :buttonRenderer])
-                          unpack-navigation-endpoint
-                          :id)]
-    {:id radio-id
-     :kind :playlist
-     :provider :ytm
-     :title title}))
+  (when-let [radio (-> header
+                       (j/get-in [button-key
+                                  :buttonRenderer])
+                       unpack-navigation-endpoint)]
+    (assoc radio
+           :radio/kind (:kind radio)
+           :kind :radio
+           :title title)))
 
 (defn load [^YTMusic client id]
   (p/let [response (send-request (.-cookie client)

@@ -13,6 +13,7 @@
             [gakki.accounts.ytm.playlist :as playlist]
             [gakki.accounts.ytm.search :as search]
             [gakki.accounts.ytm.search-suggest :as search-suggest]
+            [gakki.accounts.ytm.upnext :as upnext]
             [gakki.accounts.ytm.util :as util]
             [gakki.util.logging :as log]))
 
@@ -78,6 +79,11 @@
   (p/let [^YTMusic ytm (account->client account)]
     (artist/load ytm artist-id)))
 
+(defn- do-resolve-radio [account radio]
+  (p/let [^YTMusic ytm (account->client account)]
+    ; TODO lazily continue loading the playlist?
+    (upnext/load ytm radio)))
+
 (deftype YTMAccountProvider []
   IAccountProvider
   (get-name [_this] "YouTube Music")
@@ -92,14 +98,17 @@
     ; NOTE: this is pulled out to a separate fn to facilitate hot-reload dev
     (do-fetch-home account))
 
-  (resolve-album [_ account album-id]
+  (resolve-album [_ account {album-id :id}]
     (do-resolve-album account album-id))
 
-  (resolve-artist [_ account artist-id]
+  (resolve-artist [_ account {artist-id :id}]
     (do-resolve-artist account artist-id))
 
-  (resolve-playlist [_ account playlist-id]
+  (resolve-playlist [_ account {playlist-id :id}]
     (do-resolve-playlist account playlist-id))
+
+  (resolve-radio [_ account radio]
+    (do-resolve-radio account radio))
 
   (search [_ account query]
     (p/let [^YTMusic ytm (account->client account)]
@@ -132,6 +141,14 @@
   (p/let [result (do-resolve-playlist
                    (:ytm @(re-frame.core/subscribe [:accounts]))
                    "VLPLw6X_oq5Z8kl_Myg9QL1ZKxV1BobTeXrb") ]
+    (cljs.pprint/pprint result))
+
+  ; this is a "shuffle CHVRCHES" playlist ID:
+  (p/let [result (do-resolve-radio
+                   (:ytm @(re-frame.core/subscribe [:accounts]))
+                   {:id "80QNzlx-Fyg"
+                    :playlist-id "RDAOoxcn6rFh4zxhtR0lDvIPBA"
+                    :radio/kind :track})]
     (cljs.pprint/pprint result))
 
   (p/let [result (do-resolve-album

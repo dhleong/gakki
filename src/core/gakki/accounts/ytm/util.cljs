@@ -58,17 +58,23 @@
   (let [endpoint (or (j/get runs-container-or-endpoint :navigationEndpoint)
                      (j/get-in runs-container-or-endpoint [:runs 0 :navigationEndpoint]))
         playlist-id (j/get-in endpoint [:watchPlaylistEndpoint :playlistId])
-        watch-id (or (j/get-in endpoint [:watchEndpoint :videoId])
-                     playlist-id)]
-    {:id (or watch-id
-             (j/get-in endpoint [:browseEndpoint :browseId]))
-     :provider :ytm
-     :kind (let [raw-kind (j/get-in endpoint [:browseEndpoint
-                                              :browseEndpointContextSupportedConfigs
-                                              :browseEndpointContextMusicConfig
-                                              :pageType])]
-             (get ytm-kinds raw-kind (cond
-                                       playlist-id :playlist
-                                       watch-id :track
-                                       :else :unknown)))}))
+        watch-id (j/get-in endpoint [:watchEndpoint :videoId])
+        id (or watch-id
+               playlist-id
+               (j/get-in endpoint [:browseEndpoint :browseId]))]
+    (when id
+      {:id id
+       :playlist-id (or playlist-id
+                        (j/get-in endpoint [:watchEndpoint :playlistId]))
+       :params (or (j/get-in endpoint [:watchEndpoint :params])
+                   (j/get-in endpoint [:watchPlaylistEndpoint :params]))
+       :provider :ytm
+       :kind (let [raw-kind (j/get-in endpoint [:browseEndpoint
+                                                :browseEndpointContextSupportedConfigs
+                                                :browseEndpointContextMusicConfig
+                                                :pageType])]
+               (get ytm-kinds raw-kind (cond
+                                         playlist-id :playlist
+                                         watch-id :track
+                                         :else :unknown)))})))
 

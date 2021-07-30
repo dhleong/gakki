@@ -32,6 +32,10 @@
     [this account playlist-id]
     "Return a promise...")
 
+  (resolve-radio
+    [this account radio]
+    "Return a promise...")
+
   (search
     [this account query])
 
