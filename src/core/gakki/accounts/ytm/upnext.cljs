@@ -1,6 +1,7 @@
 (ns gakki.accounts.ytm.upnext
   (:require [applied-science.js-interop :as j]
             [gakki.accounts.ytm.util :as util :refer [runs->text]]
+            [gakki.util.logging :refer [with-timing-promise]]
             [promesa.core :as p]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
                                                generateBody generate-body}]))
@@ -56,8 +57,9 @@
 
                  (:params info)
                  (j/assoc! :params (:params info)))
-          response (send-request (.-cookie client)
-                                 (j/lit
-                                   {:endpoint "next"
-                                    :body body}))]
+          response (->> (send-request (.-cookie client)
+                                      (j/lit
+                                        {:endpoint "next"
+                                         :body body}))
+                        (with-timing-promise :ytm/upnext-load))]
     (inflate info response)))

@@ -8,13 +8,16 @@
             [gakki.theme :as theme]))
 
 (def ^:private help
-  {"S" "Shuffle Artist"
+  {"S" "Open a Shuffle playlist for this Artist"
+   "R" "Open a Radio for this Artist"
 
    :header "Artist Page"})
 
 (defn view [artist-id]
   (let [artist (<sub [:artist artist-id])]
-    (use-input {"s" #(when-let [playlist (:shuffle artist)]
+    (use-input {"S" #(when-let [playlist (:shuffle artist)]
+                       (>evt [:player/open playlist]))
+                "R" #(when-let [playlist (:radio artist)]
                        (>evt [:player/open playlist]))
                 :help help})
 
