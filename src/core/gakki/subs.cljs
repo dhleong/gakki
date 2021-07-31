@@ -8,6 +8,7 @@
 (reg-sub :accounts :accounts)
 (reg-sub :artists :artist)
 (reg-sub :playlists :playlist)
+(reg-sub :radios :radio)
 (reg-sub ::carousel-data ::carousel-data)
 (reg-sub ::prefs :prefs)
 
@@ -225,28 +226,31 @@
   (fn [db [_ id]]
     (get-in db [:album id])))
 
-(reg-sub
-  :artist
-  :<- [:artists]
-  (fn [artists [_ id]]
-    (get artists id)))
+(defn- reg-entity-sub-by-id
+  ([sub-id _<- entity-map-sub-id]
+   (reg-entity-sub-by-id {} sub-id _<- entity-map-sub-id))
+  ([{:keys [stateful?]} sub-id _<- entity-map-sub-id]
+   (reg-sub
+     sub-id
+     :<- entity-map-sub-id
+     (fn [entities [_ id]]
+       (get entities id)))
 
-(reg-sub
-  :playlist
-  :<- [:playlists]
-  (fn [playlists [_ id]]
-    (get playlists id)))
+   (when stateful?
+     (reg-sub
+       (keyword (name sub-id) "items-with-state")
+       :<- entity-map-sub-id
+       :<- [:player/item]
+       (fn [[entities now-playing] [_ id]]
+         (let [items (get-in entities [id :items])]
+           (->> items
+                (mapv #(if (= (:id %) (:id now-playing))
+                         (assoc % :current? true)
+                         %)))))))))
 
-(reg-sub
-  :playlist/items-with-state
-  :<- [:playlists]
-  :<- [:player/item]
-  (fn [[playlists now-playing] [_ id]]
-    (let [items (get-in playlists [id :items])]
-      (->> items
-           (mapv #(if (= (:id %) (:id now-playing))
-                    (assoc % :current? true)
-                    %))))))
+(reg-entity-sub-by-id :artist :<- [:artists])
+(reg-entity-sub-by-id {:stateful? true} :playlist :<- [:playlists])
+(reg-entity-sub-by-id {:stateful? true} :radio :<- [:radios])
 
 
 ; ======= integrations ====================================

@@ -143,13 +143,14 @@
                    "VLPLw6X_oq5Z8kl_Myg9QL1ZKxV1BobTeXrb") ]
     (cljs.pprint/pprint result))
 
-  ; this is a "shuffle CHVRCHES" playlist ID:
-  (p/let [result (do-resolve-radio
-                   (:ytm @(re-frame.core/subscribe [:accounts]))
-                   {:id "80QNzlx-Fyg"
-                    :playlist-id "RDAOoxcn6rFh4zxhtR0lDvIPBA"
-                    :radio/kind :track})]
-    (cljs.pprint/pprint result))
+  ; this is a "shuffle CHVRCHES" radio
+  (-> (p/let [result (do-resolve-radio
+                       (:ytm @(re-frame.core/subscribe [:accounts]))
+                       {:id "80QNzlx-Fyg"
+                        :playlist-id "RDAOoxcn6rFh4zxhtR0lDvIPBA"
+                        :radio/kind :track})]
+        (cljs.pprint/pprint result))
+      (p/catch log/error))
 
   (p/let [result (do-resolve-album
                    (:ytm @(re-frame.core/subscribe [:accounts]))

@@ -54,6 +54,13 @@
       (when-let [child (single-key-child container)]
         (recur child)))))
 
+(defn split-string-by-dots [s]
+  (str/split s #"  •  "))
+
+(defn split-runs-by-dots [runs]
+  (-> (runs->text runs)
+      (split-string-by-dots)))
+
 (defn unpack-navigation-endpoint [^js runs-container-or-endpoint]
   (let [endpoint (or (j/get runs-container-or-endpoint :navigationEndpoint)
                      (j/get-in runs-container-or-endpoint [:runs 0 :navigationEndpoint]))
