@@ -129,10 +129,11 @@
         (-> (p/let [f (case kind
                         :album ap/resolve-album
                         :artist ap/resolve-artist
-                        :playlist ap/resolve-playlist)
+                        :playlist ap/resolve-playlist
+                        :radio ap/resolve-radio)
                     result (f provider
                               account
-                              (:id entity))]
+                              entity)]
               (if (or (seq (:items result))
                       (seq (:categories result)))
                 (>evt [:player/on-resolved kind result :action/open])

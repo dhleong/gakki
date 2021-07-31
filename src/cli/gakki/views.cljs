@@ -13,6 +13,7 @@
             [gakki.views.home :as home]
             [gakki.views.playlist :as playlist]
             [gakki.views.queue :as queue]
+            [gakki.views.radio :as radio]
             [gakki.views.search :as search]
             [gakki.views.search-results :as search-results]
             [gakki.views.splash :as splash]))
@@ -25,6 +26,7 @@
    :artist #'artist/view
    :help #'help/view
    :playlist #'playlist/view
+   :radio #'radio/view
    :queue #'queue/view
    :search #'search/view
    :search/results #'search-results/view

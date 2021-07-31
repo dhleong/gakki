@@ -210,21 +210,16 @@
   :player/open
   [trim-v]
   (fn [{:keys [db]} [item]]
-    (let [item (inflate-item db item)]
-      (case (:kind item)
+    (let [{:keys [kind] :as item} (inflate-item db item)]
+      (case kind
         :track {:dispatch [::set-current-playable item]}
 
-        :playlist (if (seq (:items item))
-                    {:dispatch [:navigate! [:playlist (:id item)]]}
+        (:album :playlist :radio)
+        (if (seq (:items item))
+          {:dispatch [:navigate! [kind (:id item)]]}
 
-                    ; Unresolved playlist; fetch and resolve now:
-                    {:providers/resolve-and-open [:playlist (:accounts db) item]})
-
-        :album (if (seq (:items item))
-                 {:dispatch [:navigate! [:album (:id item)]]}
-
-                 ; Unresolved album; fetch and resolve now:
-                 {:providers/resolve-and-open [:album (:accounts db) item]})
+          ; Unresolved; fetch and resolve now:
+          {:providers/resolve-and-open [kind (:accounts db) item]})
 
         :artist (if (:categories item)
                   {:dispatch [:navigate! [:artist (:id item)]]}

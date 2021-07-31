@@ -1,6 +1,5 @@
 (ns gakki.accounts.ytm.music-shelf
   (:require [applied-science.js-interop :as j]
-            [clojure.string :as str]
             [gakki.accounts.ytm.util :as util :refer [->seconds
                                                       runs->text
                                                       unpack-navigation-endpoint]]
@@ -28,7 +27,7 @@
     (let [[artist album duration] (-> items
                                       second
                                       :title
-                                      (str/split #"  •  "))]
+                                      util/split-string-by-dots)]
       (assoc (first items)
              :artist artist
              :album album
