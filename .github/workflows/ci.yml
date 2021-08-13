@@ -52,9 +52,3 @@ jobs:
 
     - name: Verify Tests
       run: yarn test
-
-    - name: Setup tmate CI debugging
-      if: ${{ failure() }}
-      uses: mxschmitt/action-tmate@v3
-      with:
-        limit-access-to-actor: true
