@@ -18,5 +18,5 @@
     [:f> track-list
      :items (<sub [:playlist/items-with-state id])
      :header [playlist-header playlist]
-     :on-whole-list-selected #(>evt [:player/play-items (:items playlist)])
-     :on-index-selected #(>evt [:player/play-items (:items playlist) %])]))
+     :on-whole-list-selected #(>evt [:player/play-items playlist])
+     :on-index-selected #(>evt [:player/play-items playlist %])]))

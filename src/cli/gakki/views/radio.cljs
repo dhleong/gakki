@@ -18,7 +18,7 @@
     [:f> track-list
      :items (<sub [:radio/items-with-state id])
      :header [radio-header radio]
-     :on-whole-list-selected #(>evt [:player/play-items (:items radio)])
-     :on-index-selected #(>evt [:player/play-items (:items radio) %])]))
+     :on-whole-list-selected #(>evt [:player/play-items radio])
+     :on-index-selected #(>evt [:player/play-items radio %])]))
 
 

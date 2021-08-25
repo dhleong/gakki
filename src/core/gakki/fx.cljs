@@ -1,6 +1,7 @@
 (ns gakki.fx
   (:require [archetype.util :refer [>evt]]
             [re-frame.core :refer [reg-fx]]
+            [re-frame.registrar :refer [get-handler]]
             [promesa.core :as p]
             [gakki.accounts.core :as ap]
             [gakki.accounts :as accounts :refer [providers]]
@@ -25,6 +26,27 @@
   :auth/save!
   (fn [[provider account]]
     (native/add-account provider account)))
+
+
+
+; ======= Debouncing ======================================
+
+(defonce ^:private dedup-promise-state (atom nil))
+
+(reg-fx
+  :dedup-promised-fx
+  (fn [fx]
+    (swap! dedup-promise-state
+           (fn [state fx]
+             (if (get state fx)
+               state
+               (assoc state fx
+                      (let [[fx-name args] fx
+                            handler (get-handler :fx fx-name :required!)]
+                        (when-let [p (handler args)]
+                          (-> p
+                              (p/finally #(swap! dedup-promise-state dissoc fx))))))))
+           fx)))
 
 
 ; ======= Prefs ===========================================
@@ -115,6 +137,26 @@
                                    (log/error "Loading home from " k ":" e)))))))
            p/all
            (with-loading-promise :providers/load!)))))
+
+(reg-fx
+  :providers/paginate!
+  (fn [{:keys [accounts] {k :provider :keys [kind] :as entity} :entity}]
+    (let [provider (get providers k)
+          account (get accounts k)]
+
+      (if (and provider account)
+        (when-let [p (ap/paginate provider account entity)]
+          (-> (p/let [result p]
+                (if (seq (:items result))
+                  ((log/of :providers/paginate!) "TODO: handle: " result)
+                  (log/error "Empty " kind " from " k " = " result)))
+
+              (with-loading-promise :providers/resolve-and-open)
+
+              (p/catch (fn [e]
+                         (log/error "Resolving " kind " from " e ": " e)))))
+
+        (log/error "Invalid provider or no account: " k)))))
 
 (reg-fx
   :providers/resolve-and-open

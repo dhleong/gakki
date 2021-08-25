@@ -11,6 +11,8 @@
             [gakki.util.logging :as log]
             [gakki.util.media :refer [category-id]]))
 
+(def ^:private paginate-distance 5)
+
 (def ^:private inject-sub (partial inject-cofx ::inject/sub))
 
 (reg-event-fx
@@ -258,12 +260,17 @@
 (reg-event-fx
   :player/play-items
   [trim-v (path :player :queue)]
-  (fn [_ [items ?selected-index]]
-    (let [items (if (vector? items)
+  (fn [_ [input ?selected-index]]
+    (let [items (if (map? input)
+                  (:items input)
+                  input)
+          items (if (vector? items)
                   items
                   (vec items))]
       {:db {:items items
+            :entity input
             :index (or ?selected-index 0)}
+       ; TODO trigger pagination check
        :dispatch [::set-current-playable (if (nil? ?selected-index)
                                            (first items)
                                            (nth items ?selected-index))]})))
@@ -331,15 +338,23 @@
 
 (reg-event-fx
   :player/nth-in-queue
-  [trim-v (path :player)]
-  (fn [{{{queue :items} :queue :as player-state} :db} [index]]
-    (if-some [next-item (nth-or-nil queue index)]
-      {:db (assoc-in player-state [:queue :index] index)
-       :dispatch [::set-current-playable next-item]}
+  [trim-v]
+  (fn [{db :db} [index]]
+    (let [{{queue :items entity :entity} :queue} (:player db)]
+      (if-some [next-item (nth-or-nil queue index)]
+        {:db (assoc-in db [:player :queue :index] index)
+         :dispatch [::set-current-playable next-item]
+         :fx [(when (and (>= index (- (count queue)
+                                      paginate-distance))
+                         (:accounts db))
+                ((log/of :player) "At " index " of " (count queue))
+                [:dedup-promised-fx [:providers/paginate!
+                                     {:accounts (:accounts db)
+                                      :entity entity}]])]}
 
-      ; nothing more in the queue
-      {:db (assoc player-state :state :paused)
-       :native/set-state! :paused})))
+        ; nothing more in the queue
+        {:db (assoc-in db [:player :state] :paused)
+         :native/set-state! :paused}))))
 
 (reg-event-fx
   :player/seek-by

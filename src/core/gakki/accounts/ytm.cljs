@@ -63,6 +63,13 @@
                    {:title title
                     :items (map ->home-item content)})))})))
 
+(defn- do-paginate [account entity]
+  ((log/of :ytm) "TODO: paginate" (:continuation entity))
+  (when false
+    (p/let [^YTMusic _ytm (account->client account)]
+      ; TODO paginate
+      nil)))
+
 (defn- do-resolve-playlist [account playlist-id]
   (p/let [^YTMusic ytm (account->client account)]
     ; TODO lazily continue loading the playlist? We can use:
@@ -97,6 +104,9 @@
   (fetch-home [_ account]
     ; NOTE: this is pulled out to a separate fn to facilitate hot-reload dev
     (do-fetch-home account))
+
+  (paginate [_ account entity]
+    (do-paginate account entity))
 
   (resolve-album [_ account {album-id :id}]
     (do-resolve-album account album-id))
