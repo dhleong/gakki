@@ -22,10 +22,10 @@
 
   (paginate
     [this account entity index]
-    "Return a promise resolving to a map containing the next `:items`
-     in the passed entity. Any other keys in the resolved map will be
-     merged into the original entity (for updating pagination data,
-     for example).
+    "Return a promise resolving to a map containing an updated :entity and the
+     :next-items in the passed entity. Any other keys in the resolved map will
+     be merged into the original entity (for updating pagination data, for
+     example).
 
      If the entity cannot paginate, this method should return nil.")
 

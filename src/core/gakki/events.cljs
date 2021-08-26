@@ -279,9 +279,16 @@
   :player/on-resolved
   [trim-v]
   (fn [{:keys [db]} [entity-kind entity ?action]]
-    {:db (assoc-in db [entity-kind (:id entity)] (clean-entity entity))
-     :fx [(when (= :action/open ?action)
-            [:dispatch [:player/open entity]])]}))
+    (let [cleaned-entity (clean-entity entity)]
+      {:db (cond-> db
+             true ; Always
+             (assoc-in [entity-kind (:id entity)] cleaned-entity)
+
+             (= :action/queue-entity ?action)
+             (assoc-in [:player :queue :entity] cleaned-entity))
+
+       :fx [(when (= :action/open ?action)
+              [:dispatch [:player/open entity]])]})))
 
 (reg-event-fx
   :player/on-playback-config-resolved
@@ -312,6 +319,13 @@
        :dispatch [::set-current-playable (if (nil? ?selected-index)
                                            (first items)
                                            (nth items ?selected-index))]})))
+
+(reg-event-fx
+  :player/enqueue-items
+  [trim-v check-pagination (path :player :queue :items)]
+  (fn [{queue :db} [new-items]]
+    (log/player "Enqueue " (map :title new-items))
+    {:db (into queue new-items)}))
 
 (reg-event-fx
   ::set-current-playable

@@ -146,12 +146,17 @@
 
       (if (and provider account)
         (when-let [p (ap/paginate provider account entity index)]
-          (-> (p/let [result p]
-                (if (seq (:items result))
-                  ((log/of :providers/paginate!) "TODO: handle: " result)
+          (-> (p/let [{new-entity :entity next-items :next-items :as result} p]
+                (if (seq next-items)
+                  (do
+                    ((log/of :providers/paginate!)
+                     "Loaded " (count next-items) "of" (:id entity) "via pagination")
+                    (>evt [:player/on-resolved kind new-entity :action/queue-entity])
+                    (>evt [:player/enqueue-items next-items]))
+
                   (log/error "Empty " kind " from " k " = " result)))
 
-              (with-loading-promise :providers/resolve-and-open)
+              (with-loading-promise :providers/paginate!)
 
               (p/catch (fn [e]
                          (log/error "Resolving " kind " from " e ": " e)))))
