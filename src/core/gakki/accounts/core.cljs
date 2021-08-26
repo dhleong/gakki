@@ -21,7 +21,7 @@
         :items []}]}")
 
   (paginate
-    [this account entity]
+    [this account entity index]
     "Return a promise resolving to a map containing the next `:items`
      in the passed entity. Any other keys in the resolved map will be
      merged into the original entity (for updating pagination data,

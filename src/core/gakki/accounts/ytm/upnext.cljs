@@ -1,7 +1,7 @@
 (ns gakki.accounts.ytm.upnext
   (:require [applied-science.js-interop :as j]
             [gakki.accounts.ytm.util :as util :refer [runs->text]]
-            [gakki.util.logging :refer [with-timing-promise]]
+            [gakki.util.logging :as log :refer [with-timing-promise]]
             [promesa.core :as p]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
                                                generateBody generate-body}]))
@@ -25,17 +25,19 @@
      :title (runs->text (j/get renderer :title))}))
 
 (defn- parse-items [^js response]
-  (let [raw-root (j/get-in response [:contents
-                                     :singleColumnMusicWatchNextResultsRenderer
-                                     :tabbedRenderer
-                                     :watchNextTabbedResultsRenderer
-                                     :tabs
-                                     0
-                                     :tabRenderer
-                                     :content
-                                     :musicQueueRenderer
-                                     :content
-                                     :playlistPanelRenderer])
+  (let [raw-root (or (j/get-in response [:contents
+                                         :singleColumnMusicWatchNextResultsRenderer
+                                         :tabbedRenderer
+                                         :watchNextTabbedResultsRenderer
+                                         :tabs
+                                         0
+                                         :tabRenderer
+                                         :content
+                                         :musicQueueRenderer
+                                         :content
+                                         :playlistPanelRenderer])
+                     (j/get-in response [:continuationContents
+                                         :playlistPanelContinuation]))
         continuations (j/get raw-root :continuations)]
     {:items (->> (j/get raw-root :contents)
                  (map parse-item))
@@ -56,10 +58,22 @@
                  (j/assoc! :videoId (:id info))
 
                  (:params info)
-                 (j/assoc! :params (:params info)))
+                 (j/assoc! :params (:params info))
+
+                 (:continuation info)
+                 (j/assoc! :continuation (:continuation info))
+
+                 (:index info)
+                 (j/assoc! :index (:index info))
+
+                 (:click-tracking-params info)
+                 (j/assoc-in! [:clickTracking :clickTrackingParams]
+                              (:click-tracking-params info)))
           response (->> (send-request (.-cookie client)
                                       (j/lit
                                         {:endpoint "next"
                                          :body body}))
                         (with-timing-promise :ytm/upnext-load))]
-    (inflate info response)))
+    (-> info
+        (inflate response)
+        (dissoc :continuation :index :click-tracking-params))))

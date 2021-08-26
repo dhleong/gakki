@@ -63,12 +63,32 @@
                    {:title title
                     :items (map ->home-item content)})))})))
 
-(defn- do-paginate [account entity]
-  ((log/of :ytm) "TODO: paginate" (:continuations entity))
-  (when false
-    (p/let [^YTMusic _ytm (account->client account)]
+(defn- do-paginate [account entity index]
+  (when-let [continuations (first (:continuations entity))]
+    ((log/of :ytm) "Paginate" (:kind entity) (:id entity) "@" continuations "...")
+    (p/let [^YTMusic ytm (account->client account)
+            up-next (upnext/load
+                      ytm
+                      (assoc entity
+                             :id (if (= :track (:radio/kind entity))
+                                   (get-in entity [:items index :id])
+                                   (:id entity))
+                             :continuation (j/get-in
+                                             continuations
+                                             [:nextRadioContinuationData
+                                              :continuation])
+                             :click-tracking-params (j/get-in
+                                                      continuations
+                                                      [:nextRadioContinuationData
+                                                       :clickTrackingParams])
+                             :index index))]
+
       ; TODO paginate
-      nil)))
+      ((log/of :ytm) "Loaded: " up-next)
+
+      (-> entity
+          (update :items into (:items up-next))
+          (assoc :continuations (:continuations up-next))))))
 
 (defn- do-resolve-playlist [account playlist-id]
   (p/let [^YTMusic ytm (account->client account)]
@@ -105,8 +125,8 @@
     ; NOTE: this is pulled out to a separate fn to facilitate hot-reload dev
     (do-fetch-home account))
 
-  (paginate [_ account entity]
-    (do-paginate account entity))
+  (paginate [_ account entity index]
+    (do-paginate account entity index))
 
   (resolve-album [_ account {album-id :id}]
     (do-resolve-album account album-id))

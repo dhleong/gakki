@@ -140,12 +140,12 @@
 
 (reg-fx
   :providers/paginate!
-  (fn [{:keys [accounts] {k :provider :keys [kind] :as entity} :entity}]
+  (fn [{:keys [accounts index] {k :provider :keys [kind] :as entity} :entity}]
     (let [provider (get providers k)
           account (get accounts k)]
 
       (if (and provider account)
-        (when-let [p (ap/paginate provider account entity)]
+        (when-let [p (ap/paginate provider account entity index)]
           (-> (p/let [result p]
                 (if (seq (:items result))
                   ((log/of :providers/paginate!) "TODO: handle: " result)

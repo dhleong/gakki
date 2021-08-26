@@ -48,7 +48,8 @@
                       (fnil conj [])
                       [:dedup-promised-fx [:providers/paginate!
                                            {:accounts (:accounts db)
-                                            :entity entity}]])))))))
+                                            :entity entity
+                                            :index index}]])))))))
 
 
 ; ======= Core events =====================================
