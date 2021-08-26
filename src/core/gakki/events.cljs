@@ -1,8 +1,10 @@
 (ns gakki.events
-  (:require [re-frame.core :refer [reg-event-db
-                                   reg-event-fx
-                                   inject-cofx
-                                   path trim-v]]
+  (:require [re-frame.core :as rf :refer [reg-event-db
+                                          reg-event-fx
+                                          inject-cofx
+                                          ->interceptor
+                                          path trim-v]]
+            [re-frame.interceptor :refer [update-effect]]
             [vimsical.re-frame.cofx.inject :as inject]
             [gakki.db :as db]
             [gakki.const :as const :refer [max-volume-int]]
@@ -14,6 +16,42 @@
 (def ^:private paginate-distance 5)
 
 (def ^:private inject-sub (partial inject-cofx ::inject/sub))
+
+
+; ======= Cofx ============================================
+
+(def check-pagination
+  (->interceptor
+    :id     :check-pagination
+    :after  (fn check-pagination-after [context]
+              (let [db (rf/get-effect context :db ::not-found)
+                    {queue :items :keys [entity index]} (get-in db [:player :queue])]
+                (cond
+                  (= db ::not-found)
+                  context
+
+                  ; Not time yet to paginate
+                  (< index
+                     (- (count queue)
+                        paginate-distance))
+                  context
+
+                  ; Sanity check:
+                  (nil? (:accounts db))
+                  context
+
+                  :else
+                  (do
+                    ((log/of :player) "At " index " of " (count queue))
+                    (update-effect
+                      context :fx
+                      (fnil conj [])
+                      [:dedup-promised-fx [:providers/paginate!
+                                           {:accounts (:accounts db)
+                                            :entity entity}]])))))))
+
+
+; ======= Core events =====================================
 
 (reg-event-fx
   ::initialize-db
@@ -259,7 +297,7 @@
 
 (reg-event-fx
   :player/play-items
-  [trim-v (path :player :queue)]
+  [trim-v check-pagination (path :player :queue)]
   (fn [_ [input ?selected-index]]
     (let [items (if (map? input)
                   (:items input)
@@ -270,7 +308,6 @@
       {:db {:items items
             :entity input
             :index (or ?selected-index 0)}
-       ; TODO trigger pagination check
        :dispatch [::set-current-playable (if (nil? ?selected-index)
                                            (first items)
                                            (nth items ?selected-index))]})))
@@ -338,23 +375,15 @@
 
 (reg-event-fx
   :player/nth-in-queue
-  [trim-v]
-  (fn [{db :db} [index]]
-    (let [{{queue :items entity :entity} :queue} (:player db)]
-      (if-some [next-item (nth-or-nil queue index)]
-        {:db (assoc-in db [:player :queue :index] index)
-         :dispatch [::set-current-playable next-item]
-         :fx [(when (and (>= index (- (count queue)
-                                      paginate-distance))
-                         (:accounts db))
-                ((log/of :player) "At " index " of " (count queue))
-                [:dedup-promised-fx [:providers/paginate!
-                                     {:accounts (:accounts db)
-                                      :entity entity}]])]}
+  [trim-v check-pagination (path :player)]
+  (fn [{{{queue :items} :queue :as player-state} :db} [index]]
+    (if-some [next-item (nth-or-nil queue index)]
+      {:db (assoc-in player-state [:queue :index] index)
+       :dispatch [::set-current-playable next-item]}
 
-        ; nothing more in the queue
-        {:db (assoc-in db [:player :state] :paused)
-         :native/set-state! :paused}))))
+      ; nothing more in the queue
+      {:db (assoc player-state :state :paused)
+       :native/set-state! :paused})))
 
 (reg-event-fx
   :player/seek-by

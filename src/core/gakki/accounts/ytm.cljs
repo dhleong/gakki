@@ -64,7 +64,7 @@
                     :items (map ->home-item content)})))})))
 
 (defn- do-paginate [account entity]
-  ((log/of :ytm) "TODO: paginate" (:continuation entity))
+  ((log/of :ytm) "TODO: paginate" (:continuations entity))
   (when false
     (p/let [^YTMusic _ytm (account->client account)]
       ; TODO paginate
