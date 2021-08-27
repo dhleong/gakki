@@ -86,7 +86,7 @@
       {:entity (-> entity
                    (update :items into (:items up-next))
                    (assoc :continuations (:continuations up-next)))
-       :new-items (:items up-next)})))
+       :next-items (:items up-next)})))
 
 (defn- do-resolve-playlist [account playlist-id]
   (p/let [^YTMusic ytm (account->client account)]

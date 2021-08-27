@@ -154,7 +154,7 @@
                     (>evt [:player/on-resolved kind new-entity :action/queue-entity])
                     (>evt [:player/enqueue-items next-items]))
 
-                  (log/error "Empty " kind " from " k " = " result)))
+                  (log/error "Empty " kind " from paginating " k " = " result)))
 
               (with-loading-promise :providers/paginate!)
 
