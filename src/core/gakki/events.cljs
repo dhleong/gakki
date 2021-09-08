@@ -1,8 +1,10 @@
 (ns gakki.events
-  (:require [re-frame.core :refer [reg-event-db
-                                   reg-event-fx
-                                   inject-cofx
-                                   path trim-v]]
+  (:require [re-frame.core :as rf :refer [reg-event-db
+                                          reg-event-fx
+                                          inject-cofx
+                                          ->interceptor
+                                          path trim-v]]
+            [re-frame.interceptor :refer [update-effect]]
             [vimsical.re-frame.cofx.inject :as inject]
             [gakki.db :as db]
             [gakki.const :as const :refer [max-volume-int]]
@@ -11,7 +13,46 @@
             [gakki.util.logging :as log]
             [gakki.util.media :refer [category-id]]))
 
+(def ^:private paginate-distance 5)
+
 (def ^:private inject-sub (partial inject-cofx ::inject/sub))
+
+
+; ======= Cofx ============================================
+
+(def check-pagination
+  (->interceptor
+    :id     :check-pagination
+    :after  (fn check-pagination-after [context]
+              (let [db (rf/get-effect context :db ::not-found)
+                    {queue :items :keys [entity index]} (get-in db [:player :queue])]
+                (cond
+                  (= db ::not-found)
+                  context
+
+                  ; Not time yet to paginate
+                  (< index
+                     (- (count queue)
+                        paginate-distance))
+                  context
+
+                  ; Sanity check:
+                  (nil? (:accounts db))
+                  context
+
+                  :else
+                  (do
+                    ((log/of :player) "At " index " of " (count queue))
+                    (update-effect
+                      context :fx
+                      (fnil conj [])
+                      [:dedup-promised-fx [:providers/paginate!
+                                           {:accounts (:accounts db)
+                                            :entity entity
+                                            :index index}]])))))))
+
+
+; ======= Core events =====================================
 
 (reg-event-fx
   ::initialize-db
@@ -238,9 +279,16 @@
   :player/on-resolved
   [trim-v]
   (fn [{:keys [db]} [entity-kind entity ?action]]
-    {:db (assoc-in db [entity-kind (:id entity)] (clean-entity entity))
-     :fx [(when (= :action/open ?action)
-            [:dispatch [:player/open entity]])]}))
+    (let [cleaned-entity (clean-entity entity)]
+      {:db (cond-> db
+             true ; Always
+             (assoc-in [entity-kind (:id entity)] cleaned-entity)
+
+             (= :action/queue-entity ?action)
+             (assoc-in [:player :queue :entity] cleaned-entity))
+
+       :fx [(when (= :action/open ?action)
+              [:dispatch [:player/open entity]])]})))
 
 (reg-event-fx
   :player/on-playback-config-resolved
@@ -257,16 +305,27 @@
 
 (reg-event-fx
   :player/play-items
-  [trim-v (path :player :queue)]
-  (fn [_ [items ?selected-index]]
-    (let [items (if (vector? items)
+  [trim-v check-pagination (path :player :queue)]
+  (fn [_ [input ?selected-index]]
+    (let [items (if (map? input)
+                  (:items input)
+                  input)
+          items (if (vector? items)
                   items
                   (vec items))]
       {:db {:items items
+            :entity input
             :index (or ?selected-index 0)}
        :dispatch [::set-current-playable (if (nil? ?selected-index)
                                            (first items)
                                            (nth items ?selected-index))]})))
+
+(reg-event-fx
+  :player/enqueue-items
+  [trim-v check-pagination (path :player :queue :items)]
+  (fn [{queue :db} [new-items]]
+    (log/player "Enqueue " (map :title new-items))
+    {:db (into queue new-items)}))
 
 (reg-event-fx
   ::set-current-playable
@@ -331,7 +390,7 @@
 
 (reg-event-fx
   :player/nth-in-queue
-  [trim-v (path :player)]
+  [trim-v check-pagination (path :player)]
   (fn [{{{queue :items} :queue :as player-state} :db} [index]]
     (if-some [next-item (nth-or-nil queue index)]
       {:db (assoc-in player-state [:queue :index] index)
