@@ -1,67 +1,24 @@
 (ns gakki.accounts.ytm
   (:require [applied-science.js-interop :as j]
-            [clojure.string :as str]
             [promesa.core :as p]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
             [gakki.accounts.core :refer [IAccountProvider]]
             [gakki.accounts.ytm.creds :refer [account->client]]
-            [gakki.accounts.ytm.consts :refer [ytm-kinds]]
             [gakki.accounts.ytm.album :as album]
             [gakki.accounts.ytm.artist :as artist]
+            [gakki.accounts.ytm.home :as home]
             [gakki.accounts.ytm.playable :as playable]
             [gakki.accounts.ytm.playlist :as playlist]
             [gakki.accounts.ytm.search :as search]
             [gakki.accounts.ytm.search-suggest :as search-suggest]
             [gakki.accounts.ytm.upnext :as upnext]
-            [gakki.accounts.ytm.util :as util]
             [gakki.util.logging :as log]))
 
-
-(defn- ->text [obj]
-  (or (when (string? obj)
-        obj)
-      (when-let [text (j/get obj :text)]
-        text)
-
-      (when (js/Array.isArray obj)
-        (->> obj
-             (map ->text)
-             (str/join "; ")))
-
-      (str obj)))
-
-(j/defn ^:private ->home-item [^:js {:keys [title navigationEndpoint] :as item}]
-  {:title (->text title)
-   :provider :ytm
-   :id (or (j/get-in navigationEndpoint [:watchEndpoint :videoId])
-           (j/get-in navigationEndpoint [:browseEndpoint :browseId]))
-   :image-url (util/pick-thumbnail item)
-   :kind (or (when (j/get-in navigationEndpoint [:watchEndpoint :videoId])
-               :track)
-
-             (when-let [ytm-kind (j/get-in navigationEndpoint
-                                           [:browseEndpoint
-                                            :browseEndpointContextSupportedConfigs
-                                            :browseEndpointContextMusicConfig
-                                            :pageType])]
-               (get ytm-kinds ytm-kind (keyword "unknown"
-                                                ytm-kind))))})
-
-
 (defn- do-fetch-home [account]
-  (log/with-timing-promise :ytm/parse-and-fetch-home
-    (p/let [^YTMusic ytm (account->client account)
-
-            start (js/Date.now)
-            home (.getHomePage ytm)]
-      (log/timing :ytm/fetch-home (- (js/Date.now) start))
-
-      {:categories
-       (->> (j/get home :content)
-            (map (j/fn [^:js {:keys [title content]}]
-                   {:title title
-                    :items (map ->home-item content)})))})))
+  (log/with-timing-promise :ytm/fetch-home
+    (p/let [^YTMusic ytm (account->client account)]
+      (home/load ytm))))
 
 (defn- do-paginate [account entity index]
   (when-let [continuations (first (:continuations entity))]
@@ -153,6 +110,12 @@
           result (-> client
                      (.getArtist "UCvInFYiyeAJOGEjhqJnyaMA"))]
     (println result))
+
+  (-> (p/let [account (:ytm @(re-frame.core/subscribe [:accounts]))
+              result (do-fetch-home account)]
+        (def last-home result)
+        (cljs.pprint/pprint result))
+      (p/catch log/error))
 
   (p/let [client (account->client
                    (:ytm @(re-frame.core/subscribe [:accounts])))

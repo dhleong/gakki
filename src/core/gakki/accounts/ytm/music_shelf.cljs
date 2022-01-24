@@ -96,7 +96,8 @@
   [^js item]
   (let [root (j/get item :musicTwoRowItemRenderer)
         title (j/get root :title)
-        endpoint (unpack-navigation-endpoint title)]
+        endpoint (or (unpack-navigation-endpoint title)
+                     (unpack-navigation-endpoint root))]
     (assoc endpoint
            :title (runs->text title)
            :subtitle (when-let [subtitle (j/get root :subtitle)]
