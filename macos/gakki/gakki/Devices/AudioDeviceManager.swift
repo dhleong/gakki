@@ -55,9 +55,13 @@ class AudioDeviceManager {
 
     fileprivate func onDefaultDeviceChanged() {
         let newDefault = getDefaultOutputDevice()
+        let isFirst = self.defaultOutputDevice == nil
         self.defaultOutputDevice = newDefault
 
-        NSLog("CHANGE: DefaultOutputDevice \(String(describing: newDefault)) @ \(String(describing: newDefault?.nominalSampleRate))")
+        if !isFirst {
+            IPC.send(["type": "default-device-changed"])
+        }
+
         if let device = newDefault {
             device.listen()
         }

@@ -12,6 +12,9 @@ class AudioDevice {
     private var id: AudioDeviceID
     private var listening = false
 
+    // NOTE: It'd be cool to detect changes in sample rate, but this always
+    // returns nil. Leaving for future reference, but I think we would
+    // actually have to read the *array* of valid sample rates....
     var nominalSampleRate: Float64? {
         guard let address = validAddress(selector: kAudioDevicePropertyNominalSampleRate) else {
             return nil
@@ -61,6 +64,11 @@ class AudioDevice {
         }
     }
 
+    fileprivate func onSampleRatesChanged() {
+        // TODO This is a very lazy place to put this...
+        IPC.send(["type": "default-device-updated"])
+    }
+
     private func validAddress(selector: AudioObjectPropertySelector) -> AudioObjectPropertyAddress? {
         var address = AudioDevice.address(selector: selector)
         guard AudioObjectHasProperty(id, &address) else { return nil }
@@ -86,10 +94,8 @@ extension AudioDevice {
 
     class func getPropertyDataOrNil<T>(_ objectID: AudioObjectID, address: AudioObjectPropertyAddress, andValue: inout T) -> T? {
         if noErr == getPropertyData(objectID, address: address, andValue: &andValue) {
-            print("GOT prop data")
             return andValue
         } else {
-            print("Err getting property data")
             return nil
         }
     }
@@ -100,7 +106,7 @@ extension AudioDevice {
         let status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &refableAddress, UInt32(0), nil, &size, &andValue)
 
         if status != noErr {
-            NSLog("Err getting property data: \(String(describing: status))")
+            IPC.log("[WARN] Error getting property data: \(String(describing: status))")
         }
 
         return status
@@ -118,12 +124,11 @@ fileprivate func onAudioPropertyChanged(
 
     switch address.mSelector {
         case kAudioDevicePropertyNominalSampleRate:
-            NSLog("\(_self): Nominal Sample Rate changed -> \(String(describing: _self.nominalSampleRate))!")
+            _self.onSampleRatesChanged()
 
         case kAudioDevicePropertyAvailableNominalSampleRates:
             // TODO Fetching *available* rates is... tricky.
-            NSLog("\(_self): Available Sample Rates changed -> \(String(describing: _self.nominalSampleRate))!")
-
+            _self.onSampleRatesChanged()
 
         default:
             break // nop
