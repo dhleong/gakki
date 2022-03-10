@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		653F75C927DA855F00F5ADD6 /* AudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653F75C827DA855F00F5ADD6 /* AudioDeviceManager.swift */; };
+		653F75CB27DA856A00F5ADD6 /* AudioDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653F75CA27DA856A00F5ADD6 /* AudioDevice.swift */; };
 		6565346C267A442600679CA5 /* MPNowPlayingInfoCenter+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6565346B267A442600679CA5 /* MPNowPlayingInfoCenter+Extensions.swift */; };
 		65C58C7F265862B2001C4796 /* Command.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C58C7E265862B1001C4796 /* Command.swift */; };
 		65C58C812658652F001C4796 /* convertFromKebabCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C58C802658652F001C4796 /* convertFromKebabCase.swift */; };
@@ -40,6 +42,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		653F75C827DA855F00F5ADD6 /* AudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceManager.swift; sourceTree = "<group>"; };
+		653F75CA27DA856A00F5ADD6 /* AudioDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevice.swift; sourceTree = "<group>"; };
 		6565346B267A442600679CA5 /* MPNowPlayingInfoCenter+Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "MPNowPlayingInfoCenter+Extensions.swift"; sourceTree = "<group>"; };
 		65C58C7E265862B1001C4796 /* Command.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Command.swift; sourceTree = "<group>"; };
 		65C58C802658652F001C4796 /* convertFromKebabCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = convertFromKebabCase.swift; sourceTree = "<group>"; };
@@ -87,6 +91,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		653F75C727DA854800F5ADD6 /* Devices */ = {
+			isa = PBXGroup;
+			children = (
+				653F75C827DA855F00F5ADD6 /* AudioDeviceManager.swift */,
+				653F75CA27DA856A00F5ADD6 /* AudioDevice.swift */,
+			);
+			path = Devices;
+			sourceTree = "<group>";
+		};
 		6565346A267A442600679CA5 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
@@ -134,6 +147,7 @@
 		65F36FB52653E89B0062940F /* gakki */ = {
 			isa = PBXGroup;
 			children = (
+				653F75C727DA854800F5ADD6 /* Devices */,
 				B6B19AC2265ABF88008635AC /* Commands */,
 				6565346A267A442600679CA5 /* Extensions */,
 				65C58C85265868B7001C4796 /* Model */,
@@ -315,6 +329,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				653F75CB27DA856A00F5ADD6 /* AudioDevice.swift in Sources */,
 				65F36FB92653E89B0062940F /* ContentView.swift in Sources */,
 				65C58C84265868AE001C4796 /* CommandHandler.swift in Sources */,
 				65F36FB72653E89B0062940F /* AppDelegate.swift in Sources */,
@@ -323,6 +338,7 @@
 				65C58C8726586B0C001C4796 /* IPC.swift in Sources */,
 				65C58C812658652F001C4796 /* convertFromKebabCase.swift in Sources */,
 				6565346C267A442600679CA5 /* MPNowPlayingInfoCenter+Extensions.swift in Sources */,
+				653F75C927DA855F00F5ADD6 /* AudioDeviceManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
