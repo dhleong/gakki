@@ -101,6 +101,10 @@
       (clip/current-time clip)
       0))
 
+  (default-output-device? [_this]
+    (when-let [clip (:clip @state)]
+      (clip/default-output-device? clip)))
+
   (playing? [_this]
     (if-let [clip (:clip @state)]
       (clip/playing? clip)
