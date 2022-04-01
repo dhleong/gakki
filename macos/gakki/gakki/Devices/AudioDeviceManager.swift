@@ -93,7 +93,6 @@ fileprivate func onAudioPropertyChanged(
             _self.onDefaultDeviceChanged()
 
         case kAudioHardwarePropertyDefaultSystemOutputDevice:
-            /* NSLog("CHANGE: DefaultSystemOutputDevice") */
             break // nop?
         default:
             break // nop
