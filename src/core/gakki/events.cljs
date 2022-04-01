@@ -439,11 +439,32 @@
           new-volume (+ current-volume delta)]
       {:dispatch [:player/set-volume new-volume]})))
 
+(reg-event-fx
+  :player/check-output-device
+  [trim-v]
+  (fn [_ _]
+    ; NOTE: We actually perform the check after a short delay
+    ; to ensure the device has had time to update its settings.
+    ; The first check is to avoid *any* barf when the switch is quick,
+    ; and the second is to catch slow changes (which seems to happen
+    ; for me when the device increases its available channel count)
+    (log/debug "Default output device may have changed...")
+    {:dispatch-later [{:ms 250 :dispatch [::check-output-device]}
+                      {:ms 500 :dispatch [::check-output-device]}]}))
+
 (reg-event-db
   ::stop-adjusting-volume
   [trim-v (path :player :adjusting-volume?)]
   (fn [adjust-volume-count _]
     (dec adjust-volume-count)))
+
+(reg-event-fx
+  ::check-output-device
+  [trim-v (path :player)]
+  (fn [{{current-state :state} :db} _]
+    (when (= :playing current-state)
+      (log/debug "Requesting output device check")
+      {:player/check-output-device! :!})))
 
 
 ; ======= Player feedback =================================

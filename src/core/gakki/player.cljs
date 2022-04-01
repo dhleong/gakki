@@ -105,6 +105,14 @@
 (defn set-volume! [volume-percent]
   (on-playable player/set-volume volume-percent))
 
+(defn check-output-device! []
+  (on-playable (fn [playable]
+                 (log/debug "checking output device...")
+                 (when-not (clip/default-output-device? playable)
+                   (log/debug "restart!")
+                   (player/pause playable)
+                   (player/play playable)))))
+
 (comment
   (prepare! {:item {:id "8FV4gcs-MNA"
                     :provider :ytm}})

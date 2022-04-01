@@ -59,6 +59,9 @@
     :log ((log/of :native) (:message message))
     :media (handle-media-event message)
 
+    :default-device-changed (>evt [:player/check-output-device])
+    :default-device-updated (>evt [:player/check-output-device])
+
     :auth-result (swap! requests update :auth
                         (fn on-auth [handler]
                           (when handler

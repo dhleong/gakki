@@ -206,6 +206,7 @@
 
 ; ======= Player ==========================================
 
+(reg-fx :player/check-output-device! player/check-output-device!)
 (reg-fx :player/pause! player/pause!)
 (reg-fx :player/play! player/play!)
 (reg-fx :player/prepare! player/prepare!)

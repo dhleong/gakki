@@ -35,6 +35,9 @@
       (nth id)
       (js->clj :keywordize-keys true)))
 
+(defn- default-output-device [^RtAudio speaker]
+  (device-by-id speaker (.getDefaultOutputDevice speaker)))
+
 (defprotocol IAudioClip
   "An AudioClip represents a forward-only stream of audio starting
    from *some* point in time"
@@ -65,8 +68,7 @@
     (j/get speaker :streamTime))
 
   (default-output-device? [_this]
-    (let [current-default (device-by-id speaker
-                                        (.getDefaultOutputDevice speaker))]
+    (let [current-default (default-output-device speaker)]
       (= device current-default)))
 
   (play [this]
@@ -107,7 +109,7 @@
    {:keys [channels sample-rate] :as config}
    ^Readable stream]
   (if (and (some (partial = sample-rate) available-rates)
-           (<= channels available-channels))
+           (= channels available-channels))
     [config stream]
 
     (if-let [desired-rate (pick-desired-rate device)]
@@ -181,3 +183,14 @@
                                     e))]
     (->AudioClip stream instance events device
                  (->writable-stream instance on-write-error))))
+
+(comment
+
+  (let [instance (RtAudio.)
+        device (default-output-device instance)]
+    (.closeStream instance)
+    {:device device
+     :rate (pick-desired-rate device)
+     :channels (:outputChannels device)})
+
+  )

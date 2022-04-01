@@ -16,6 +16,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     var popover: NSPopover!
     var statusBarItem: NSStatusItem!
+    var audioDeviceManager: AudioDeviceManager!
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         if CommandLine.arguments.contains("--show-ui") {
@@ -34,7 +35,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        attachHandlers()
+        self.audioDeviceManager = AudioDeviceManager()
+        self.audioDeviceManager.listen()
+        attachMediaCommandHandlers()
         MPNowPlayingInfoCenter.default().playbackState = .playing
         MPNowPlayingInfoCenter.default().playbackState = .paused
 
@@ -46,7 +49,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
-        // Insert code here to tear down your application
+        self.audioDeviceManager.unlisten()
     }
 
     @objc func togglePopover(_ sender: AnyObject?) {
@@ -59,7 +62,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func attachHandlers() {
+    private func attachMediaCommandHandlers() {
         let commandCenter = MPRemoteCommandCenter.shared()
         let playPause = commandCenter.togglePlayPauseCommand
         playPause.isEnabled = true
