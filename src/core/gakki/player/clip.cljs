@@ -30,10 +30,24 @@
                                (throw e)))
                            (callback))}))
 
-(defn- device-by-id [^RtAudio speaker, id]
-  (-> (.getDevices speaker)
-      (nth id)
-      (js->clj :keywordize-keys true)))
+(defn- device-by-id
+  ([^RtAudio speaker, id]
+   (device-by-id speaker id nil))
+  ([^RtAudio speaker, id opts]
+   (let [all-devices (.getDevices speaker)]
+     (letfn [(debug-object []
+               {:instance speaker
+                :devices (map #(js->clj % :keywordize-keys true) all-devices)
+                :id id})]
+       (or (-> all-devices
+               (nth id nil)
+               (js->clj :keywordize-keys true))
+
+         (when (:required? opts)
+           (throw (ex-info (str "Unable to load output device #" id)
+                           (debug-object))))
+
+         (log/error "Unable to load output device #" id (debug-object)))))))
 
 (defn- default-output-device [^RtAudio speaker]
   (device-by-id speaker (.getDefaultOutputDevice speaker)))
@@ -171,7 +185,7 @@
                                       :as config}]
   (let [instance (RtAudio.)
         device-id (.getDefaultOutputDevice instance)
-        device (device-by-id instance device-id)
+        device (device-by-id instance device-id {:required? true})
         [config stream] (resample-if-needed device config stream)
         events (EventEmitter.)
         instance (doto instance
@@ -192,5 +206,15 @@
     {:device device
      :rate (pick-desired-rate device)
      :channels (:outputChannels device)})
+
+  (let [instance (RtAudio.)]
+    (try
+      (println (device-by-id instance 42))
+      ; (println (device-by-id instance 42 {:required? true}))
+      (catch :default e
+        (println "ERROR: " e))
+      (finally
+        (.closeStream instance))))
+
 
   )
