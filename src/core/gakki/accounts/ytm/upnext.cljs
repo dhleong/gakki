@@ -24,6 +24,21 @@
      :artist (runs->text (j/get renderer :shortBylineText))
      :title (runs->text (j/get renderer :title))}))
 
+(defmethod parse-item "playlistPanelVideoWrapperRenderer"
+  [^js container]
+  (j/let [^:js {{wrapped :primaryRenderer} :playlistPanelVideoWrapperRenderer} container]
+    (parse-item wrapped)))
+
+(defmethod parse-item :default
+  [^js container]
+  ; Debug helper:
+  #_:clj-kondo/ignore
+  (def failed-container container)
+
+  (throw (ex-info (str "No multimethod for ytm.upnext/parse-item: "
+                       (first (js/Object.keys container)))
+                  {:container (js->clj container)})))
+
 (defn- parse-items [^js response]
   (let [raw-root (or (j/get-in response [:contents
                                          :singleColumnMusicWatchNextResultsRenderer
