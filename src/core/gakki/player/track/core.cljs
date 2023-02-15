@@ -26,9 +26,13 @@
                full-config)]
     (log "playing " stream " with " full-config
          "; seek-bytes=" seek-bytes)
-    (doto clip
-      (clip/set-volume (:volume current-state 1.0))
-      (clip/play))
+    (clip/set-volume clip (:volume current-state 1.0))
+    (-> (clip/play clip)
+        (p/catch
+          (fn [e]
+            (case (:kind (ex-data e))
+              :warning nil ; ignore
+              (log/error "Error playing clip: " (ex-message e) (ex-data e))))))
     (assoc current-state :clip clip)))
 
 (defn- swap-close! [state & {:keys [closed?]
@@ -54,10 +58,10 @@
       (p/catch
         (fn [e]
           (case (:kind (ex-data e))
-            :system (do (log "SYSTEM error playing clip; possible device change")
+            :system (do (log/error "SYSTEM error playing clip; possible device change")
                         (restart-clip! this))
             :warning nil ; ignore
-            (log "Error playing clip: " (ex-message e) (ex-data e)))))))
+            (log/error "Error playing clip: " (ex-message e) (ex-data e)))))))
 
 (deftype AudioTrack [id, ^IPCMSource source, state]
   Object
