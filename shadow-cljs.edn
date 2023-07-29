@@ -1,7 +1,5 @@
 ;; shadow-cljs configuration
-{:dev-http {8080 "resources/public/"}
-
- :source-paths [; core (shared) cross-platform code (models, etc):
+{:source-paths [; core (shared) cross-platform code (models, etc):
                 "src/core"
 
                 ; cli app:
