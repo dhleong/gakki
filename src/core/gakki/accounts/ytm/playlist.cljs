@@ -10,11 +10,8 @@
 
 (defn- parse-items [^js response]
   (let [raw-shelves (j/get-in response [:contents
-                                        :singleColumnBrowseResultsRenderer
-                                        :tabs
-                                        0
-                                        :tabRenderer
-                                        :content
+                                        :twoColumnBrowseResultsRenderer
+                                        :secondaryContents
                                         :sectionListRenderer
                                         :contents])]
     ; TODO extract continuation data
@@ -23,12 +20,28 @@
          (mapcat :items)
          vec)))
 
+(defn- inflate-header [^js response]
+  (or (j/get-in
+       response [:contents
+                 :twoColumnBrowseResultsRenderer
+                 :tabs
+                 0
+                 :tabRenderer
+                 :content
+                 :sectionListRenderer
+                 :contents
+                 0
+                 :musicEditablePlaylistDetailHeaderRenderer
+                 :header
+                 :musicResponsiveHeaderRenderer])
+      (j/get-in response [:header :musicDetailHeaderRenderer])
+      (j/get-in response [:header
+                          :musicEditablePlaylistDetailHeaderRenderer
+                          :header
+                          :musicDetailHeaderRenderer])))
+
 (defn inflate [id kind, ^js response]
-  (let [header (or (j/get-in response [:header :musicDetailHeaderRenderer])
-                   (j/get-in response [:header
-                                       :musicEditablePlaylistDetailHeaderRenderer
-                                       :header
-                                       :musicDetailHeaderRenderer]))]
+  (let [header (inflate-header response)]
     {:id id
      :provider :ytm
      :kind kind
@@ -43,4 +56,9 @@
                                             id)
                                       :type "PLAYLIST"
                                       :endpoint "browse"})]
+    #_{:clj-kondo/ignore [:inline-def :clojure-lsp/unused-public-var]}
+    (def last-response response)
     (inflate id :playlist response)))
+
+(comment
+  (inflate :id :playlist last-response))
