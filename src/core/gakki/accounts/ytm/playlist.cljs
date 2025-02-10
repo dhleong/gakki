@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [load])
   (:require [applied-science.js-interop :as j]
             [clojure.string :as str]
-            [gakki.accounts.ytm.api :refer [YTMClient send-request]]
+            [gakki.accounts.ytm.api :refer [send-request]]
             [promesa.core :as p]
             [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
             [gakki.accounts.ytm.util :as util :refer [runs->text]]))
@@ -48,7 +48,7 @@
      :image-url (util/pick-thumbnail header)
      :items (parse-items response)}))
 
-(defn load [^YTMClient client, id]
+(defn load [client, id]
   (p/let [response (send-request client
                                  #js {:id (if-not (str/starts-with? id "VL")
                                             (str "VL" id)

@@ -3,7 +3,7 @@
   (:require
    ["ytdl-core" :as ytdl]
    [applied-science.js-interop :as j]
-   [gakki.accounts.ytm.api :refer [YTMClient send-request]]
+   [gakki.accounts.ytm.api :refer [get-cookies send-request]]
    [gakki.const :as const]
    [gakki.util.convert :refer [->float ->int]]
    [promesa.core :as p]))
@@ -28,7 +28,7 @@
                       :codec codec)
        :url url})))
 
-(defn- load-ytm [^YTMClient client id]
+(defn- load-ytm [client id]
   (p/let [response (send-request client
                                  (j/lit
                                   {:endpoint "player"
@@ -62,9 +62,9 @@
 
 ; ======= Public interface ================================
 
-(defn load [^YTMusic client, id]
+(defn load [client id]
   (let [cookies (when client
-                  (.-cookie client))
+                  (get-cookies client))
         errors (atom nil)
         catch-errors (fn [p tag]
                        (p/catch p (fn [e]

@@ -3,7 +3,7 @@
    [applied-science.js-interop :as j]
    [gakki.accounts.core :refer [IAccountProvider]]
    [gakki.accounts.ytm.album :as album]
-   [gakki.accounts.ytm.api :refer [YTMClient send-request]]
+   [gakki.accounts.ytm.api :refer [send-request]]
    [gakki.accounts.ytm.artist :as artist]
    [gakki.accounts.ytm.creds :refer [account->client]]
    [gakki.accounts.ytm.home :as home]
@@ -17,13 +17,13 @@
 
 (defn- do-fetch-home [account]
   (log/with-timing-promise :ytm/fetch-home
-    (p/let [^YTMClient ytm (account->client account)]
+    (p/let [ytm (account->client account)]
       (home/load ytm))))
 
 (defn- do-paginate [account entity index]
   (when-let [continuations (first (:continuations entity))]
     ((log/of :ytm) "Paginate" (:kind entity) (:id entity) "@" continuations "...")
-    (p/let [^YTMClient ytm (account->client account)
+    (p/let [ytm (account->client account)
             up-next (upnext/load
                      ytm
                      (assoc entity
@@ -46,7 +46,7 @@
        :next-items (:items up-next)})))
 
 (defn- do-resolve-playlist [account playlist-id]
-  (p/let [^YTMClient ytm (account->client account)]
+  (p/let [ytm (account->client account)]
     ; TODO lazily continue loading the playlist? We can use:
     ;   (>evt [:player/on-resolved :playlist result])
     ; to replace the resolved playlist; if we concat new items with old,
@@ -54,15 +54,15 @@
     (playlist/load ytm playlist-id)))
 
 (defn- do-resolve-album [account album-id]
-  (p/let [^YTMClient ytm (account->client account)]
+  (p/let [ytm (account->client account)]
     (album/load ytm album-id)))
 
 (defn- do-resolve-artist [account artist-id]
-  (p/let [^YTMClient ytm (account->client account)]
+  (p/let [ytm (account->client account)]
     (artist/load ytm artist-id)))
 
 (defn- do-resolve-radio [account radio]
-  (p/let [^YTMClient ytm (account->client account)]
+  (p/let [ytm (account->client account)]
     ; TODO lazily continue loading the playlist?
     (upnext/load ytm radio)))
 
@@ -97,11 +97,11 @@
     (do-resolve-radio account radio))
 
   (search [_ account query]
-    (p/let [^YTMClient ytm (account->client account)]
+    (p/let [ytm (account->client account)]
       (search/perform ytm query)))
 
   (search-suggest [_ account partial-query]
-    (p/let [^YTMClient ytm (account->client account)]
+    (p/let [ytm (account->client account)]
       (search-suggest/load ytm partial-query))))
 
 #_:clj-kondo/ignore

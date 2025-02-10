@@ -64,7 +64,7 @@
           :kind :radio}
          (parse-items response)))
 
-(defn load [^YTMClient client info]
+(defn load [client info]
   (p/let [body (cond-> #js {}
                  (:playlist-id info)
                  (j/assoc! :playlistId (:playlist-id info))

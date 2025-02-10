@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [load])
   (:require
    [applied-science.js-interop :as j]
-   [gakki.accounts.ytm.api :refer [YTMClient send-request]]
+   [gakki.accounts.ytm.api :refer [send-request]]
    [gakki.accounts.ytm.playlist :as playlist]
    [promesa.core :as p]))
 
@@ -75,7 +75,7 @@
     (when (seq (:items like-playlist))
       like-playlist)))
 
-(defn load [^YTMClient client id]
+(defn load [client id]
   (p/let [response (send-request client
                                  #js {:id id
                                       :type "ALBUM"

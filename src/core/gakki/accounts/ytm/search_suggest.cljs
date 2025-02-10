@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [load])
   (:require
    [applied-science.js-interop :as j]
-   [gakki.accounts.ytm.api :refer [YTMClient send-request]]
+   [gakki.accounts.ytm.api :refer [send-request]]
    [gakki.accounts.ytm.util :refer [runs->text single-key-child]]
    [promesa.core :as p]))
 
@@ -17,7 +17,7 @@
                                 [:b text]
                                 text))))})))
 
-(defn load [^YTMClient client, query]
+(defn load [client, query]
   (p/let [response (send-request client
                                  (j/lit
                                   {:endpoint "music/get_search_suggestions"

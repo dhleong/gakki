@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [load])
   (:require
    [applied-science.js-interop :as j]
-   [gakki.accounts.ytm.api :refer [YTMClient send-request]]
+   [gakki.accounts.ytm.api :refer [send-request]]
    [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
    [gakki.accounts.ytm.util :refer [runs->text unpack-navigation-endpoint]]
    [gakki.const :as const]
@@ -18,7 +18,7 @@
            :kind :radio
            :title title)))
 
-(defn load [^YTMClient client id]
+(defn load [client id]
   (p/let [response (send-request client
                                  #js {:id id
                                       :type "ARTIST"

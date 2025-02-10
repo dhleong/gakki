@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [load])
   (:require
    [applied-science.js-interop :as j]
-   [gakki.accounts.ytm.api :refer [YTMClient send-request]]
+   [gakki.accounts.ytm.api :refer [send-request]]
    [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
    [promesa.core :as p]))
 
@@ -21,7 +21,7 @@
                       (keep music-shelf->section)
                       vec)}))
 
-(defn load [^YTMClient client]
+(defn load [client]
   (p/let [response (send-request client
                                  #js {:id "FEmusic_home"
                                       :endpoint "browse"})]
