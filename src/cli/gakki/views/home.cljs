@@ -11,8 +11,9 @@
 
 (defn- initialized []
   (use-input
-    {"r" #(>evt [:providers/refresh!])
-     :help (assoc help :header "Gakki Home")})
+   {"r" #(>evt [:providers/refresh!])
+    "A" #(>evt [:navigate/replace! [:auth]])
+    :help (assoc help :header "Gakki Home")})
 
   [frame
    [header "Gakki Home"]
