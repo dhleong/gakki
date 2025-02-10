@@ -18,13 +18,13 @@
   [:<>
    [:> k/Text {:color theme/header-color-on-background}
     "YouTube Music: " (ap/describe-account
-                        (:ytm accounts/providers)
-                        account)]])
+                       (:ytm accounts/providers)
+                       account)]])
 
 (defn- fetch-user-info [{{:keys [token]} :access}]
   (p/let [response (->> (j/lit {:headers {:Authorization
                                           (str "Bearer " token)}})
-                        (fetch (str "https://www.googleapis.com/oauth2/v2/userinfo")))
+                        (fetch "https://www.googleapis.com/oauth2/v2/userinfo"))
           json (.json response)]
     (js->clj json :keywordize-keys true)))
 
@@ -45,14 +45,14 @@
 (defn- logged-out []
   (r/with-let [state (r/atom nil)]
     (use-input
-      (fn logged-out-input [k]
-        (case k
-          :return (when (let [s @state]
-                          (or (nil? s)
-                              (= :error s)))
-                    (reset! state :started)
-                    (perform-login state))
-          nil)))
+     (fn logged-out-input [k]
+       (case k
+         :return (when (let [s @state]
+                         (or (nil? s)
+                             (= :error s)))
+                   (reset! state :started)
+                   (perform-login state))
+         nil)))
 
     (case @state
       nil [:<>
@@ -82,15 +82,14 @@
               [:> k/Text {:color theme/text-color-on-background}
                "Press"
                [:> k/Text {:color theme/accent-color} " ENTER "]
-               "to try again."]]
-      )))
+               "to try again."]])))
 
 (defn view []
   (use-input
-    (fn ytm-input [k]
-      (case k
-        :escape (>evt [:navigate/replace! [:auth]])
-        nil)))
+   (fn ytm-input [k]
+     (case k
+       :escape (>evt [:navigate/replace! [:auth]])
+       nil)))
 
   (let [account (<sub [:account :ytm])]
     [:> k/Box {:flex-direction :column
@@ -107,5 +106,4 @@
       [:> k/Text {:color theme/text-color-disabled}
        "Press "
        [:> k/Text {:color theme/text-color-on-background} "<esc>"]
-       " to return"]]
-     ]))
+       " to return"]]]))

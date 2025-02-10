@@ -25,20 +25,20 @@
     ((log/of :ytm) "Paginate" (:kind entity) (:id entity) "@" continuations "...")
     (p/let [^YTMusic ytm (account->client account)
             up-next (upnext/load
-                      ytm
-                      (assoc entity
-                             :id (if (= :track (:radio/kind entity))
-                                   (get-in entity [:items index :id])
-                                   (:id entity))
-                             :continuation (j/get-in
-                                             continuations
-                                             [:nextRadioContinuationData
-                                              :continuation])
-                             :click-tracking-params (j/get-in
-                                                      continuations
-                                                      [:nextRadioContinuationData
-                                                       :clickTrackingParams])
-                             :index index))]
+                     ytm
+                     (assoc entity
+                            :id (if (= :track (:radio/kind entity))
+                                  (get-in entity [:items index :id])
+                                  (:id entity))
+                            :continuation (j/get-in
+                                           continuations
+                                           [:nextRadioContinuationData
+                                            :continuation])
+                            :click-tracking-params (j/get-in
+                                                    continuations
+                                                    [:nextRadioContinuationData
+                                                     :clickTrackingParams])
+                            :index index))]
 
       {:entity (-> entity
                    (update :items into (:items up-next))
@@ -70,7 +70,8 @@
   IAccountProvider
   (get-name [_this] "YouTube Music")
   (describe-account [_ account]
-    (when-let [email (-> account :user :email)]
+    (when-let [email (or (get-in account [:user :email])
+                         (get-in account [:user "email"]))]
       (str email)))
 
   (create-playable [_this account info]
@@ -106,7 +107,7 @@
 #_:clj-kondo/ignore
 (comment
   (p/let [client (account->client
-                   (:ytm @(re-frame.core/subscribe [:accounts])))
+                  (:ytm @(re-frame.core/subscribe [:accounts])))
           result (-> client
                      (.getArtist "UCvInFYiyeAJOGEjhqJnyaMA"))]
     (println result))
@@ -118,42 +119,37 @@
       (p/catch log/error))
 
   (p/let [client (account->client
-                   (:ytm @(re-frame.core/subscribe [:accounts])))
+                  (:ytm @(re-frame.core/subscribe [:accounts])))
           ;; result (-> client
           ;;            (.getPlaylist "VLPLw6X_oq5Z8kl_Myg9QL1ZKxV1BobTeXrb"))
           result (send-request (.-cookie client)
                                #js {:id "VLPLw6X_oq5Z8kl_Myg9QL1ZKxV1BobTeXrb"
                                     :type "ALBUM"
-                                    :endpoint "browse"})
-          ]
-    (println (js/JSON.stringify result nil 2))
-    )
+                                    :endpoint "browse"})]
+    (println (js/JSON.stringify result nil 2)))
 
   (p/let [result (do-resolve-playlist
-                   (:ytm @(re-frame.core/subscribe [:accounts]))
-                   "VLPLw6X_oq5Z8kl_Myg9QL1ZKxV1BobTeXrb") ]
+                  (:ytm @(re-frame.core/subscribe [:accounts]))
+                  "VLPLw6X_oq5Z8kl_Myg9QL1ZKxV1BobTeXrb")]
     (cljs.pprint/pprint result))
 
   ; this is a "shuffle CHVRCHES" radio
   (-> (p/let [result (do-resolve-radio
-                       (:ytm @(re-frame.core/subscribe [:accounts]))
-                       {:id "80QNzlx-Fyg"
-                        :playlist-id "RDAOoxcn6rFh4zxhtR0lDvIPBA"
-                        :radio/kind :track})]
+                      (:ytm @(re-frame.core/subscribe [:accounts]))
+                      {:id "80QNzlx-Fyg"
+                       :playlist-id "RDAOoxcn6rFh4zxhtR0lDvIPBA"
+                       :radio/kind :track})]
         (cljs.pprint/pprint result))
       (p/catch log/error))
 
   (p/let [result (do-resolve-album
-                   (:ytm @(re-frame.core/subscribe [:accounts]))
-                   "MPREb_XSoe2FaWnVW") ]
+                  (:ytm @(re-frame.core/subscribe [:accounts]))
+                  "MPREb_XSoe2FaWnVW")]
     (prn result))
 
   (p/let [result (do-resolve-artist
-                   (:ytm @(re-frame.core/subscribe [:accounts]))
-                   "UCvInFYiyeAJOGEjhqJnyaMA") ]
+                  (:ytm @(re-frame.core/subscribe [:accounts]))
+                  "UCvInFYiyeAJOGEjhqJnyaMA")]
     (prn result)
-    (prn (select-keys result [:title :description :radio :shuffle]))
-    )
-
-  )
+    (prn (select-keys result [:title :description :radio :shuffle]))))
 
