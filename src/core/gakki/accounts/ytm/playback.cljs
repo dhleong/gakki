@@ -1,7 +1,7 @@
 (ns gakki.accounts.ytm.playback
   (:refer-clojure :exclude [load])
   (:require
-   ["ytdl-core" :as ytdl]
+   ["@distube/ytdl-core" :as ytdl]
    [applied-science.js-interop :as j]
    [gakki.accounts.ytm.api :refer [get-cookies send-request]]
    [gakki.const :as const]
