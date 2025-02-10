@@ -1,13 +1,12 @@
 (ns gakki.accounts.ytm.artist
   (:refer-clojure :exclude [load])
-  (:require [applied-science.js-interop :as j]
-            [promesa.core :as p]
-            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]
-            [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
-            [gakki.accounts.ytm.util :refer [runs->text
-                                             unpack-navigation-endpoint]]
-            [gakki.const :as const]))
+  (:require
+   [applied-science.js-interop :as j]
+   [gakki.accounts.ytm.api :refer [YTMClient send-request]]
+   [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
+   [gakki.accounts.ytm.util :refer [runs->text unpack-navigation-endpoint]]
+   [gakki.const :as const]
+   [promesa.core :as p]))
 
 (defn- unpack-playlist [header button-key title]
   (when-let [radio (-> header
@@ -19,8 +18,8 @@
            :kind :radio
            :title title)))
 
-(defn load [^YTMusic client id]
-  (p/let [response (send-request (.-cookie client)
+(defn load [^YTMClient client id]
+  (p/let [response (send-request client
                                  #js {:id id
                                       :type "ARTIST"
                                       :endpoint "browse"})

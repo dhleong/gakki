@@ -1,10 +1,10 @@
 (ns gakki.accounts.ytm.album
   (:refer-clojure :exclude [load])
-  (:require [applied-science.js-interop :as j]
-            [promesa.core :as p]
-            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]
-            [gakki.accounts.ytm.playlist :as playlist]))
+  (:require
+   [applied-science.js-interop :as j]
+   [gakki.accounts.ytm.api :refer [YTMClient send-request]]
+   [gakki.accounts.ytm.playlist :as playlist]
+   [promesa.core :as p]))
 
 (defmulti ^:private apply-mutation (fn [_state mutation]
                                      (j/get mutation :type)))
@@ -75,8 +75,8 @@
     (when (seq (:items like-playlist))
       like-playlist)))
 
-(defn load [^YTMusic client id]
-  (p/let [response (send-request (.-cookie client)
+(defn load [^YTMClient client id]
+  (p/let [response (send-request client
                                  #js {:id id
                                       :type "ALBUM"
                                       :endpoint "browse"})]

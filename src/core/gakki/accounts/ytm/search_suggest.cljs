@@ -1,12 +1,10 @@
 (ns gakki.accounts.ytm.search-suggest
   (:refer-clojure :exclude [load])
-  (:require [applied-science.js-interop :as j]
-            [promesa.core :as p]
-            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
-                                               generateBody generate-body}]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]
-            [gakki.accounts.ytm.util :refer [runs->text
-                                             single-key-child]]))
+  (:require
+   [applied-science.js-interop :as j]
+   [gakki.accounts.ytm.api :refer [YTMClient send-request]]
+   [gakki.accounts.ytm.util :refer [runs->text single-key-child]]
+   [promesa.core :as p]))
 
 (defn- unpack-suggestion [^js container]
   (j/let [^:js {:keys [suggestion]} (single-key-child container)
@@ -19,13 +17,11 @@
                                 [:b text]
                                 text))))})))
 
-(defn load [^YTMusic client, query]
-  (p/let [body (-> (generate-body #js {})
-                   (j/assoc! :input query))
-          response (send-request (.-cookie client)
+(defn load [^YTMClient client, query]
+  (p/let [response (send-request client
                                  (j/lit
-                                   {:endpoint "music/get_search_suggestions"
-                                    :body body}))
+                                  {:endpoint "music/get_search_suggestions"
+                                   :body {:input query}}))
           suggestions (j/get-in response [:contents
                                           0
                                           :searchSuggestionsSectionRenderer
@@ -36,9 +32,7 @@
 (comment
 
   (-> (p/let [client (gakki.accounts.ytm.creds/account->client
-                       @(re-frame.core/subscribe [:account :ytm]))
+                      @(re-frame.core/subscribe [:account :ytm]))
               result (load client "last")]
         (cljs.pprint/pprint result))
-      (p/catch log/error))
-
-  )
+      (p/catch log/error)))

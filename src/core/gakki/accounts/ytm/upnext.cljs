@@ -1,10 +1,10 @@
 (ns gakki.accounts.ytm.upnext
-  (:require [applied-science.js-interop :as j]
-            [gakki.accounts.ytm.util :as util :refer [runs->text]]
-            [gakki.util.logging :as log :refer [with-timing-promise]]
-            [promesa.core :as p]
-            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
-                                               generateBody generate-body}]))
+  (:require
+   [applied-science.js-interop :as j]
+   [gakki.accounts.ytm.api :refer [send-request]]
+   [gakki.accounts.ytm.util :as util :refer [runs->text]]
+   [gakki.util.logging :as log :refer [with-timing-promise]]
+   [promesa.core :as p]))
 
 (defmulti parse-item (fn [container] (first (js/Object.keys container))))
 
@@ -64,8 +64,8 @@
           :kind :radio}
          (parse-items response)))
 
-(defn load [^YTMusic client info]
-  (p/let [body (cond-> (generate-body #js {})
+(defn load [^YTMClient client info]
+  (p/let [body (cond-> #js {}
                  (:playlist-id info)
                  (j/assoc! :playlistId (:playlist-id info))
 
@@ -84,10 +84,10 @@
                  (:click-tracking-params info)
                  (j/assoc-in! [:clickTracking :clickTrackingParams]
                               (:click-tracking-params info)))
-          response (->> (send-request (.-cookie client)
+          response (->> (send-request client
                                       (j/lit
-                                        {:endpoint "next"
-                                         :body body}))
+                                       {:endpoint "next"
+                                        :body body}))
                         (with-timing-promise :ytm/upnext-load))]
     (-> info
         (inflate response)

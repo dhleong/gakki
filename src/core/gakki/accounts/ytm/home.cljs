@@ -1,10 +1,10 @@
 (ns gakki.accounts.ytm.home
   (:refer-clojure :exclude [load])
-  (:require [applied-science.js-interop :as j]
-            [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
-            [promesa.core :as p]
-            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]))
+  (:require
+   [applied-science.js-interop :as j]
+   [gakki.accounts.ytm.api :refer [YTMClient send-request]]
+   [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
+   [promesa.core :as p]))
 
 (defn inflate [^js response]
   (let [raw-shelves (j/get-in response [:contents
@@ -21,8 +21,8 @@
                       (keep music-shelf->section)
                       vec)}))
 
-(defn load [^YTMusic client]
-  (p/let [response (send-request (.-cookie client)
+(defn load [^YTMClient client]
+  (p/let [response (send-request client
                                  #js {:id "FEmusic_home"
                                       :endpoint "browse"})]
     (inflate response)))

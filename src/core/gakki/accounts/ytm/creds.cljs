@@ -1,24 +1,25 @@
 (ns gakki.accounts.ytm.creds
-  (:require [applied-science.js-interop :as j]
-            [archetype.util :refer [>evt]]
-            [promesa.core :as p]
-            ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]
-            [gakki.util.logging :as log]))
+  (:require
+   ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
+   [applied-science.js-interop :as j]
+   [archetype.util :refer [>evt]]
+   [gakki.accounts.ytm.api :as api]
+   [gakki.util.logging :as log]
+   [promesa.core :as p]))
 
 (defonce ^:private created-creds (atom nil))
 
 (defonce account->creds
   (memoize
-    (fn [account]
-      (cached
-        (OauthCredentialsManager.
-          (clj->js account)
-          #js {:persistCredentials
-               (fn [creds]
-                 (let [updated (merge account
-                                      (js->clj creds :keywordize-keys true))]
-                   (>evt [:auth/save :ytm updated {:load-home? false}])))})))))
+   (fn [account]
+     (cached
+      (OauthCredentialsManager.
+       (clj->js account)
+       #js {:persistCredentials
+            (fn [creds]
+              (let [updated (merge account
+                                   (js->clj creds :keywordize-keys true))]
+                (>evt [:auth/save :ytm updated {:load-home? false}])))})))))
 
 (defn account->cookies [account]
   (p/let [initial? (nil? (get @created-creds account))
@@ -37,4 +38,4 @@
 
 (defn account->client [account]
   (p/let [cookies (account->cookies account)]
-    (YTMusic. cookies)))
+    (api/create-client cookies)))

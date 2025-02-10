@@ -1,29 +1,26 @@
 (ns gakki.accounts.ytm.search
-  (:require [applied-science.js-interop :as j]
-            [promesa.core :as p]
-            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
-                                               generateBody generate-body}]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]
-            [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]))
+  (:require
+   [applied-science.js-interop :as j]
+   [gakki.accounts.ytm.api :refer [YTMClient send-request]]
+   [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
+   [promesa.core :as p]))
 
 (def ^:private param-types
   {:uploads "agIYAw%3D%3D"})
 
-(defn- perform-with [^YTMusic client {:keys [params query]}]
-  (p/let [body (-> (generate-body #js {})
-                   (j/assoc! :query query)
-                   (j/assoc! :params (get param-types params params)))
-          response (send-request (.-cookie client)
+(defn- perform-with [^YTMClient client {:keys [params query]}]
+  (p/let [response (send-request client
                                  (j/lit
-                                   {:endpoint "search"
-                                    :body body}))
+                                  {:endpoint "search"
+                                   :body {:query query
+                                          :params (get param-types params params)}}))
           tabs (j/get-in response [:contents
                                    :tabbedSearchResultsRenderer
                                    :tabs])
           selected (->> tabs
                         (some
-                          #(when (j/get-in % [:tabRenderer :selected])
-                             (j/get % :tabRenderer))))
+                         #(when (j/get-in % [:tabRenderer :selected])
+                            (j/get % :tabRenderer))))
           shelves (j/get-in selected [:content
                                       :sectionListRenderer
                                       :contents])]
@@ -39,14 +36,11 @@
                    (cons uploads categories)
                    categories)}))
 
-
 #_:clj-kondo/ignore
 (comment
 
   (-> (p/let [client (gakki.accounts.ytm.creds/account->client
-                       @(re-frame.core/subscribe [:account :ytm]))
+                      @(re-frame.core/subscribe [:account :ytm]))
               result (perform client "last of us")]
         (cljs.pprint/pprint result))
-      (p/catch log/error))
-
-  )
+      (p/catch log/error)))

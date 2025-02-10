@@ -2,8 +2,7 @@
   (:refer-clojure :exclude [load])
   (:require [applied-science.js-interop :as j]
             [clojure.string :as str]
-            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]
+            [gakki.accounts.ytm.api :refer [YTMClient send-request]]
             [promesa.core :as p]
             [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
             [gakki.accounts.ytm.util :as util :refer [runs->text]]))
@@ -49,8 +48,8 @@
      :image-url (util/pick-thumbnail header)
      :items (parse-items response)}))
 
-(defn load [^YTMusic client, id]
-  (p/let [response (send-request (.-cookie client)
+(defn load [^YTMClient client, id]
+  (p/let [response (send-request client
                                  #js {:id (if-not (str/starts-with? id "VL")
                                             (str "VL" id)
                                             id)
