@@ -15,13 +15,12 @@
   (on-file-created [this path])
   (on-file-accessed [this path]))
 
-
 ; ======= Cache state management ==========================
 
 (defn- create-state [max-size-bytes on-evicted]
   (atom {:files (LinkedMap.
-                  0 ; max entries (0 = don't limit count)
-                  true) ; evict in insertion order ("cache mode")
+                 0 ; max entries (0 = don't limit count)
+                 true) ; evict in insertion order ("cache mode")
          :max-size max-size-bytes
          :on-evicted on-evicted
          :bytes 0}))
@@ -31,7 +30,7 @@
   state)
 
 (defn- put-with-size
-  [{:keys [files max-size on-evicted] :as state} path size]
+  [{:keys [^js files max-size on-evicted] :as state} path size]
   (let [contained? (.containsKey files path)]
     (.set files path {:path path
                       :size size})
@@ -48,7 +47,6 @@
                      (update :promises (fnil conj [])
                              (on-evicted (:path evicted))))))))))
 
-
 ; ======= FS implementation ===============================
 
 (defn initialize-state-with-stats
@@ -58,9 +56,9 @@
   (->> stats
        (sort-by #(j/get (second %) :atimeMs))
        (reduce
-         (j/fn [s [path ^:js {:keys [size]}]]
-           (put-with-size s path size))
-         initial-state)))
+        (j/fn [s [path ^:js {:keys [size]}]]
+          (put-with-size s path size))
+        initial-state)))
 
 (defn- initialize-fs-cache [root-path state]
   (log/with-timing-promise
@@ -88,8 +86,8 @@
           (swap! state dissoc :promises)
           (p/all promises))
         (p/catch (partial
-                   log/error
-                   "Unable to update cache for download of" path))))
+                  log/error
+                  "Unable to update cache for download of" path))))
 
   (on-file-accessed [_this path]
     (swap! state access path)))
@@ -107,8 +105,8 @@
   ([cache-size] (create (paths/platform :cache) cache-size))
   ([root-path cache-size]
    (let [state (create-state
-                 cache-size
-                 on-evict-file)]
+                cache-size
+                on-evict-file)]
      (-> (initialize-fs-cache root-path state)
          (p/catch (partial log/error "Error initializing fs-cache")))
      (create-fs-with-state state))))
@@ -124,15 +122,12 @@
     existing
     (create cache-size)))
 
-
 #_:clj-kondo/ignore
 (comment
 
   (-> (paths/platform :cache)
       (initialize-fs-cache (create-state
-                             (* 1024 1024 1024)
-                             on-evict-file))
+                            (* 1024 1024 1024)
+                            on-evict-file))
       (p/then cljs.pprint/pprint)
-      (p/catch log/error))
-
-  )
+      (p/catch log/error)))

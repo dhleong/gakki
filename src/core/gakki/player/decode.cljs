@@ -28,26 +28,26 @@
 
         decoder (case codec
                   "opus" (prism/opus.Decoder.
-                           #js {:rate (:sample-rate config)
-                                :channels (:channels config)
-                                :frameSize const/default-frame-size})
+                          #js {:rate (:sample-rate config)
+                               :channels (:channels config)
+                               :frameSize const/default-frame-size})
 
                   (do
                     ((log/of :player/decode)
                      "No optimized decoder for " codec
                      "; falling back to ffmpeg")
                     (prism/FFmpeg.
-                      (j/lit
-                        {:args [:-loglevel "0"
-                                :-ac (:channels config)
-                                :-i "-"
-                                :-f "s16le"
-                                :-acodec "pcm_s16le"
-                                :-ac (:channels config)]}))))
+                     (j/lit
+                      {:args [:-loglevel "0"
+                              :-ac (:channels config)
+                              :-i "-"
+                              :-f "s16le"
+                              :-acodec "pcm_s16le"
+                              :-ac (:channels config)]}))))
 
-        demuxed (if demuxer
-                  (.pipe stream demuxer)
-                  stream)
+        ^js demuxed (if demuxer
+                      (.pipe stream demuxer)
+                      stream)
         decoded (.pipe demuxed decoder)]
 
     ; Ensure that the decoded data is chunked appropriately to match the
