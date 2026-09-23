@@ -45,19 +45,17 @@
 (defn- logged-out []
   (r/with-let [state (r/atom nil)]
     (use-input
-     (fn logged-out-input [k]
-       (case k
-         :return (when (let [s @state]
-                         (or (nil? s)
-                             (= :error s)))
-                   (reset! state :started)
-                   (perform-login state))
-         nil)))
+     {:return (fn []
+                (when (let [s @state]
+                        (or (nil? s)
+                            (= :error s)))
+                  (reset! state :started)
+                  (perform-login state)))})
 
     (case @state
       nil [:<>
            [:> k/Text {:color theme/text-color-on-background}
-            "A browse window will open for you to login to the Google Account "
+            "A browser window will open for you to login to the Google Account "
             "you wish to use with YouTube Music."]
            [:> k/Text " "]
            [:> k/Text {:color theme/text-color-on-background}
@@ -86,10 +84,7 @@
 
 (defn view []
   (use-input
-   (fn ytm-input [k]
-     (case k
-       :escape (>evt [:navigate/replace! [:auth]])
-       nil)))
+   {:escape #(>evt [:navigate/replace! [:auth]])})
 
   (let [account (<sub [:account :ytm])]
     [:> k/Box {:flex-direction :column

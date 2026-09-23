@@ -29,27 +29,27 @@
 
 (defn- compute-handler [stack]
   (reduce
-    (fn [h {:keys [f name owned]}]
-      (cond
+   (fn [h {:keys [f name owned]}]
+     (cond
         ; fn inputs override all maps
-        (nil? owned) f
+       (nil? owned) f
 
         ; Map inputs cannot override fn inputs for now
-        (fn? h) h
+       (fn? h) h
 
-        :else
-        (reduce-kv
-          (fn [m k v]
-            (if (= :help k)
+       :else
+       (reduce-kv
+        (fn [m k v]
+          (if (= :help k)
               ; :help maps are a special case
-              (update m k apply-help-map name v)
+            (update m k apply-help-map name v)
 
               ; Normal case:
-              (assoc m k [name v])))
-          h
-          owned)))
-    {}
-    stack))
+            (assoc m k [name v])))
+        h
+        owned)))
+   {}
+   stack))
 
 (defn- recompute-handler [stack]
   (reset! handler (compute-handler stack)))
@@ -82,34 +82,35 @@
                         f)}]
 
     (use-effect
-      (fn []
-        (recompute-handler
-          (swap! active-stack conj entry))
-        #(recompute-handler
-           (swap! active-stack vec-dissoc entry)))
-      #js [entry])))
+     (fn []
+       (recompute-handler
+        (swap! active-stack conj entry))
+       #(recompute-handler
+         (swap! active-stack vec-dissoc entry)))
+     #js [entry])))
 
 (defn dispatcher []
   (k/useInput
-    (fn input-dispatcher [input k]
-      (let [the-key (->key input k)
-            handler @handler]
-        (if (fn? handler)
-          (handler the-key)
+   (fn input-dispatcher [input k]
+     (println "hi" k handler)
+     (let [the-key (->key input k)
+           handler @handler]
+       (if (fn? handler)
+         (handler the-key)
 
-          (if-let [[owner f] (get handler the-key)]
-            (cond
-              (and (fn? f) (= 0 (.-length f)))
-              (f)
+         (if-let [[owner f] (get handler the-key)]
+           (cond
+             (and (fn? f) (= 0 (.-length f)))
+             (f)
 
-              :else
-              (log/error "Handler to " the-key " was not a zero-arity fn."
-                         "\n  Value: " f
-                         "\n  Registered: " owner))
+             :else
+             (log/error "Handler to " the-key " was not a zero-arity fn."
+                        "\n  Value: " f
+                        "\n  Registered: " owner))
 
-            (when (and (= "?" the-key)
-                       (:help handler))
-              (>evt [:navigate! [:help (second (:help handler))]])))))))
+           (when (and (= "?" the-key)
+                      (:help handler))
+             (>evt [:navigate! [:help (second (:help handler))]])))))))
 
   ; This is a functional component that doesn't render anything
   nil)
