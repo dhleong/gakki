@@ -92,7 +92,6 @@
 (defn dispatcher []
   (k/useInput
    (fn input-dispatcher [input k]
-     (println "hi" k handler)
      (let [the-key (->key input k)
            handler @handler]
        (if (fn? handler)
