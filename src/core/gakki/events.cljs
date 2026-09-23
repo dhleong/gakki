@@ -103,6 +103,14 @@
     :providers/load! accounts}))
 
 (reg-event-fx
+ :auth/delete
+ [trim-v]
+ (fn [{:keys [db]} [provider]]
+   {:db (update db :accounts dissoc provider)
+    ; TODO: Clear any fetched pages
+    :auth/save! [provider nil]}))
+
+(reg-event-fx
  :auth/save
  [trim-v]
  (fn [{:keys [db]} [provider account {:keys [load-home?]
