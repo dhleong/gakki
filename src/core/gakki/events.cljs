@@ -1,170 +1,168 @@
 (ns gakki.events
-  (:require [re-frame.core :as rf :refer [reg-event-db
-                                          reg-event-fx
-                                          inject-cofx
-                                          ->interceptor
-                                          path trim-v]]
-            [re-frame.interceptor :refer [update-effect]]
-            [vimsical.re-frame.cofx.inject :as inject]
-            [gakki.db :as db]
+  (:require [clojure.string :as str]
             [gakki.const :as const :refer [max-volume-int]]
+            [gakki.db :as db]
             [gakki.persistent :as persistent]
             [gakki.util.coll :refer [index-of nth-or-nil]]
             [gakki.util.logging :as log]
-            [gakki.util.media :refer [category-id]]))
+            [gakki.util.media :refer [category-id]]
+            [re-frame.core :as rf :refer [->interceptor inject-cofx path
+                                          reg-event-db reg-event-fx trim-v]]
+            [re-frame.interceptor :refer [update-effect]]
+            [vimsical.re-frame.cofx.inject :as inject]))
 
 (def ^:private paginate-distance 5)
 
 (def ^:private inject-sub (partial inject-cofx ::inject/sub))
 
-
 ; ======= Cofx ============================================
 
 (def check-pagination
   (->interceptor
-    :id     :check-pagination
-    :after  (fn check-pagination-after [context]
-              (let [db (rf/get-effect context :db ::not-found)
-                    {queue :items :keys [entity index]} (get-in db [:player :queue])]
-                (cond
-                  (= db ::not-found)
-                  context
+   :id     :check-pagination
+   :after  (fn check-pagination-after [context]
+             (let [db (rf/get-effect context :db ::not-found)
+                   {queue :items :keys [entity index]} (get-in db [:player :queue])]
+               (cond
+                 (= db ::not-found)
+                 context
 
                   ; Not time yet to paginate
-                  (< index
-                     (- (count queue)
-                        paginate-distance))
-                  context
+                 (< index
+                    (- (count queue)
+                       paginate-distance))
+                 context
 
                   ; Sanity check:
-                  (nil? (:accounts db))
-                  context
+                 (nil? (:accounts db))
+                 context
 
-                  :else
-                  (do
-                    ((log/of :player) "At " index " of " (count queue))
-                    (update-effect
-                      context :fx
-                      (fnil conj [])
-                      [:dedup-promised-fx [:providers/paginate!
-                                           {:accounts (:accounts db)
-                                            :entity entity
-                                            :index index}]])))))))
-
+                 :else
+                 (do
+                   ((log/of :player) "At " index " of " (count queue))
+                   (update-effect
+                    context :fx
+                    (fnil conj [])
+                    [:dedup-promised-fx [:providers/paginate!
+                                         {:accounts (:accounts db)
+                                          :entity entity
+                                          :index index}]])))))))
 
 ; ======= Core events =====================================
 
 (reg-event-fx
-  ::initialize-db
-  (fn [_ _]
-    {:db db/default-db
-     :auth/load! :!
-     :persistent/load! :!
-     :prefs/load! :!}))
+ ::initialize-db
+ (fn [_ _]
+   {:db db/default-db
+    :auth/load! :!
+    :persistent/load! :!
+    :prefs/load! :!}))
 
 (reg-event-db
-  :navigate!
-  [trim-v]
-  (fn [db [new-page]]
-    (if (not= (:page db) new-page)
-      (-> db
-          (assoc :page new-page)
-          (update :backstack conj (:page db)))
-      db)))
+ :on-init-error
+ [trim-v]
+ (fn [db [e & message]]
+   (assoc db :init-error {:error e
+                          :message (str/join " " message)})))
 
 (reg-event-db
-  :navigate/replace!
-  [trim-v]
-  (fn [db [new-top-page]]
-    (-> db
-        (assoc :page new-top-page)
-        (assoc :backstack []))))
+ :navigate!
+ [trim-v]
+ (fn [db [new-page]]
+   (if (not= (:page db) new-page)
+     (-> db
+         (assoc :page new-page)
+         (update :backstack conj (:page db)))
+     db)))
 
 (reg-event-db
-  :navigate/back!
-  [trim-v]
-  (fn [db _]
-    (if-let [prev (peek (:backstack db))]
-      (-> db
-          (assoc :page prev)
-          (update :backstack pop))
-      (assoc db :page [:home]))))
+ :navigate/replace!
+ [trim-v]
+ (fn [db [new-top-page]]
+   (-> db
+       (assoc :page new-top-page)
+       (assoc :backstack []))))
 
+(reg-event-db
+ :navigate/back!
+ [trim-v]
+ (fn [db _]
+   (if-let [prev (peek (:backstack db))]
+     (-> db
+         (assoc :page prev)
+         (update :backstack pop))
+     (assoc db :page [:home]))))
 
 ; ======= Auth/Providers ==================================
 
 (reg-event-fx
-  :auth/set
-  [trim-v]
-  (fn [{:keys [db]} [accounts]]
-    {:db (assoc db :accounts accounts)
-     :providers/load! accounts}))
+ :auth/set
+ [trim-v]
+ (fn [{:keys [db]} [accounts]]
+   {:db (assoc db :accounts accounts)
+    :providers/load! accounts}))
 
 (reg-event-fx
-  :auth/save
-  [trim-v]
-  (fn [{:keys [db]} [provider account {:keys [load-home?]
-                                       :or {load-home? true}}]]
-    {:db (assoc-in db [:accounts provider] account)
-     :providers/load! (when load-home?
-                        {provider account})
-     :auth/save! [provider account]}))
+ :auth/save
+ [trim-v]
+ (fn [{:keys [db]} [provider account {:keys [load-home?]
+                                      :or {load-home? true}}]]
+   {:db (assoc-in db [:accounts provider] account)
+    :providers/load! (when load-home?
+                       {provider account})
+    :auth/save! [provider account]}))
 
 (reg-event-db
-  :loading/update-count
-  [trim-v]
-  (fn [db [update-f]]
-    (update db :loading-count update-f)))
+ :loading/update-count
+ [trim-v]
+ (fn [db [update-f]]
+   (update db :loading-count update-f)))
 
 (reg-event-fx
-  :providers/refresh!
-  [trim-v]
-  (fn [{:keys [db]} _]
-    (when-let [accounts (:accounts db)]
-      {:providers/load! accounts})))
-
+ :providers/refresh!
+ [trim-v]
+ (fn [{:keys [db]} _]
+   (when-let [accounts (:accounts db)]
+     {:providers/load! accounts})))
 
 ; ======= Prefs ===========================================
 
 (reg-event-fx
-  :prefs/set
-  [trim-v (path :prefs)]
-  (fn [_ [prefs]]
-    {:db prefs
-     :integrations/configure! (merge
-                                db/default-integrations
-                                (:integrations prefs))}))
-
+ :prefs/set
+ [trim-v (path :prefs)]
+ (fn [_ [prefs]]
+   {:db prefs
+    :integrations/configure! (merge
+                              db/default-integrations
+                              (:integrations prefs))}))
 
 ; ======= Persistent state ================================
 
 (reg-event-fx
-  :persistent/load!
-  [trim-v]
-  (fn [_ _]
-    {:persistent/load! :!}))
+ :persistent/load!
+ [trim-v]
+ (fn [_ _]
+   {:persistent/load! :!}))
 
 (reg-event-db
-  :persistent/set
-  [trim-v]
-  (fn [db [state]]
-    (persistent/restore-state db state)))
+ :persistent/set
+ [trim-v]
+ (fn [db [state]]
+   (persistent/restore-state db state)))
 
 (reg-event-fx
-  :persistent/save
-  [trim-v]
-  (fn [{:keys [db]} _]
-    {:persistent/save (persistent/pull-state db)}))
-
+ :persistent/save
+ [trim-v]
+ (fn [{:keys [db]} _]
+   {:persistent/save (persistent/pull-state db)}))
 
 ; ======= Home control ====================================
 
 (reg-event-db
-  :home/replace
-  [trim-v (path :home/categories)]
-  (fn [db [provider-id {:keys [categories]}]]
-    (assoc db provider-id categories)))
-
+ :home/replace
+ [trim-v (path :home/categories)]
+ (fn [db [provider-id {:keys [categories]}]]
+   (assoc db provider-id categories)))
 
 ; ======= Carousel shared =================================
 
@@ -193,52 +191,51 @@
                 context)))})
 
 (reg-event-fx
-  :carousel/navigate-categories
-  [trim-v carousel-path
-   (inject-sub [:carousel/categories])]
-  (fn [{categories :carousel/categories} [direction]]
-    (let [delta (case direction
-                  :up -1
-                  :down 1)
-          idx (index-of categories :selected?)]
-      (when-let [next-category (when idx
-                                 (nth categories
-                                      (mod (+ idx delta)
-                                           (count categories))))]
-        {:carousel {:selection {:category (category-id next-category)}
-                    :selected (first (:items next-category))}}))))
+ :carousel/navigate-categories
+ [trim-v carousel-path
+  (inject-sub [:carousel/categories])]
+ (fn [{categories :carousel/categories} [direction]]
+   (let [delta (case direction
+                 :up -1
+                 :down 1)
+         idx (index-of categories :selected?)]
+     (when-let [next-category (when idx
+                                (nth categories
+                                     (mod (+ idx delta)
+                                          (count categories))))]
+       {:carousel {:selection {:category (category-id next-category)}
+                   :selected (first (:items next-category))}}))))
 
 (reg-event-fx
-  :carousel/navigate-row
-  [trim-v carousel-path
-   (inject-sub [:carousel/selection])
-   (inject-sub [:carousel/categories])]
-  (fn [{categories :carousel/categories selections :carousel/selection}
-       [direction]]
-    (let [{:keys [items] :as category} (or (when-let [id (:category selections)]
-                                             (->> categories
-                                                  (filter #(= id (category-id %)))
-                                                  first))
-                                           (first categories))
-          delta (case direction
-                  :left -1
-                  :right 1)
-          idx (or (index-of items :selected?) 0)]
-      (when-let [next-item (when (seq items)
-                             (nth items
-                                  (mod (+ idx delta)
-                                       (count items))))]
-        {:carousel {:selection {:category (category-id category)
-                                :item (:id next-item)}
-                    :selected next-item}}))))
+ :carousel/navigate-row
+ [trim-v carousel-path
+  (inject-sub [:carousel/selection])
+  (inject-sub [:carousel/categories])]
+ (fn [{categories :carousel/categories selections :carousel/selection}
+      [direction]]
+   (let [{:keys [items] :as category} (or (when-let [id (:category selections)]
+                                            (->> categories
+                                                 (filter #(= id (category-id %)))
+                                                 first))
+                                          (first categories))
+         delta (case direction
+                 :left -1
+                 :right 1)
+         idx (or (index-of items :selected?) 0)]
+     (when-let [next-item (when (seq items)
+                            (nth items
+                                 (mod (+ idx delta)
+                                      (count items))))]
+       {:carousel {:selection {:category (category-id category)
+                               :item (:id next-item)}
+                   :selected next-item}}))))
 
 (reg-event-fx
-  :carousel/open-selected
-  [trim-v carousel-path (inject-sub [:page])]
-  (fn [{{:keys [selected]} :carousel} _]
-    (when selected
-      {:dispatch [:player/open selected]})))
-
+ :carousel/open-selected
+ [trim-v carousel-path (inject-sub [:page])]
+ (fn [{{:keys [selected]} :carousel} _]
+   (when selected
+     {:dispatch [:player/open selected]})))
 
 ; ======= Player control ==================================
 
@@ -248,26 +245,26 @@
       item))
 
 (reg-event-fx
-  :player/open
-  [trim-v]
-  (fn [{:keys [db]} [item]]
-    (let [{:keys [kind] :as item} (inflate-item db item)]
-      (case kind
-        :track {:dispatch [::set-current-playable item]}
+ :player/open
+ [trim-v]
+ (fn [{:keys [db]} [item]]
+   (let [{:keys [kind] :as item} (inflate-item db item)]
+     (case kind
+       :track {:dispatch [::set-current-playable item]}
 
-        (:album :playlist :radio)
-        (if (seq (:items item))
-          {:dispatch [:navigate! [kind (:id item)]]}
+       (:album :playlist :radio)
+       (if (seq (:items item))
+         {:dispatch [:navigate! [kind (:id item)]]}
 
           ; Unresolved; fetch and resolve now:
-          {:providers/resolve-and-open [kind (:accounts db) item]})
+         {:providers/resolve-and-open [kind (:accounts db) item]})
 
-        :artist (if (:categories item)
-                  {:dispatch [:navigate! [:artist (:id item)]]}
+       :artist (if (:categories item)
+                 {:dispatch [:navigate! [:artist (:id item)]]}
 
-                  {:providers/resolve-and-open [:artist (:accounts db) item]})
+                 {:providers/resolve-and-open [:artist (:accounts db) item]})
 
-        (log/error "TODO support opening: " item)))))
+       (log/error "TODO support opening: " item)))))
 
 (defn- clean-entity [entity]
   (if (and (seq (:items entity))
@@ -276,196 +273,195 @@
     entity))
 
 (reg-event-fx
-  :player/on-resolved
-  [trim-v]
-  (fn [{:keys [db]} [entity-kind entity ?action]]
-    (let [cleaned-entity (clean-entity entity)]
-      {:db (cond-> db
-             true ; Always
-             (assoc-in [entity-kind (:id entity)] cleaned-entity)
+ :player/on-resolved
+ [trim-v]
+ (fn [{:keys [db]} [entity-kind entity ?action]]
+   (let [cleaned-entity (clean-entity entity)]
+     {:db (cond-> db
+            true ; Always
+            (assoc-in [entity-kind (:id entity)] cleaned-entity)
 
-             (= :action/queue-entity ?action)
-             (assoc-in [:player :queue :entity] cleaned-entity))
+            (= :action/queue-entity ?action)
+            (assoc-in [:player :queue :entity] cleaned-entity))
 
-       :fx [(when (= :action/open ?action)
-              [:dispatch [:player/open entity]])]})))
-
-(reg-event-fx
-  :player/on-playback-config-resolved
-  [trim-v (path :player :current)]
-  (fn [{current :db} [id {duration-ms :duration}]]
-    (let [duration-seconds (js/Math.ceil (/ duration-ms 1000))]
-      (when (and (= id (:id current))
-                 (not= duration-seconds (:duration current)))
-        (log/player "Providing duration" duration-seconds
-                    " (was " (:duration current) ") for track #" id)
-        (let [with-duration (assoc current :duration duration-seconds)]
-          {:db with-duration
-           :native/set-now-playing! with-duration})))))
+      :fx [(when (= :action/open ?action)
+             [:dispatch [:player/open entity]])]})))
 
 (reg-event-fx
-  :player/play-items
-  [trim-v check-pagination (path :player :queue)]
-  (fn [_ [input ?selected-index]]
-    (let [items (if (map? input)
-                  (:items input)
-                  input)
-          items (if (vector? items)
-                  items
-                  (vec items))]
-      {:db {:items items
-            :entity input
-            :index (or ?selected-index 0)}
-       :dispatch [::set-current-playable (if (nil? ?selected-index)
-                                           (first items)
-                                           (nth items ?selected-index))]})))
+ :player/on-playback-config-resolved
+ [trim-v (path :player :current)]
+ (fn [{current :db} [id {duration-ms :duration}]]
+   (let [duration-seconds (js/Math.ceil (/ duration-ms 1000))]
+     (when (and (= id (:id current))
+                (not= duration-seconds (:duration current)))
+       (log/player "Providing duration" duration-seconds
+                   " (was " (:duration current) ") for track #" id)
+       (let [with-duration (assoc current :duration duration-seconds)]
+         {:db with-duration
+          :native/set-now-playing! with-duration})))))
 
 (reg-event-fx
-  :player/enqueue-items
-  [trim-v check-pagination (path :player :queue :items)]
-  (fn [{queue :db} [new-items]]
-    (log/player "Enqueue " (map :title new-items))
-    {:db (into queue new-items)}))
+ :player/play-items
+ [trim-v check-pagination (path :player :queue)]
+ (fn [_ [input ?selected-index]]
+   (let [items (if (map? input)
+                 (:items input)
+                 input)
+         items (if (vector? items)
+                 items
+                 (vec items))]
+     {:db {:items items
+           :entity input
+           :index (or ?selected-index 0)}
+      :dispatch [::set-current-playable (if (nil? ?selected-index)
+                                          (first items)
+                                          (nth items ?selected-index))]})))
 
 (reg-event-fx
-  ::set-current-playable
-  [trim-v (inject-sub [:player/volume-percent])]
-  (fn [{:keys [db] volume-percent :player/volume-percent} [playable]]
-    ((log/of :events/set-current-playable) "set playable <- " playable "@" volume-percent)
-    {:db (-> db
-             (assoc-in [:player :current] playable)
-             (assoc-in [:player :state] :playing))
-     :integrations/set-state! {:item playable :state :playing}
-     :native/set-now-playing! playable
-     :player/play! {:item playable
-                    :account (get-in db [:accounts (:provider playable)])
-                    :config {:volume-percent volume-percent}}}))
+ :player/enqueue-items
+ [trim-v check-pagination (path :player :queue :items)]
+ (fn [{queue :db} [new-items]]
+   (log/player "Enqueue " (map :title new-items))
+   {:db (into queue new-items)}))
 
 (reg-event-fx
-  :player/play-pause
-  [trim-v (path :player)]
-  (fn [{{current-state :state :as player} :db} _]
-    (when-let [new-state (case current-state
-                           :playing :paused
-                           :paused :playing
-                           nil nil)]
-      (assoc {:db (assoc player :state new-state)
-              :integrations/set-state! {:state new-state
-                                        :item (:current player)}
-              :native/set-state! new-state}
-             (case new-state
-               :playing :player/unpause!
-               :paused :player/pause!)
-             :!))))
+ ::set-current-playable
+ [trim-v (inject-sub [:player/volume-percent])]
+ (fn [{:keys [db] volume-percent :player/volume-percent} [playable]]
+   ((log/of :events/set-current-playable) "set playable <- " playable "@" volume-percent)
+   {:db (-> db
+            (assoc-in [:player :current] playable)
+            (assoc-in [:player :state] :playing))
+    :integrations/set-state! {:item playable :state :playing}
+    :native/set-now-playing! playable
+    :player/play! {:item playable
+                   :account (get-in db [:accounts (:provider playable)])
+                   :config {:volume-percent volume-percent}}}))
 
 (reg-event-fx
-  :player/play
-  [trim-v (path :player)]
-  (fn [{{current-state :state} :db} _]
-    (when (= :paused current-state)
-      {:dispatch [:player/play-pause]})))
+ :player/play-pause
+ [trim-v (path :player)]
+ (fn [{{current-state :state :as player} :db} _]
+   (when-let [new-state (case current-state
+                          :playing :paused
+                          :paused :playing
+                          nil nil)]
+     (assoc {:db (assoc player :state new-state)
+             :integrations/set-state! {:state new-state
+                                       :item (:current player)}
+             :native/set-state! new-state}
+            (case new-state
+              :playing :player/unpause!
+              :paused :player/pause!)
+            :!))))
 
 (reg-event-fx
-  :player/pause
-  [trim-v (path :player)]
-  (fn [{{current-state :state} :db} _]
-    (when (= :playing current-state)
-      {:dispatch [:player/play-pause]})))
+ :player/play
+ [trim-v (path :player)]
+ (fn [{{current-state :state} :db} _]
+   (when (= :paused current-state)
+     {:dispatch [:player/play-pause]})))
 
 (reg-event-fx
-  :player/next-in-queue
-  [trim-v (path :player :queue)]
-  (fn [{{current-index :index} :db} _]
-    {:dispatch [:player/nth-in-queue (inc current-index)]}))
+ :player/pause
+ [trim-v (path :player)]
+ (fn [{{current-state :state} :db} _]
+   (when (= :playing current-state)
+     {:dispatch [:player/play-pause]})))
 
 (reg-event-fx
-  :player/rewind-or-prev-in-queue
-  [trim-v (path :player :queue)]
-  (fn [{{current-index :index} :db} _]
+ :player/next-in-queue
+ [trim-v (path :player :queue)]
+ (fn [{{current-index :index} :db} _]
+   {:dispatch [:player/nth-in-queue (inc current-index)]}))
+
+(reg-event-fx
+ :player/rewind-or-prev-in-queue
+ [trim-v (path :player :queue)]
+ (fn [{{current-index :index} :db} _]
     ; TODO In theory, it might be nice for this to rewind if we are > N seconds
     ; into the playback of the track, but we don't keep have that information...
     ; ... yet. So for now, we just always go back in the queue.
-    (when (> current-index 0)
-      {:dispatch [:player/nth-in-queue (dec current-index)]})))
+   (when (> current-index 0)
+     {:dispatch [:player/nth-in-queue (dec current-index)]})))
 
 (reg-event-fx
-  :player/nth-in-queue
-  [trim-v check-pagination (path :player)]
-  (fn [{{{queue :items} :queue :as player-state} :db} [index]]
-    (if-some [next-item (nth-or-nil queue index)]
-      {:db (assoc-in player-state [:queue :index] index)
-       :dispatch [::set-current-playable next-item]}
+ :player/nth-in-queue
+ [trim-v check-pagination (path :player)]
+ (fn [{{{queue :items} :queue :as player-state} :db} [index]]
+   (if-some [next-item (nth-or-nil queue index)]
+     {:db (assoc-in player-state [:queue :index] index)
+      :dispatch [::set-current-playable next-item]}
 
       ; nothing more in the queue
-      {:db (assoc player-state :state :paused)
-       :native/set-state! :paused})))
+     {:db (assoc player-state :state :paused)
+      :native/set-state! :paused})))
 
 (reg-event-fx
-  :player/seek-by
-  [trim-v]
-  (fn [_ [relative-seconds]]
-    {:player/seek-by! relative-seconds}))
+ :player/seek-by
+ [trim-v]
+ (fn [_ [relative-seconds]]
+   {:player/seek-by! relative-seconds}))
 
 (reg-event-fx
-  :player/seek-to
-  [trim-v]
-  (fn [_ [timestamp-seconds]]
-    {:player/seek-to! timestamp-seconds}))
+ :player/seek-to
+ [trim-v]
+ (fn [_ [timestamp-seconds]]
+   {:player/seek-to! timestamp-seconds}))
 
 (reg-event-fx
-  :player/set-volume
-  [trim-v
-   (path :player)
-   (inject-sub [:player/volume-suppress-amount])]
-  (fn [{player :db suppress-amount :player/volume-suppress-amount} [new-volume]]
+ :player/set-volume
+ [trim-v
+  (path :player)
+  (inject-sub [:player/volume-suppress-amount])]
+ (fn [{player :db suppress-amount :player/volume-suppress-amount} [new-volume]]
     ; NOTE: new-volume should be in [0..max-volume-int]
-    (let [new-volume (-> new-volume
-                         (max 0)
-                         (min max-volume-int))]
-      {:db (-> player
-               (assoc :volume new-volume)
-               (update :adjusting-volume? inc))
-       :player/set-volume! (* (/ new-volume max-volume-int)
-                              suppress-amount)
-       :dispatch-later {:ms 1500 :dispatch [::stop-adjusting-volume]}
-       :dispatch [:persistent/save]})))
+   (let [new-volume (-> new-volume
+                        (max 0)
+                        (min max-volume-int))]
+     {:db (-> player
+              (assoc :volume new-volume)
+              (update :adjusting-volume? inc))
+      :player/set-volume! (* (/ new-volume max-volume-int)
+                             suppress-amount)
+      :dispatch-later {:ms 1500 :dispatch [::stop-adjusting-volume]}
+      :dispatch [:persistent/save]})))
 
 (reg-event-fx
-  :player/volume-inc
-  [trim-v (path :player)]
-  (fn [{player :db} [delta]]
-    (let [current-volume (or (:volume player)
-                             max-volume-int)
-          new-volume (+ current-volume delta)]
-      {:dispatch [:player/set-volume new-volume]})))
+ :player/volume-inc
+ [trim-v (path :player)]
+ (fn [{player :db} [delta]]
+   (let [current-volume (or (:volume player)
+                            max-volume-int)
+         new-volume (+ current-volume delta)]
+     {:dispatch [:player/set-volume new-volume]})))
 
 (reg-event-fx
-  :player/check-output-device
-  [trim-v]
-  (fn [_ _]
+ :player/check-output-device
+ [trim-v]
+ (fn [_ _]
     ; NOTE: We actually perform the check after a short delay
     ; to ensure the device has had time to update its settings.
     ; The first check is to avoid *any* barf when the switch is quick,
     ; and the second is to catch slow changes (which seems to happen
     ; for me when the device increases its available channel count)
-    (log/debug "Default output device may have changed...")
-    {:dispatch-later [{:ms 250 :dispatch [::check-output-device]}
-                      {:ms 500 :dispatch [::check-output-device]}]}))
+   (log/debug "Default output device may have changed...")
+   {:dispatch-later [{:ms 250 :dispatch [::check-output-device]}
+                     {:ms 500 :dispatch [::check-output-device]}]}))
 
 (reg-event-db
-  ::stop-adjusting-volume
-  [trim-v (path :player :adjusting-volume?)]
-  (fn [adjust-volume-count _]
-    (dec adjust-volume-count)))
+ ::stop-adjusting-volume
+ [trim-v (path :player :adjusting-volume?)]
+ (fn [adjust-volume-count _]
+   (dec adjust-volume-count)))
 
 (reg-event-fx
-  ::check-output-device
-  [trim-v (path :player)]
-  (fn [{{current-state :state} :db} _]
-    (when (= :playing current-state)
-      (log/debug "Requesting output device check")
-      {:player/check-output-device! :!})))
-
+ ::check-output-device
+ [trim-v (path :player)]
+ (fn [{{current-state :state} :db} _]
+   (when (= :playing current-state)
+     (log/debug "Requesting output device check")
+     {:player/check-output-device! :!})))
 
 ; ======= Player feedback =================================
 
@@ -489,67 +485,64 @@
   (log/error "Unexpected player event type: " what))
 
 (reg-event-fx
-  :player/event
-  [trim-v]
-  (fn [{:keys [db]} [event]]
-    (handle-player-event db event)))
-
+ :player/event
+ [trim-v]
+ (fn [{:keys [db]} [event]]
+   (handle-player-event db event)))
 
 ; ======= Cache management ================================
 
 (reg-event-fx
-  :cache/download-completed
-  [trim-v (inject-sub [:prefs :cache.size])]
-  (fn [{cache-size :prefs} [path]]
-    {:cache/download-completed {:cache-size cache-size
-                                :path path}}))
+ :cache/download-completed
+ [trim-v (inject-sub [:prefs :cache.size])]
+ (fn [{cache-size :prefs} [path]]
+   {:cache/download-completed {:cache-size cache-size
+                               :path path}}))
 
 (reg-event-fx
-  :cache/file-accessed
-  [trim-v]
-  (fn [_ [path]]
-    {:cache/file-accessed path}))
-
+ :cache/file-accessed
+ [trim-v]
+ (fn [_ [path]]
+   {:cache/file-accessed path}))
 
 ; ======= Integrations ====================================
 
 (reg-event-fx
-  :integrations/set-add
-  [trim-v (path :integration-vars)]
-  (fn [{:keys [db]} [set-name value]]
-    (let [new-db (update db set-name (fnil conj #{}) value)]
-      {:db new-db
-       :fx [(when-not (= db new-db)
-              [:dispatch [:integrations/update]])]})))
+ :integrations/set-add
+ [trim-v (path :integration-vars)]
+ (fn [{:keys [db]} [set-name value]]
+   (let [new-db (update db set-name (fnil conj #{}) value)]
+     {:db new-db
+      :fx [(when-not (= db new-db)
+             [:dispatch [:integrations/update]])]})))
 
 (reg-event-fx
-  :integrations/set-remove
-  [trim-v (path :integration-vars)]
-  (fn [{:keys [db]} [set-name value]]
-    (let [new-db (update db set-name (fnil disj #{}) value)]
-      {:db new-db
-       :fx [(when-not (= db new-db)
-              [:dispatch [:integrations/update]])]})))
+ :integrations/set-remove
+ [trim-v (path :integration-vars)]
+ (fn [{:keys [db]} [set-name value]]
+   (let [new-db (update db set-name (fnil disj #{}) value)]
+     {:db new-db
+      :fx [(when-not (= db new-db)
+             [:dispatch [:integrations/update]])]})))
 
 (reg-event-fx
-  :integrations/update
-  [trim-v (inject-cofx ::inject/sub [:player/volume-percent])]
-  (fn [{{vars :integration-vars} :db volume :player/volume-percent} _]
-    {:fx [(when-not (nil? (:voice-connected vars))
-            [:player/set-volume! volume])]}))
-
+ :integrations/update
+ [trim-v (inject-cofx ::inject/sub [:player/volume-percent])]
+ (fn [{{vars :integration-vars} :db volume :player/volume-percent} _]
+   {:fx [(when-not (nil? (:voice-connected vars))
+           [:player/set-volume! volume])]}))
 
 ; ======= Search ==========================================
 
 (reg-event-fx
-  :search/reload!
-  [trim-v]
-  (fn [{:keys [db]} [query]]
-    {:db (assoc-in db [:search query] :loading)
-     :providers/search [(:accounts db) query]}))
+ :search/reload!
+ [trim-v]
+ (fn [{:keys [db]} [query]]
+   {:db (assoc-in db [:search query] :loading)
+    :providers/search [(:accounts db) query]}))
 
 (reg-event-db
-  :search/on-loaded
-  [trim-v (path :search)]
-  (fn [{search :db} [query result]]
-    (assoc search query result)))
+ :search/on-loaded
+ [trim-v (path :search)]
+ (fn [{search :db} [query result]]
+   (assoc search query result)))

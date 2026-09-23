@@ -7,7 +7,8 @@
 (def default-db
   {:page [:home]
    :backstack []
-   :accounts nil})
+   :accounts nil
+   :init-error nil})
 
 (def default-prefs
   {:cache.size const/default-cache-size})

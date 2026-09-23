@@ -29,14 +29,14 @@
    :radio #'radio/view
    :queue #'queue/view
    :search #'search/view
-   :search/results #'search-results/view
-   })
+   :search/results #'search-results/view})
 
 (defn main []
   (let [accounts (<sub [:accounts])
         [page args] (<sub [:page])
         page-fn (get pages page)
-        page-form [:f> page-fn args]]
+        page-form [:f> page-fn args]
+        init-error (<sub [:init-error])]
     [:<>
      [:f> dimens-tracker]
      [:f> input/dispatcher]
@@ -45,6 +45,16 @@
        [:f> global-nav])
 
      (cond
+       (some? init-error)
+       (let [{:keys [message error]} init-error]
+         [:> k/Box {:flex-direction :column}
+          [:> k/Text {:color :red} "Failed to initialize"]
+          [:> k/Text message]
+          [:> k/Text (str error)]
+          [:> k/Text "You may need to rebuild them:"]
+          ; TODO: platform-specific:
+          [:> k/Text "  pnpm build:macos"]])
+
        (nil? accounts)
        [splash/view]
 

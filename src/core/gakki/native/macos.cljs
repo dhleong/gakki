@@ -88,9 +88,10 @@
                              native-exe-path)]
 
     (doto (spawn full-path)
-      (.on "error" #(log/error :native "Failed to launch native components" %))
+      (.on "error" (fn [e]
+                     (log/error :native "Failed to launch native components" e)
+                     (>evt [:on-init-error e "Failed to launch native components"])))
       observe-events)))
-
 
 ; ======= outgoing message handling =======================
 
@@ -105,7 +106,6 @@
                         (ex-info "Failed to write native message"
                                  {:message message}
                                  e)))))))
-
 
 ; ======= public interface ================================
 
@@ -127,18 +127,18 @@
 
 (defn load-accounts []
   (p/create
-    (fn auth [p-resolve]
-      (swap! requests assoc :auth
-             (fn on-auth [raw-map]
-               (p-resolve
-                 (->> raw-map
-                      (reduce-kv
-                        (fn [m account password]
-                          (assoc m (keyword account)
-                                 (-> (t/reader :json)
-                                     (t/read password))))
-                        {})))))
-      (send! {:type :load-accounts}))))
+   (fn auth [p-resolve]
+     (swap! requests assoc :auth
+            (fn on-auth [raw-map]
+              (p-resolve
+               (->> raw-map
+                    (reduce-kv
+                     (fn [m account password]
+                       (assoc m (keyword account)
+                              (-> (t/reader :json)
+                                  (t/read password))))
+                     {})))))
+     (send! {:type :load-accounts}))))
 
 (defn set-state! [state]
   (send! {:type :set-state
@@ -158,7 +158,6 @@
              (assoc :type :set-now-playing)))
   (set-state! :playing))
 
-
 ; ======= Map containing all optional actions =============
 
 (def commands
@@ -176,6 +175,4 @@
 
   (swap! process (fn [^js old]
                    (.kill old "SIGKILL")
-                   nil))
-
-  )
+                   nil)))
