@@ -21,8 +21,18 @@
                       (keep music-shelf->section)
                       vec)}))
 
+; TODO: Clean up DEPRECATED
+#_{:clojure-lsp/ignore [:clojure-lsp/unused-public-var]}
 (defn load [^YTMusic client]
   (p/let [response (send-request (.-cookie client)
                                  #js {:id "FEmusic_home"
                                       :endpoint "browse"})]
     (inflate response)))
+
+(defn load-innertube [^js client]
+  (p/let [home-feed (j/call-in client [.-music .-getHomeFeed])]
+    (def last-feed home-feed)
+    ; TODO extract continuation data
+    {:categories (->> (j/get home-feed .-sections)
+                      (keep music-shelf->section)
+                      vec)}))

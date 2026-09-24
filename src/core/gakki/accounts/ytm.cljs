@@ -7,6 +7,7 @@
             [gakki.accounts.ytm.artist :as artist]
             [gakki.accounts.ytm.creds :refer [account->client
                                               get-authd-innertube]]
+            [gakki.accounts.ytm.home :as home]
             [gakki.accounts.ytm.playable :as playable]
             [gakki.accounts.ytm.playlist :as playlist]
             [gakki.accounts.ytm.search :as search]
@@ -17,10 +18,8 @@
 
 (defn- do-fetch-home [account]
   (log/with-timing-promise :ytm/fetch-home
-    (p/let [^js client (get-authd-innertube account)
-            response (j/call-in client [.-music .-getHomeFeed])]
-      (def last-resp response)
-      client)
+    (p/let [^js client (get-authd-innertube account)]
+      (home/load-innertube client))
     #_(p/let [^YTMusic ytm (account->client account)]
         (home/load ytm))))
 
