@@ -112,7 +112,8 @@
 
 (defmethod parse-shelf-item :MusicTwoRowItem
   [^js item]
-  (def last-item item)
+  #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
+  (def ^:private last-item item)
   (let [title (str (j/get item .-title))
         subtitle (some-> item
                          (j/get .-subtitle)
