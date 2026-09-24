@@ -14,6 +14,7 @@
 
 (defn view [id]
   (use-input {:help {:header "Playlist"}})
+  (def last-id id)
   (let [playlist (<sub [:playlist id])]
     [:f> track-list
      :items (<sub [:playlist/items-with-state id])

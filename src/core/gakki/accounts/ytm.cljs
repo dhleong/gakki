@@ -49,12 +49,14 @@
        :next-items (:items up-next)})))
 
 (defn- do-resolve-playlist [account playlist-id]
-  (p/let [^YTMusic ytm (account->client account)]
+  #_(p/let [^YTMusic ytm (account->client account)]
     ; TODO lazily continue loading the playlist? We can use:
     ;   (>evt [:player/on-resolved :playlist result])
     ; to replace the resolved playlist; if we concat new items with old,
     ; it should "just work"
-    (playlist/load ytm playlist-id)))
+      (playlist/load ytm playlist-id))
+  (p/let [^js client (get-authd-innertube account)]
+    (playlist/load-innertube client playlist-id)))
 
 (defn- do-resolve-album [account album-id]
   (p/let [^YTMusic ytm (account->client account)]

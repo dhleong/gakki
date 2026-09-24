@@ -116,4 +116,9 @@
   (or (some-> endpoint-container
               (j/get .-endpoint)
               (unpack-innertube-endpoint))
+      (when (= "song" (j/get endpoint-container .-item_type))
+        (when-some [id (j/get endpoint-container .-id)]
+          {:id id
+           :provider :ytm
+           :kind :track}))
       (unpack-legacy-navigation-endpoint endpoint-container)))

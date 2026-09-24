@@ -8,13 +8,17 @@
 (def ^:private ignored-section-titles #{"Videos"})
 
 (defn- parse-flex-column-item [^js item]
-  (if-let [root (j/get item :musicResponsiveListItemFlexColumnRenderer)]
-    (let [from-endpoint (unpack-navigation-endpoint (j/get root :text))]
-      (assoc from-endpoint
-             :title (runs->text (j/get root :text))))
+  (def last-flex item)
+  (if-some [title (j/get item .-title)]
+    {:title (str title)}
 
-    (throw (ex-info "Unexpected flexColumn item"
-                    {:item item}))))
+    (if-let [root (j/get item :musicResponsiveListItemFlexColumnRenderer)]
+      (let [from-endpoint (unpack-navigation-endpoint (j/get root :text))]
+        (assoc from-endpoint
+               :title (runs->text (j/get root :text))))
+
+      (throw (ex-info "Unexpected flexColumn item"
+                      {:item item})))))
 
 (defn- resolve-generic-shelf-item [item items]
   (cond
@@ -129,6 +133,39 @@
 (defmethod parse-shelf-item :MusicResponsiveListItem
   [^js item]
   (def last-responsive-item item)
+  (if-let [flex (j/get item .-flex_columns)]
+    (let [item-endpoint (unpack-navigation-endpoint item)
+          album-name (some-> (j/get-in item [.-album .-name])
+                             str)
+          artist-name (some-> (or (j/get item .-artist)
+                                  (first (j/get item .-artists)))
+                              (j/get .-name)
+                              str)]
+      (when-some [endpoint (or item-endpoint
+                               (unpack-navigation-endpoint (j/get item .-album))
+                               (unpack-navigation-endpoint (j/get item .-artist)))]
+        (merge
+         endpoint
+         {:title (or (when item-endpoint
+                       (str (j/get item .-title)))
+                     album-name
+                     artist-name)
+          :album album-name
+          :artist artist-name
+          :image-url (-> item
+                         (j/get .-thumbnail)
+                         util/pick-thumbnail)
+          :duration (some-> item
+                            (j/get-in [.-duration .-seconds]))
+          :items (keep parse-flex-column-item flex)})))
+
+    ; TODO:  support fixed_columns?
+    (throw (ex-info "Unexpected musicResponsiveListItemRenderer contents"
+                    {:contents item}))))
+
+(defmethod parse-shelf-item :ContinuationItem
+  [_]
+  (log/debug "TODO: Continuation item")
   nil)
 
 ; ======= Shelf parsing ===================================
@@ -174,7 +211,7 @@
       {:title title
        :items (vec (keep parse-shelf-item contents))})))
 
-(defmethod music-shelf->section :MusicTestebuilderSelf
+(defmethod music-shelf->section :MusicTastebuilderSelf
   [^js carousel]
   ; TODO: support?
   nil)
