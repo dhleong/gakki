@@ -21,6 +21,7 @@ jobs:
       uses: actions/setup-node@v6
       with:
         node-version: ${{ matrix.node-version }}
+        cache: "pnpm"
 
     - name: Setup Clojure
       uses: DeLaGuardo/setup-clojure@3.0
@@ -35,24 +36,16 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-m2-
 
-    - name: Node dependency cache
-      uses: actions/cache@v4
-      with:
-        path: '**/node_modules'
-        key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-
     - name: Install dependencies
       run: |
         sudo apt-get install libasound2-dev
-        yarn install --frozen-lockfile
+        pnpm install --frozen-lockfile
 
     - name: Start shadow server
-      run: yarn start
+      run: pnpm start
 
     - name: Verify Lint
-      run: yarn lint
+      run: pnpm lint
 
     - name: Verify Tests
-      run: yarn test
+      run: pnpm test
