@@ -7,6 +7,7 @@
     "gakki": "resources/cli.js"
   },
   "scripts": {
+    "postinstall": "pnpm patchright install chromium",
     "dev": "shadow-cljs watch :cli",
     "cli": "node resources/cli.js",
     "start": "shadow-cljs start",
@@ -48,6 +49,7 @@
     "keytar": "^7.0.0",
     "node-fetch": "^2.6.1",
     "open": "^11.0.4",
+    "patchright": "^1.63.0",
     "prism-media": "^1.3.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",

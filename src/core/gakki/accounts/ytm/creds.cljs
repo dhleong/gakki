@@ -8,11 +8,11 @@
             [gakki.util.logging :as log]))
 
 (defonce ^:private created-creds (atom nil))
+(defonce ^:private innertube-ref (atom nil))
 (defonce ^:private innertube-promise (Innertube.create
                                       #js {:cache (UniversalCache. false)}))
 
 (defn- unpack-innertube-auth [^js credentials]
-  (println "UNPACK: " credentials)
   {:access {:token (j/get credentials .-access_token)
             :type (j/get credentials .-token_type)
             :expires_at (-> credentials
@@ -29,14 +29,24 @@
        :refresh_token (:token refresh)
        :scope scope})
 
-(defn ^js get-authd-innertube [account]
-  (p/let [^js yt innertube-promise]
-    (when-not (j/get-in yt [.-session .-logged_in])
-      (when-not account
-        (throw (js/Error. "get-authd-innertube called without an account, and not already logged in")))
-      (j/call-in yt [.-session .-signIn]
-                 (pack-innertube-account account)))
-    yt))
+(defn ^js get-authd-innertube [{:keys [cookie] :as account}]
+  (if (or cookie (some? @innertube-ref))
+    (p/let [old @innertube-ref]
+      (if (= cookie (j/get-in old [.-session .-cookie]))
+        old
+        ; TODO: make caching persistent? manage cookies?
+        (reset! innertube-ref
+                (Innertube.create
+                 #js {:cache (UniversalCache. false)
+                      :cookie (:cookie account)}))))
+
+    (p/let [^js yt innertube-promise]
+      (when-not (j/get-in yt [.-session .-logged_in])
+        (when-not account
+          (throw (js/Error. "get-authd-innertube called without an account, and not already logged in")))
+        (j/call-in yt [.-session .-signIn]
+                   (pack-innertube-account account)))
+      yt)))
 
 (defn login-with-innertube [{:keys [on-url]}]
   (p/let [^js yt innertube-promise]
@@ -56,7 +66,7 @@
                    (println "resp=" resp)
                    (let [unpacked (unpack-innertube-auth credentials)]
                      (println "got " unpacked)
-                     (p/resolve! result unpacked))))
+                     (p/resolve result unpacked))))
       (j/call-in yt [.-session .-on]
                  "update-credentials"
                  (j/fn [^:js {:keys [credentials]}]
@@ -92,19 +102,22 @@
                 (>evt [:auth/save :ytm updated {:load-home? false}])))})))))
 
 (defn account->cookies [account]
-  (p/let [initial? (nil? (get @created-creds account))
-          start (js/Date.now)
-          creds (account->creds account)
-          cookies-obj (.get creds)
-          delta (- (js/Date.now) start)]
+  (if-some [s (:cookies account)]
+    s
 
-    ; logging:
-    (swap! created-creds assoc account true)
-    (if initial?
-      (log/timing :ytm/initial-cookie-fetch delta)
-      (log/timing :ytm/cookie-refresh delta))
+    (p/let [initial? (nil? (get @created-creds account))
+            start (js/Date.now)
+            creds (account->creds account)
+            cookies-obj (.get creds)
+            delta (- (js/Date.now) start)]
 
-    (j/get cookies-obj :cookies)))
+      ; logging:
+      (swap! created-creds assoc account true)
+      (if initial?
+        (log/timing :ytm/initial-cookie-fetch delta)
+        (log/timing :ytm/cookie-refresh delta))
+
+      (j/get cookies-obj :cookies))))
 
 (defn account->client [account]
   (p/let [cookies (account->cookies account)]
