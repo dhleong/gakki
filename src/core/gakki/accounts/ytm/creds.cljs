@@ -3,7 +3,7 @@
             [archetype.util :refer [>evt]]
             [promesa.core :as p]
             ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
-            ["youtubei.js" :refer [Innertube UniversalCache]]
+            ["youtubei.js" :refer [Innertube Platform UniversalCache]]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
             [gakki.util.logging :as log]))
 
@@ -11,6 +11,11 @@
 (defonce ^:private innertube-ref (atom nil))
 (defonce ^:private innertube-promise (Innertube.create
                                       #js {:cache (UniversalCache. false)}))
+
+(j/assoc-in! Platform [.-shim .-eval]
+             (j/fn [^:js {:keys [output]}]
+               (p/do
+                 ((js/Function. output)))))
 
 (defn- unpack-innertube-auth [^js credentials]
   {:access {:token (j/get credentials .-access_token)
