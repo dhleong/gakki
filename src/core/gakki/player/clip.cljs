@@ -40,9 +40,12 @@
                 :devices (map #(js->clj % :keywordize-keys true) all-devices)
                 :id id
                 :fatal? true})]
-       (or (-> all-devices
-               (nth id nil)
-               (js->clj :keywordize-keys true))
+       (or (some->
+            (some (fn [device]
+                    (when (= id (j/get device .-id))
+                      device))
+                  all-devices)
+            (js->clj :keywordize-keys true))
 
            (when (:required? opts)
              (throw (ex-info (str "Unable to load output device #" id)
