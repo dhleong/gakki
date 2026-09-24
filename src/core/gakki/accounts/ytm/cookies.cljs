@@ -62,18 +62,14 @@
 
        (reset! last-session new-page)
 
-       (println "goto...")
        (.goto new-page "https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fmusic.youtube.com%2F")
-       (println "<< goto...")
 
        (when-not (= (.url new-page) logged-in-url)
-         (println "AT " (.url new-page))
          (.waitForUrl
           new-page
           logged-in-url
           #js {:timeout 0
                :abortSignal (j/get abort-controller .-signal)}))
-       (println "<< waited...")
 
        (p/let [cookies-str (get-ytm-cookies new-page)]
          {:cookie cookies-str}))

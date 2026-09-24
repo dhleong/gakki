@@ -1,29 +1,25 @@
 (ns gakki.views.auth.ytm
-  (:require ["clipboardy" :default clipboard]
-            ["ink" :as k]
-            ["ink-spinner" :default Spinner]
-            ["open" :default open]
-            [archetype.util :refer [<sub >evt]]
-            [clojure.core.match :as m]
-            [gakki.accounts :as accounts]
-            [gakki.accounts.core :as ap]
-            [gakki.accounts.ytm.cookies :refer [request-cookies]]
-            [gakki.accounts.ytm.creds :refer [get-innertube-user-info
-                                              login-with-innertube]]
-            [gakki.cli.input :refer [use-input]]
-            [gakki.theme :as theme]
-            [gakki.util.logging :as log]
-            [promesa.core :as p]
-            [reagent.core :as r]))
+  (:require
+   ["ink" :as k]
+   ["ink-spinner" :default Spinner]
+   [archetype.util :refer [<sub >evt]]
+   [clojure.core.match :as m]
+   [gakki.accounts :as accounts]
+   [gakki.accounts.core :as ap]
+   [gakki.accounts.ytm.cookies :refer [request-cookies]]
+   [gakki.accounts.ytm.creds :refer [get-innertube-user-info]]
+   [gakki.cli.input :refer [use-input]]
+   [gakki.theme :as theme]
+   [gakki.util.logging :as log]
+   [promesa.core :as p]
+   [reagent.core :as r]))
 
 (defn- managed-reset! [state new-state]
   (swap! state
          (fn [old]
            (m/match [old]
              [[:opened {:promise p}]]
-             (do
-               (println "CANCEL " p)
-               (p/cancel p))
+             (p/cancel p)
 
              :else nil)
            new-state)))
@@ -44,44 +40,6 @@
 
    [:> k/Text {:color theme/text-color-disabled}
     "Press <delete> or <backspace> to logout"]])
-
-; (defn- perform-login [state]
-;   (-> (p/let [auth-code (request-auth-code)
-;               _ (reset! state :exchanging)
-
-;               js-info (exchange-auth-code auth-code)
-;               auth (js->clj js-info :keywordize-keys true)
-;               user (fetch-user-info auth)
-;               account (assoc auth :user user)]
-;         (>evt [:auth/save :ytm account]))
-
-;       (p/catch (fn [e]
-;                  (log/error "Failed to login to YTM:" e)
-;                  (reset! state :error)))))
-
-(defn- get-creds [state]
-  (login-with-innertube
-   {:on-url (fn [{:keys [url code]}]
-              ; TODO: Probably, refactor out to shared util?
-              (open url)
-              ((.-write clipboard) code)
-              (managed-reset! state [:started
-                                     {:url url
-                                      :code code}])
-
-              (println url)
-              (println code))}))
-
-; (defn- perform-login [state]
-;   (-> (p/let [auth (get-creds state)
-;               _ (reset! state :exchanging)
-;               user (get-innertube-user-info auth)
-;               account (assoc auth :user user)]
-;         (println "GOT: " account)
-;         (>evt [:auth/save :ytm account]))
-;       (p/catch (fn [e]
-;                  (log/error "Failed to login to YTM:" e)
-;                  (reset! state :error)))))
 
 (defn- perform-login [state]
   (let [p (request-cookies)]
