@@ -115,7 +115,7 @@
                        (j/call info .-chooseFormat #js {})]))
 
 (defn- parse-innertube [^js client, info]
-  (if-let [fmt (choose-format info)]
+  (if-let [^js fmt (choose-format info)]
     (p/let [url (j/call fmt .-decipher
                         (j/get-in client [.-session .-player]))]
       (parse-audio-format (j/assoc! fmt :url url)))
