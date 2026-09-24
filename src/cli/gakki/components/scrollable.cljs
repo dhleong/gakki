@@ -1,6 +1,5 @@
 (ns gakki.components.scrollable
   (:require ["ink" :as k]
-            [archetype.views.error-boundary :refer [error-boundary]]
             [gakki.util.coll :refer [index-of]]
             [reagent.core :as r]))
 

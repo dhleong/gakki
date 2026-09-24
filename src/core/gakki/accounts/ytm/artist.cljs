@@ -1,5 +1,4 @@
 (ns gakki.accounts.ytm.artist
-  (:refer-clojure :exclude [load])
   (:require [applied-science.js-interop :as j]
             [promesa.core :as p]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
@@ -39,8 +38,8 @@
                     (runs->text))]
 
     (when const/debug?
-      #_:clj-kondo/ignore
-      (def last-response response))
+      #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
+      (def ^:private last-response response))
 
     {:id id
      :kind :artist

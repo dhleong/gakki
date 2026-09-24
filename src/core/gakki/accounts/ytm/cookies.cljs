@@ -9,8 +9,7 @@
 (def ^:private logged-in-url "https://music.youtube.com/")
 (def ^:private cookie-urls
   #js ["https://youtube.com"
-       logged-in-url
-       #_"https://google.com"])
+       logged-in-url])
 
 (defonce ^:private last-session (atom nil))
 
@@ -19,7 +18,6 @@
                             (.context browser-or-page))
                           browser-or-page)
           cookies (.cookies context cookie-urls)]
-    (def last-cookies cookies)
     (->> cookies
          (map (j/fn [^:js {:keys [name value]}]
                 (str name "=" value)))

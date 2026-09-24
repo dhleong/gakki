@@ -1,13 +1,10 @@
 (ns gakki.accounts.ytm.playlist
-  (:refer-clojure :exclude [load])
-  (:require ["ytmusic" :rename {YTMUSIC YTMusic}]
-            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
-            [applied-science.js-interop :as j]
-            [clojure.string :as str]
-            [gakki.accounts.ytm.music-shelf :refer [music-shelf->section
-                                                    parse-shelf-item]]
-            [gakki.accounts.ytm.util :as util :refer [runs->text]]
-            [promesa.core :as p]))
+  (:require
+   [applied-science.js-interop :as j]
+   [gakki.accounts.ytm.music-shelf :refer [music-shelf->section
+                                           parse-shelf-item]]
+   [gakki.accounts.ytm.util :as util :refer [runs->text]]
+   [promesa.core :as p]))
 
 (defn- parse-items [^js response]
   (let [raw-shelves (j/get-in response [:contents
@@ -50,17 +47,6 @@
      :image-url (util/pick-thumbnail header)
      :items (parse-items response)}))
 
-(defn load [^YTMusic client, id]
-  (p/let [response (send-request (.-cookie client)
-                                 #js {:id (if-not (str/starts-with? id "VL")
-                                            (str "VL" id)
-                                            id)
-                                      :type "PLAYLIST"
-                                      :endpoint "browse"})]
-    #_{:clj-kondo/ignore [:inline-def :clojure-lsp/unused-public-var]}
-    (def last-response response)
-    (inflate id :playlist response)))
-
 (defn inflate-innertube [id kind ^js playlist]
   #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
   (def ^:private last-playlist playlist)
@@ -78,6 +64,3 @@
 (defn load-innertube [^js client, id]
   (p/let [playlist (j/call-in client [.-music .-getPlaylist] id)]
     (inflate-innertube id :playlist playlist)))
-
-(comment
-  (inflate :id :playlist last-response))

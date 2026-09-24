@@ -49,18 +49,17 @@
 
 (def of
   (memoize
-    (fn log-creator [tag]
-      (let [string-tag (if (string? tag)
-                         tag
-                         (str/replace (str "gakki" tag) #"[./]" ":"))
-            colorized-tag ((colorizer string-tag) string-tag)]
-        (fn log [& args]
-          (when (enabled? string-tag)
-            (perform-log (cons colorized-tag args))))))))
+   (fn log-creator [tag]
+     (let [string-tag (if (string? tag)
+                        tag
+                        (str/replace (str "gakki" tag) #"[./]" ":"))
+           colorized-tag ((colorizer string-tag) string-tag)]
+       (fn log [& args]
+         (when (enabled? string-tag)
+           (perform-log (cons colorized-tag args))))))))
 
 (def debug (of nil))
 (def player (of :player))
-
 
 ; ======= Error logging ===================================
 
@@ -94,7 +93,6 @@
          (error log-prefix (ex-message e) (ex-data e))
          fallback-value)))))
 
-
 ; ======= Timing ==========================================
 
 (def ^:private colorize-timing (colorizer ":timing"))
@@ -114,7 +112,6 @@
                       (p/rejected err)
                       (p/resolved result)))))))
 
-
 ; ======= stdout patching =================================
 
 (defn patch
@@ -128,29 +125,27 @@
         safe-error (fn safe-error [& args]
                      (when-not (and (string? (first args))
                                     (str/includes?
-                                      (first args)
-                                      "unmounted component"))
+                                     (first args)
+                                     "unmounted component"))
                        (apply @console-error args)))]
     (re-frame/set-loggers!
-      {:log      (partial log :info)
-       :warn     (partial log :warn)
-       :error    (partial debug :error)
-       :debug    (partial log :debug)
-       :group    (partial log :info)
-       :groupEnd  #()})
+     {:log      (partial log :info)
+      :warn     (partial log :warn)
+      :error    (partial debug :error)
+      :debug    (partial log :debug)
+      :group    (partial log :info)
+      :groupEnd  #()})
 
     ; Even in a prod build, react whines in some situations about a state
     ; update against an unmounted component, but Reagent does seem to clean
     ; up properly so... just suppress the warning.
     (js/Object.defineProperties
-      js/console
-      #js {:error #js {:get (constantly safe-error)
-                       :enumerable true
-                       :set (fn [replacement]
-                              (when replacement
-                                (reset! console-error replacement)))}})))
-
-
+     js/console
+     #js {:error #js {:get (constantly safe-error)
+                      :enumerable true
+                      :set (fn [replacement]
+                             (when replacement
+                               (reset! console-error replacement)))}})))
 
 ; ======= debug-style enable/disable configs ==============
 ; See logging-test for some examples
@@ -192,12 +187,9 @@
     (let [checks (->> (str/split config #"\s*,\s*")
                       (map compile-config-part))]
       (memoize
-        (partial enabled-checks-pass? checks)))))
+       (partial enabled-checks-pass? checks)))))
 
 (comment
 
-  #_:clj-kondo/ignore
   (def ^:private config-enables?
-    (delay (compile-config "gakki:*")))
-
-  )
+    (delay (compile-config "gakki:*"))))

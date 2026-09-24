@@ -8,7 +8,6 @@
 (def ^:private ignored-section-titles #{"Videos"})
 
 (defn- parse-flex-column-item [^js item]
-  (def last-flex item)
   (if-some [title (j/get item .-title)]
     {:title (str title)}
 
@@ -132,7 +131,6 @@
 
 (defmethod parse-shelf-item :MusicResponsiveListItem
   [^js item]
-  (def last-responsive-item item)
   (if-let [flex (j/get item .-flex_columns)]
     (let [item-endpoint (unpack-navigation-endpoint item)
           album-name (some-> (j/get-in item [.-album .-name])
@@ -212,7 +210,7 @@
        :items (vec (keep parse-shelf-item contents))})))
 
 (defmethod music-shelf->section :MusicTastebuilderSelf
-  [^js carousel]
+  [^js _carousel]
   ; TODO: support?
   nil)
 
