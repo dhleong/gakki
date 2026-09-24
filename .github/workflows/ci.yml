@@ -36,10 +36,14 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-m2-
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get install libasound2-dev
-        pnpm install --frozen-lockfile
+    - name: Install build dependencies
+      uses: awalsh128/cache-apt-pkgs-action@v1
+      with:
+        packages: libasound2-dev
+        version: 1.0
+
+    - name: Install node dependencies
+      run: pnpm install --frozen-lockfile
 
     - name: Start shadow server
       run: pnpm start
