@@ -28,7 +28,6 @@
       ; ignore:
       nil)))
 
-
 ; ======= connection management / init ====================
 
 (defn- disconnect [{:keys [connecting?]}]
@@ -101,10 +100,16 @@
                     (retry-connect (inc retry-count) state)
 
                     :else
-                    (log/error "Connecting to Discord"
-                               "\ncode:" code
-                               "\nretry-count: " retry-count
-                               e)))))))
+                    (do
+                      (swap! client-state assoc
+                             :connecting? false
+                             :reason :gave-up
+                             :code code
+                             :message message)
+                      (log/error "Connecting to Discord"
+                                 "\ncode:" code
+                                 "\nretry-count: " retry-count
+                                 e))))))))
 
 (defn- retry-connect
   ([retry-count] (retry-connect retry-count nil))
@@ -116,11 +121,10 @@
           :connecting? false
           :client nil
           :retry-timeout (js/setTimeout
-                           #(try-connect retry-count state)
-                           (if (= 0 retry-count)
-                             not-running-retry-delay
-                             connect-error-retry-delay)))))
-
+                          #(try-connect retry-count state)
+                          (if (= 0 retry-count)
+                            not-running-retry-delay
+                            connect-error-retry-delay)))))
 
 ; ======= public interface ================================
 
@@ -130,14 +134,14 @@
       (when-let [^DiscordClient client (:client @client-state)]
         (-> client
             (.setActivity
-              #js {:details (str "Listening to " (:title item))
-                   :state (str "by " (:artist item)
-                               (when (= :paused state)
-                                 " [paused]"))
-                   :startTimestamp (when (= :playing state)
-                                     (js/Date.now))
+             #js {:details (str "Listening to " (:title item))
+                  :state (str "by " (:artist item)
+                              (when (= :paused state)
+                                " [paused]"))
+                  :startTimestamp (when (= :playing state)
+                                    (js/Date.now))
 
-                   :instance false})
+                  :instance false})
             (p/catch (fn [e]
                        (log/debug "Failed to set discord status" e))))))))
 
@@ -176,11 +180,9 @@
 (comment
 
   (set-now-playing!
-    @(re-frame.core/subscribe [:player/item]))
+   @(re-frame.core/subscribe [:player/item]))
 
   (p/let [resp (set-now-playing!
                 {:title "Test"
                  :artist "Foo"})]
-    (println resp))
-
-  )
+    (println resp)))
