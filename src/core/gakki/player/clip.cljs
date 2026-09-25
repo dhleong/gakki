@@ -38,16 +38,20 @@
      (letfn [(debug-object []
                {:instance speaker
                 :devices (map #(js->clj % :keywordize-keys true) all-devices)
-                :id id})]
-       (or (-> all-devices
-               (nth id nil)
-               (js->clj :keywordize-keys true))
+                :id id
+                :fatal? true})]
+       (or (some->
+            (some (fn [device]
+                    (when (= id (j/get device .-id))
+                      device))
+                  all-devices)
+            (js->clj :keywordize-keys true))
 
-         (when (:required? opts)
-           (throw (ex-info (str "Unable to load output device #" id)
-                           (debug-object))))
+           (when (:required? opts)
+             (throw (ex-info (str "Unable to load output device #" id)
+                             (debug-object))))
 
-         (log/error "Unable to load output device #" id (debug-object)))))))
+           (log/error "Unable to load output device #" id (debug-object)))))))
 
 (defn- default-output-device [^RtAudio speaker]
   (device-by-id speaker (.getDefaultOutputDevice speaker)))
@@ -160,17 +164,17 @@
     (doto instance
       (.openStream
         ; Output stream:
-        #js {:deviceId device-id
-             :nChannels channels}
-        nil ; No input stream
-        (.-RTAUDIO_SINT16 RtAudioFormat)
-        sample-rate
-        (or frame-size const/default-frame-size)
-        "gakki" ; stream name
-        nil ; input callback
-        nil ; output callback
-        0 ; stream flags
-        (partial on-error events)))
+       #js {:deviceId device-id
+            :nChannels channels}
+       nil ; No input stream
+       (.-RTAUDIO_SINT16 RtAudioFormat)
+       sample-rate
+       (or frame-size const/default-frame-size)
+       "gakki" ; stream name
+       nil ; input callback
+       nil ; output callback
+       0 ; stream flags
+       (partial on-error events)))
     (catch :default e
       (log/error "Failed to initialize AudioClip"
                  {:config config
@@ -214,7 +218,4 @@
       (catch :default e
         (println "ERROR: " e))
       (finally
-        (.closeStream instance))))
-
-
-  )
+        (.closeStream instance)))))

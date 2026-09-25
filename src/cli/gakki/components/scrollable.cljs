@@ -1,7 +1,7 @@
 (ns gakki.components.scrollable
   (:require ["ink" :as k]
-            [reagent.core :as r]
-            [gakki.util.coll :refer [index-of]]))
+            [gakki.util.coll :refer [index-of]]
+            [reagent.core :as r]))
 
 (defn scrollable-list [{:keys [flex-direction
                                follow-selected?

@@ -56,7 +56,8 @@
 (reg-sub
  ::player-volume
  (fn [db _]
-   (get-in db [:player :volume] max-volume-int)))
+   (or (get-in db [:player :volume] max-volume-int)
+       max-volume-int)))
 
 (reg-sub
  :player/volume-suppress-amount

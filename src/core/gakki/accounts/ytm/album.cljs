@@ -1,5 +1,4 @@
 (ns gakki.accounts.ytm.album
-  (:refer-clojure :exclude [load])
   (:require [applied-science.js-interop :as j]
             [promesa.core :as p]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]

@@ -26,7 +26,7 @@
 (defn single-key-child [^js obj]
   (let [container-keys (js/Object.keys obj)]
     (when (= 1 (count container-keys))
-      (j/get obj (first container-keys)))) )
+      (j/get obj (first container-keys)))))
 
 (defn pick-thumbnail
   "Given some nested object structure like:
@@ -61,7 +61,14 @@
   (-> (runs->text runs)
       (split-string-by-dots)))
 
-(defn unpack-navigation-endpoint [^js runs-container-or-endpoint]
+(defn- unpack-endpoint-page-kind [root]
+  (let [raw-kind (j/get-in root [:browseEndpointContextSupportedConfigs
+                                 :browseEndpointContextMusicConfig
+                                 :pageType])]
+
+    (get ytm-kinds raw-kind)))
+
+(defn- unpack-legacy-navigation-endpoint [^js runs-container-or-endpoint]
   (let [endpoint (or (j/get runs-container-or-endpoint :navigationEndpoint)
                      (j/get-in runs-container-or-endpoint [:runs 0 :navigationEndpoint]))
         playlist-id (j/get-in endpoint [:watchPlaylistEndpoint :playlistId])
@@ -76,12 +83,42 @@
        :params (or (j/get-in endpoint [:watchEndpoint :params])
                    (j/get-in endpoint [:watchPlaylistEndpoint :params]))
        :provider :ytm
-       :kind (let [raw-kind (j/get-in endpoint [:browseEndpoint
-                                                :browseEndpointContextSupportedConfigs
-                                                :browseEndpointContextMusicConfig
-                                                :pageType])]
-               (get ytm-kinds raw-kind (cond
-                                         playlist-id :playlist
-                                         watch-id :track
-                                         :else :unknown)))})))
+       :kind (or (unpack-endpoint-page-kind
+                  (j/get endpoint :browseEndpoint))
+                 (cond
+                   playlist-id :playlist
+                   watch-id :track
+                   :else :unknown))})))
 
+(defn- unpack-innertube-endpoint [^js endpoint]
+  #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
+  (def ^:private last-endpoint endpoint)
+  (let [request (.buildRequest (.-command endpoint))
+        watch-id (j/get request .-videoId)
+        playlist-id (j/get request .-playlistId)
+        id (or watch-id
+               playlist-id
+               ; TODO ?
+               (j/get-in endpoint [.-payload .-browseId]))]
+    (when (some? id)
+      {:id id
+       :playlist-id playlist-id
+       :params (j/get request .-params)
+       :provider :ytm
+       :kind (or (unpack-endpoint-page-kind
+                  (j/get endpoint .-payload))
+                 (cond
+                   playlist-id :playlist
+                   watch-id :track
+                   :else :unknown))})))
+
+(defn unpack-navigation-endpoint [^js endpoint-container]
+  (or (some-> endpoint-container
+              (j/get .-endpoint)
+              (unpack-innertube-endpoint))
+      (when (= "song" (j/get endpoint-container .-item_type))
+        (when-some [id (j/get endpoint-container .-id)]
+          {:id id
+           :provider :ytm
+           :kind :track}))
+      (unpack-legacy-navigation-endpoint endpoint-container)))

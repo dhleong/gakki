@@ -10,8 +10,11 @@
 
 (defonce ^:private state (atom nil))
 
-(defn- on-playable-end []
-  (>evt [:player/event {:type :playable-end}]))
+(defn- on-playable-end
+  ([] (on-playable-end nil))
+  ([e]
+   (>evt [:player/event {:type :playable-end
+                         :error e}])))
 
 (defn- listen-for-events [playable]
   (doto (player/events playable)
@@ -29,7 +32,7 @@
                (let [events (player/events playable)]
                  (when (> (.listenerCount events "end") 0)
                    (.removeAllListeners events "end")
-                   (on-playable-end))))))
+                   (on-playable-end e))))))
 
 (defn- on-playable [f & args]
   (when-let [playable (:playable @state)]
@@ -72,23 +75,23 @@
 
 (defn play! [{:keys [item account config]}]
   (swap!
-    state
-    (fn [{old :playable :as snapshot}]
-      (when old
-        (.removeAllListeners
-          (player/events old))
-        (-> (player/close old)
-            (catch-error old "close")))
+   state
+   (fn [{old :playable :as snapshot}]
+     (when old
+       (.removeAllListeners
+        (player/events old))
+       (-> (player/close old)
+           (catch-error old "close")))
 
-      (let [{{:keys [playable]} :prepared
-             :as snapshot} (prepare-snapshot snapshot item account)]
-        (doto playable
-          (listen-for-events)
-          (apply-config config)
-          (play-catching))
-        (-> snapshot
-            (assoc :playable playable)
-            (dissoc :prepared))))))
+     (let [{{:keys [playable]} :prepared
+            :as snapshot} (prepare-snapshot snapshot item account)]
+       (doto playable
+         (listen-for-events)
+         (apply-config config)
+         (play-catching))
+       (-> snapshot
+           (assoc :playable playable)
+           (dissoc :prepared))))))
 
 (defn unpause! []
   (on-playable player/play))
@@ -120,6 +123,4 @@
   (play! {:item {:id "8FV4gcs-MNA"
                  :provider :ytm}})
 
-  (pause!)
-
-  )
+  (pause!))

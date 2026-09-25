@@ -1,24 +1,27 @@
 (ns gakki.accounts.ytm
-  (:require [applied-science.js-interop :as j]
-            [promesa.core :as p]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]
+  (:require ["ytmusic" :rename {YTMUSIC YTMusic}]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
+            [applied-science.js-interop :as j]
             [gakki.accounts.core :refer [IAccountProvider]]
-            [gakki.accounts.ytm.creds :refer [account->client]]
             [gakki.accounts.ytm.album :as album]
             [gakki.accounts.ytm.artist :as artist]
+            [gakki.accounts.ytm.creds :refer [account->client
+                                              get-authd-innertube]]
             [gakki.accounts.ytm.home :as home]
             [gakki.accounts.ytm.playable :as playable]
             [gakki.accounts.ytm.playlist :as playlist]
             [gakki.accounts.ytm.search :as search]
             [gakki.accounts.ytm.search-suggest :as search-suggest]
             [gakki.accounts.ytm.upnext :as upnext]
-            [gakki.util.logging :as log]))
+            [gakki.util.logging :as log]
+            [promesa.core :as p]))
 
 (defn- do-fetch-home [account]
   (log/with-timing-promise :ytm/fetch-home
-    (p/let [^YTMusic ytm (account->client account)]
-      (home/load ytm))))
+    (p/let [^js client (get-authd-innertube account)]
+      (home/load-innertube client))
+    #_(p/let [^YTMusic ytm (account->client account)]
+        (home/load ytm))))
 
 (defn- do-paginate [account entity index]
   (when-let [continuations (first (:continuations entity))]
@@ -46,12 +49,14 @@
        :next-items (:items up-next)})))
 
 (defn- do-resolve-playlist [account playlist-id]
-  (p/let [^YTMusic ytm (account->client account)]
+  #_(p/let [^YTMusic ytm (account->client account)]
     ; TODO lazily continue loading the playlist? We can use:
     ;   (>evt [:player/on-resolved :playlist result])
     ; to replace the resolved playlist; if we concat new items with old,
     ; it should "just work"
-    (playlist/load ytm playlist-id)))
+      (playlist/load ytm playlist-id))
+  (p/let [^js client (get-authd-innertube account)]
+    (playlist/load-innertube client playlist-id)))
 
 (defn- do-resolve-album [account album-id]
   (p/let [^YTMusic ytm (account->client account)]
@@ -71,7 +76,8 @@
   (get-name [_this] "YouTube Music")
   (describe-account [_ account]
     (when-let [email (or (get-in account [:user :email])
-                         (get-in account [:user "email"]))]
+                         (get-in account [:user "email"])
+                         (get-in account [:user :name]))]
       (str email)))
 
   (create-playable [_this account info]
@@ -146,6 +152,12 @@
                   (:ytm @(re-frame.core/subscribe [:accounts]))
                   "MPREb_XSoe2FaWnVW")]
     (prn result))
+
+  (p/let [yt (get-authd-innertube
+              (:ytm @(re-frame.core/subscribe [:accounts])))
+          info (j/call-in yt [.-account .-getInfo])]
+    (def last-info info)
+    (println info))
 
   (p/let [result (do-resolve-artist
                   (:ytm @(re-frame.core/subscribe [:accounts]))

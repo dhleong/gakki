@@ -103,6 +103,14 @@
     :providers/load! accounts}))
 
 (reg-event-fx
+ :auth/delete
+ [trim-v]
+ (fn [{:keys [db]} [provider]]
+   {:db (update db :accounts dissoc provider)
+    ; TODO: Clear any fetched pages
+    :auth/save! [provider nil]}))
+
+(reg-event-fx
  :auth/save
  [trim-v]
  (fn [{:keys [db]} [provider account {:keys [load-home?]
@@ -330,6 +338,7 @@
  (fn [{:keys [db] volume-percent :player/volume-percent} [playable]]
    ((log/of :events/set-current-playable) "set playable <- " playable "@" volume-percent)
    {:db (-> db
+            (update :player dissoc :error)
             (assoc-in [:player :current] playable)
             (assoc-in [:player :state] :playing))
     :integrations/set-state! {:item playable :state :playing}
@@ -467,9 +476,15 @@
 
 (defmulti ^:private handle-player-event (fn [_ {what :type}] what))
 
-(defmethod handle-player-event :playable-end [_ _]
-  ((log/of :player/events) "playable end")
-  {:dispatch [:player/next-in-queue]})
+(defmethod handle-player-event :playable-end [db {err :error}]
+  (let [fatal? (:fatal? (ex-data err))]
+    ((log/of :player/events) "playable end; err= " err)
+    {:db (cond-> db
+           fatal?
+           (-> (update :player dissoc :state)
+               (assoc-in [:player :error] err)))
+     :fx [(when-not fatal?
+            [:dispatch [:player/next-in-queue]])]}))
 
 (defmethod handle-player-event :playable-ending [db _]
   ((log/of :player/events) "playable ending")

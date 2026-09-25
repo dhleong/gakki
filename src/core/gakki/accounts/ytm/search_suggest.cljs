@@ -1,5 +1,4 @@
 (ns gakki.accounts.ytm.search-suggest
-  (:refer-clojure :exclude [load])
   (:require [applied-science.js-interop :as j]
             [promesa.core :as p]
             ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
@@ -24,8 +23,8 @@
                    (j/assoc! :input query))
           response (send-request (.-cookie client)
                                  (j/lit
-                                   {:endpoint "music/get_search_suggestions"
-                                    :body body}))
+                                  {:endpoint "music/get_search_suggestions"
+                                   :body body}))
           suggestions (j/get-in response [:contents
                                           0
                                           :searchSuggestionsSectionRenderer
@@ -36,9 +35,7 @@
 (comment
 
   (-> (p/let [client (gakki.accounts.ytm.creds/account->client
-                       @(re-frame.core/subscribe [:account :ytm]))
+                      @(re-frame.core/subscribe [:account :ytm]))
               result (load client "last")]
         (cljs.pprint/pprint result))
-      (p/catch log/error))
-
-  )
+      (p/catch log/error)))

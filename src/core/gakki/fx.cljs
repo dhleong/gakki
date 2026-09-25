@@ -185,6 +185,8 @@
            (with-loading-promise :providers/resolve-and-open)
 
            (p/catch (fn [e]
+                      #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
+                      (def ^:private last-error e)
                       (log/error "Resolving " kind " from " e ": " e))))
 
        (log/error "Invalid provider or no account: " k)))))
