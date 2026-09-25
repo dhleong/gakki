@@ -1,9 +1,10 @@
 (ns gakki.persistent
-  (:require [gakki.const :as const]))
+  (:require [gakki.const :as const]
+            [gakki.util.logging :as log]))
 
 (def spec
   [[:volume {:get (fn [db] (get-in db [:player :volume] const/max-volume-int))
-             :set (fn [db [v _]]
+             :set (fn [db v]
                     (assoc-in db [:player :volume] v))}]])
 
 (defn pull-state [db]
@@ -15,7 +16,11 @@
 
 (defn restore-state [db state]
   (reduce
-   (fn [db [k {set-value :set}]]
-     (set-value db (get state k)))
+   (fn [db' [k {set-value :set}]]
+     (try
+       (set-value db' (get state k))
+       (catch :default e
+         (log/error "Failed to restore " k " state: " e)
+         db')))
    db
    spec))
