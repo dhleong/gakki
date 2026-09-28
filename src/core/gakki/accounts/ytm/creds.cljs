@@ -2,7 +2,7 @@
   (:require [applied-science.js-interop :as j]
             [archetype.util :refer [>evt]]
             [promesa.core :as p]
-            ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
+            ; ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
             ["youtubei.js" :refer [Innertube Platform UniversalCache]]
             ["ytmusic" :rename {YTMUSIC YTMusic}]
             [gakki.util.logging :as log]))
@@ -95,16 +95,18 @@
        :email (str (j/get selected .-account_byline))})))
 
 (defonce account->creds
-  (memoize
-   (fn [account]
-     (cached
-      (OauthCredentialsManager.
-       (clj->js account)
-       #js {:persistCredentials
-            (fn [creds]
-              (let [updated (merge account
-                                   (js->clj creds :keywordize-keys true))]
-                (>evt [:auth/save :ytm updated {:load-home? false}])))})))))
+  (fn [_]
+    (throw (ex-info "not supported yet" {})))
+  #_(memoize
+     (fn [account]
+       (cached
+        (OauthCredentialsManager.
+         (clj->js account)
+         #js {:persistCredentials
+              (fn [creds]
+                (let [updated (merge account
+                                     (js->clj creds :keywordize-keys true))]
+                  (>evt [:auth/save :ytm updated {:load-home? false}])))})))))
 
 (defn account->cookies [account]
   (if-some [s (:cookies account)]

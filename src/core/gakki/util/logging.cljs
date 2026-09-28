@@ -1,10 +1,12 @@
 (ns gakki.util.logging
-  (:require ["chalk" :as chalk]
-            [clojure.string :as str]
+  (:require ["chalk" :default chalk]
+            ["color-convert" :default convert]
+            [applied-science.js-interop :as j]
             [cljs.pprint :refer [pprint]]
+            [clojure.string :as str]
+            [gakki.const :as const]
             [promesa.core :as p]
-            [re-frame.core :as re-frame]
-            [gakki.const :as const]))
+            [re-frame.core :as re-frame]))
 
 (declare compile-config)
 
@@ -17,13 +19,17 @@
       ; The core (debug) method is always enabled for debug builds
       (and const/debug? (= "gakki" tag))))
 
+(defn- chalk-hsv [h s v]
+  (let [hex (j/call-in convert [.-hsv .-hex] h s v)]
+    (.hex chalk hex)))
+
 ; ======= Log factories ===================================
 
 (defn- colorizer [^String tag]
   (let [h (mod (hash tag) 360)
         s 40
         v 100]
-    (chalk/hsv h s v)))
+    (chalk-hsv h s v)))
 
 (defn- error? [e]
   (instance? js/Error e))
@@ -45,7 +51,7 @@
     (when-let [data (ex-data ex)]
       (pprint data))
     (when-let [stack (when ex (.-stack ex))]
-      (println (chalk/gray stack)))))
+      (println (.gray chalk stack)))))
 
 (def of
   (memoize
@@ -76,8 +82,8 @@
                         (str " " tag user-tag " "))
                        message))))
 
-(def error (partial with-colorized-tag "ERROR" (chalk/inverse.hsv 0 40 100)))
-(def fixed (partial with-colorized-tag "FIXED" (chalk/inverse.hsv 90 40 100)))
+(def error (partial with-colorized-tag "ERROR" (.-inverse (chalk-hsv 0 40 100))))
+(def fixed (partial with-colorized-tag "FIXED" (.-inverse (chalk-hsv 90 40 100))))
 
 (defn with-error-warn
   "Wraps a function f with a new function that caches errors thrown by `f` and

@@ -2,8 +2,8 @@
   (:require [applied-science.js-interop :as j]
             [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
             [promesa.core :as p]
-            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]))
+            ; ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
+            #_["ytmusic" :rename {YTMUSIC YTMusic}]))
 
 (defn inflate [^js response]
   (let [raw-shelves (j/get-in response [:contents
@@ -23,10 +23,10 @@
 ; TODO: Clean up DEPRECATED
 #_{:clojure-lsp/ignore [:clojure-lsp/unused-public-var]}
 (defn load [^YTMusic client]
-  (p/let [response (send-request (.-cookie client)
-                                 #js {:id "FEmusic_home"
-                                      :endpoint "browse"})]
-    (inflate response)))
+  #_(p/let [response (send-request (.-cookie client)
+                                   #js {:id "FEmusic_home"
+                                        :endpoint "browse"})]
+      (inflate response)))
 
 (defn load-innertube [^js client]
   (p/let [home-feed (j/call-in client [.-music .-getHomeFeed])]

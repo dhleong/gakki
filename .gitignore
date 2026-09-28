@@ -4,6 +4,7 @@ node_modules/
 
 resources/public/js
 resources/cli.js
+resources/cljs-runtime
 resources/player.js
 target/
 

@@ -1,6 +1,6 @@
 (ns gakki.util.paths
   (:require [applied-science.js-interop :as j]
-            ["env-paths" :as env-paths]
+            ["env-paths" :default env-paths]
             ["os" :as os]
             ["path" :as path]))
 
@@ -10,9 +10,9 @@
 
 (defn user-config
   ([] (path/join
-        (os/homedir)
-        ".config"
-        "gakki"))
+       (os/homedir)
+       ".config"
+       "gakki"))
   ([sub-path]
    (path/join (user-config) sub-path)))
 

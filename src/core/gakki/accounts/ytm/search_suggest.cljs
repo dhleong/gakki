@@ -1,9 +1,9 @@
 (ns gakki.accounts.ytm.search-suggest
   (:require [applied-science.js-interop :as j]
             [promesa.core :as p]
-            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
-                                               generateBody generate-body}]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]
+            ; ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
+            ;                                    generateBody generate-body}]
+            ; ["ytmusic" :rename {YTMUSIC YTMusic}]
             [gakki.accounts.ytm.util :refer [runs->text
                                              single-key-child]]))
 
@@ -19,17 +19,18 @@
                                 text))))})))
 
 (defn load [^YTMusic client, query]
-  (p/let [body (-> (generate-body #js {})
-                   (j/assoc! :input query))
-          response (send-request (.-cookie client)
-                                 (j/lit
-                                  {:endpoint "music/get_search_suggestions"
-                                   :body body}))
-          suggestions (j/get-in response [:contents
-                                          0
-                                          :searchSuggestionsSectionRenderer
-                                          :contents])]
-    (keep unpack-suggestion suggestions)))
+  (throw (ex-info "not ready yet" {}))
+  #_(p/let [body (-> (generate-body #js {})
+                     (j/assoc! :input query))
+            response (send-request (.-cookie client)
+                                   (j/lit
+                                    {:endpoint "music/get_search_suggestions"
+                                     :body body}))
+            suggestions (j/get-in response [:contents
+                                            0
+                                            :searchSuggestionsSectionRenderer
+                                            :contents])]
+      (keep unpack-suggestion suggestions)))
 
 #_:clj-kondo/ignore
 (comment

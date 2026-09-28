@@ -3,8 +3,8 @@
             [gakki.accounts.ytm.util :as util :refer [runs->text]]
             [gakki.util.logging :as log :refer [with-timing-promise]]
             [promesa.core :as p]
-            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
-                                               generateBody generate-body}]))
+            #_["ytmusic/dist/lib/utils" :rename {sendRequest send-request
+                                                 generateBody generate-body}]))
 
 (defmulti parse-item (fn [container] (first (js/Object.keys container))))
 
@@ -65,30 +65,31 @@
          (parse-items response)))
 
 (defn load [^YTMusic client info]
-  (p/let [body (cond-> (generate-body #js {})
-                 (:playlist-id info)
-                 (j/assoc! :playlistId (:playlist-id info))
+  (throw (ex-info "TODO: " {}))
+  #_(p/let [body (cond-> (generate-body #js {})
+                   (:playlist-id info)
+                   (j/assoc! :playlistId (:playlist-id info))
 
-                 (= :track (:radio/kind info))
-                 (j/assoc! :videoId (:id info))
+                   (= :track (:radio/kind info))
+                   (j/assoc! :videoId (:id info))
 
-                 (:params info)
-                 (j/assoc! :params (:params info))
+                   (:params info)
+                   (j/assoc! :params (:params info))
 
-                 (:continuation info)
-                 (j/assoc! :continuation (:continuation info))
+                   (:continuation info)
+                   (j/assoc! :continuation (:continuation info))
 
-                 (:index info)
-                 (j/assoc! :index (:index info))
+                   (:index info)
+                   (j/assoc! :index (:index info))
 
-                 (:click-tracking-params info)
-                 (j/assoc-in! [:clickTracking :clickTrackingParams]
-                              (:click-tracking-params info)))
-          response (->> (send-request (.-cookie client)
-                                      (j/lit
-                                        {:endpoint "next"
-                                         :body body}))
-                        (with-timing-promise :ytm/upnext-load))]
-    (-> info
-        (inflate response)
-        (dissoc :continuation :index :click-tracking-params))))
+                   (:click-tracking-params info)
+                   (j/assoc-in! [:clickTracking :clickTrackingParams]
+                                (:click-tracking-params info)))
+            response (->> (send-request (.-cookie client)
+                                        (j/lit
+                                         {:endpoint "next"
+                                          :body body}))
+                          (with-timing-promise :ytm/upnext-load))]
+      (-> info
+          (inflate response)
+          (dissoc :continuation :index :click-tracking-params))))

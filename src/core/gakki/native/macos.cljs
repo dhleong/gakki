@@ -83,7 +83,8 @@
                    (log/error :native "Failed to handle " (str message) e)))))))))
 
 (defn- init-native []
-  (let [full-path (path-join js/__dirname
+  (let [full-path (path-join (js* "import.meta.dirname")
+                             ".."
                              ".."
                              native-exe-path)]
 

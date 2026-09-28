@@ -1,8 +1,8 @@
 (ns gakki.accounts.ytm.album
   (:require [applied-science.js-interop :as j]
             [promesa.core :as p]
-            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]
+            ; ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
+            ; ["ytmusic" :rename {YTMUSIC YTMusic}]
             [gakki.accounts.ytm.playlist :as playlist]))
 
 (defmulti ^:private apply-mutation (fn [_state mutation]
@@ -75,9 +75,10 @@
       like-playlist)))
 
 (defn load [^YTMusic client id]
-  (p/let [response (send-request (.-cookie client)
-                                 #js {:id id
-                                      :type "ALBUM"
-                                      :endpoint "browse"})]
-    (or (inflate-mutations response)
-        (inflate-like-playlist id response))))
+  (throw (ex-info "not supported yet" {}))
+  #_(p/let [response (send-request (.-cookie client)
+                                   #js {:id id
+                                        :type "ALBUM"
+                                        :endpoint "browse"})]
+      (or (inflate-mutations response)
+          (inflate-like-playlist id response))))

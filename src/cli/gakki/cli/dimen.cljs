@@ -1,8 +1,10 @@
 (ns gakki.cli.dimen
-  (:require [archetype.util :refer [>evt]]
-            ["ink-use-stdout-dimensions" :as use-stdout-dimensions]
-            [gakki.cli.events :as events]))
+  (:require [applied-science.js-interop :as j]
+            [archetype.util :refer [>evt]]
+            [gakki.cli.events :as events]
+            ["ink" :as k] ; ["ink-use-stdout-dimensions" :as use-stdout-dimensions]
+            ))
 
 (defn dimens-tracker []
-  (let [[width height] (use-stdout-dimensions)]
-    (>evt [::events/set-dimens width height])))
+  (j/let [^:js {:keys [columns rows]} (k/useWindowSize)]
+    (>evt [::events/set-dimens columns rows])))

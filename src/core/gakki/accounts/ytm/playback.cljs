@@ -2,9 +2,9 @@
   (:require [applied-science.js-interop :as j]
             [promesa.core :as p]
             ["ytdl-core" :as ytdl]
-            ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
-                                               generateBody generate-body}]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]
+            ; ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
+            ;                                    generateBody generate-body}]
+            ; ["ytmusic" :rename {YTMUSIC YTMusic}]
             [gakki.const :as const]
             [gakki.util.convert :refer [->float ->int]]))
 
@@ -41,18 +41,19 @@
        :url url})))
 
 (defn- load-ytm [cookies id]
-  (p/let [body (-> (generate-body #js {})
-                   (j/assoc! :videoId id))
-          response (send-request cookies
-                                 (j/lit
-                                  {:endpoint "player"
-                                   :body body}))
-          formats (j/get-in response [:streamingData :adaptiveFormats])]
-    (println response)
-    (->> formats
-         (keep parse-audio-format)
-         (sort-by (comp :average-bitrate :config) >)
-         first)))
+  (throw (ex-info "not supported yet" {}))
+  #_(p/let [body (-> (generate-body #js {})
+                     (j/assoc! :videoId id))
+            response (send-request cookies
+                                   (j/lit
+                                    {:endpoint "player"
+                                     :body body}))
+            formats (j/get-in response [:streamingData :adaptiveFormats])]
+      (println response)
+      (->> formats
+           (keep parse-audio-format)
+           (sort-by (comp :average-bitrate :config) >)
+           first)))
 
 ; ======= ytdl-core =======================================
 

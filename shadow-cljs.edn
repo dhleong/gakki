@@ -8,8 +8,8 @@
                 "src/test"]
 
  :dependencies [; core:
-                [reagent "1.2.0"]
-                [re-frame "1.2.0"]
+                [reagent "2.0.1"]
+                [re-frame "1.4.7"]
                 [net.dhleong/archetype "0.1.0-SNAPSHOT"]
 
                 ; ::inject/sub cofx (for subscriptions in event handlers)
@@ -30,9 +30,14 @@
                 [day8.re-frame/tracing "0.6.2"]
                 [org.clojure/test.check "1.1.0"]]
 
- :builds {:cli {:target :node-script
-                :output-to "resources/cli.js"
-                :main gakki.cli/init
+ :builds {:cli {:target :esm
+                :output-dir "resources/"
+                :modules {:cli {:init-fn gakki.cli/init}}
+                :js-options {:js-provider :import
+                             :keep-native-requires true
+                             :keep-as-require #{"ansi-escapes"}}
+                :devtools
+                {:ignore-warnings true}
 
                 :closure-defines {gakki.const/discord-app-id
                                   #shadow/env "GAKKI_DISCORD_APP_ID"
