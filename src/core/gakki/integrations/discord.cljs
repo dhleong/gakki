@@ -134,32 +134,50 @@
 
 ; ======= public interface ================================
 
-(defn set-state! [{:keys [item state] :as full-state}]
+(defn- format-state [{:keys [item state]}]
+  ; TODO: If we can get the current playback progress, we
+  ; should subtract it from start-timestamp to build a proper progress bar
+  (when (= :playing state)
+    ; NOTE: AFAICT there's no way to properly indicate a
+    ; "stopped" state? We're omitting the timestamp but discord
+    ; still renders a ticking-up duration... so for now we just
+    ; clear the activity when not playing
+    (let [start-timestamp (js/Date.now)]
+      #js {:type 2 ; "Listening"
+
+           ; 1 = :state
+           ; 2 = :details
+           :statusDisplayType 1
+
+           :details (:title item)
+           :state (str (:artist item)
+                       (when (= :paused state)
+                         " [paused]"))
+           :startTimestamp (when (= :playing state)
+                             start-timestamp)
+           :endTimestamp (when (= :playing state)
+                           (when-some [s (:duration item)]
+                             (+ start-timestamp (* 1000 s))))
+           :largeImageKey (let [url (:image-url item)]
+                            (when (and url
+                                       (< (count url) 300))
+                              url))
+
+           :instance false})))
+
+(defn set-state! [full-state]
   (let [{:keys [config]} (swap! client-state assoc :last-state full-state)]
     (when-not (false? (:share-activity? config))
       (when-let [^DiscordClient client (:client @client-state)]
-        (-> client
-            (.setActivity
-             #js {:type 2 ; "Listening"
-
-                  ; 1 = :state
-                  ; 2 = :details
-                  :statusDisplayType 1
-
-                  :details (:title item)
-                  :state (str (:artist item)
-                              (when (= :paused state)
-                                " [paused]"))
-                  :startTimestamp (when (= :playing state)
-                                    (js/Date.now))
-                  :largeImageKey (let [url (:image-url item)]
-                                   (when (and url
-                                              (< (count url) 300))
-                                     url))
-
-                  :instance false})
-            (p/catch (fn [e]
-                       (log/debug "Failed to set discord status" e))))))))
+        (let [formatted (format-state full-state)]
+          #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
+          (def ^:private last-formatted-state formatted)
+          (->
+           (if formatted
+             (.setActivity client formatted)
+             (.clearActivity client))
+           (p/catch (fn [e]
+                      (log/debug "Failed to set discord status" e)))))))))
 
 (defn configure!
   "Expects a map:
