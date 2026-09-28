@@ -1,0 +1,20 @@
+diff --git a/src/client.js b/src/client.js
+index 0ff29daa9ac1cd4f406944b3e195738d520b2c57..835a91c323681c17c493cf0327d235b38011c6a1 100644
+--- a/src/client.js
++++ b/src/client.js
+@@ -472,6 +472,7 @@ class RPCClient extends EventEmitter {
+     let assets;
+     let party;
+     let secrets;
++    let type = args.type;
+     if (args.startTimestamp || args.endTimestamp) {
+       timestamps = {
+         start: args.startTimestamp,
+@@ -518,6 +519,7 @@ class RPCClient extends EventEmitter {
+     return this.request(RPCCommands.SET_ACTIVITY, {
+       pid,
+       activity: {
++        type,
+         state: args.state,
+         details: args.details,
+         timestamps,

@@ -6,6 +6,9 @@
             [gakki.const :as const]
             [gakki.util.logging :as log]))
 
+; TODO: Restore voice integration support somehow?
+(def ^:private voice-integration-supported? false)
+
 (def ^:private scopes #js ["rpc" "rpc.voice.read"])
 (def ^:private redirect-uri "http://127.0.0.1")
 
@@ -50,11 +53,13 @@
 
    (-> (p/let [^DiscordClient client (DiscordClient. #js {:transport "ipc"})
                result (.login client
-                              #js {:clientId const/discord-app-id
-                                   :clientSecret const/discord-oauth-secret
-                                   :prompt "none"
-                                   :redirectUri redirect-uri
-                                   :scopes scopes})]
+                              (if voice-integration-supported?
+                                #js {:clientId const/discord-app-id}
+                                #js {:clientId const/discord-app-id
+                                     :clientSecret const/discord-oauth-secret
+                                     :prompt "none"
+                                     :redirectUri redirect-uri
+                                     :scopes scopes}))]
          (log/debug "Discord logged in: " result)
          (when (= :rpc-timed-out state)
            (log/fixed "Discord connection established!"))
@@ -71,9 +76,10 @@
 
            (.on "VOICE_CONNECTION_STATUS"
                 (fn on-voice-state [ev]
-                  (on-voice-connect-status-update ev)))
+                  (on-voice-connect-status-update ev))))
 
-           (.subscribe "VOICE_CONNECTION_STATUS"))
+         (when voice-integration-supported?
+           (.subscribe client "VOICE_CONNECTION_STATUS"))
 
          (when-let [last-state (:last-state @client-state)]
            (set-state! last-state)))
@@ -130,16 +136,26 @@
 
 (defn set-state! [{:keys [item state] :as full-state}]
   (let [{:keys [config]} (swap! client-state assoc :last-state full-state)]
-    (when-not (= false (:share-activity? config))
+    (when-not (false? (:share-activity? config))
       (when-let [^DiscordClient client (:client @client-state)]
         (-> client
             (.setActivity
-             #js {:details (str "Listening to " (:title item))
-                  :state (str "by " (:artist item)
+             #js {:type 2 ; "Listening"
+
+                  ; 1 = :state
+                  ; 2 = :details
+                  :statusDisplayType 1
+
+                  :details (:title item)
+                  :state (str (:artist item)
                               (when (= :paused state)
                                 " [paused]"))
                   :startTimestamp (when (= :playing state)
                                     (js/Date.now))
+                  :largeImageKey (let [url (:image-url item)]
+                                   (when (and url
+                                              (< (count url) 300))
+                                     url))
 
                   :instance false})
             (p/catch (fn [e]
@@ -178,6 +194,8 @@
 
 #_:clj-kondo/ignore
 (comment
+
+  (set-state! (:last-state @client-state))
 
   (set-now-playing!
    @(re-frame.core/subscribe [:player/item]))

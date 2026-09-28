@@ -56,5 +56,10 @@
     "youtubish": "^1.5.1",
     "ytdl-core": "^4.11.5",
     "ytmusic": "^0.0.6"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "discord-rpc": "patches/discord-rpc.patch"
+    }
   }
 }

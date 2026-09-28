@@ -50,6 +50,9 @@
       (j/get container :thumbnail)
       (recur (j/get container :thumbnail))
 
+      (j/get container .-contents)
+      (recur (j/get container .-contents))
+
       :else
       (when-let [child (single-key-child container)]
         (recur child)))))

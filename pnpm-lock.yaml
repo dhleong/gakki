@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  discord-rpc:
+    hash: n7jcoi7tsasx2xle2suktcrzhu
+    path: patches/discord-rpc.patch
+
 importers:
 
   .:
@@ -19,7 +24,7 @@ importers:
         version: 15.7.0
       discord-rpc:
         specifier: 4.0.1
-        version: 4.0.1
+        version: 4.0.1(patch_hash=n7jcoi7tsasx2xle2suktcrzhu)
       env-paths:
         specifier: ^2.2.1
         version: 2.2.1
@@ -2265,7 +2270,7 @@ snapshots:
       miller-rabin: 4.0.1
       randombytes: 2.1.0
 
-  discord-rpc@4.0.1:
+  discord-rpc@4.0.1(patch_hash=n7jcoi7tsasx2xle2suktcrzhu):
     dependencies:
       node-fetch: 2.7.0
       ws: 7.5.13

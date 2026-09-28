@@ -131,6 +131,8 @@
 
 (defmethod parse-shelf-item :MusicResponsiveListItem
   [^js item]
+  #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
+  (def ^:private last-responsive item)
   (if-let [flex (j/get item .-flex_columns)]
     (let [item-endpoint (unpack-navigation-endpoint item)
           album-name (some-> (j/get-in item [.-album .-name])
