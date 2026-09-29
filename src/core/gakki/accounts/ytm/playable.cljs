@@ -7,15 +7,6 @@
             [gakki.player.track :as track]
             [promesa.core :as p]))
 
-; (defn youtube-id->stream [account id]
-;   (p/let [client (when account
-;                    (account->client account))
-;           {:keys [config url]} (playback/load client id)
-;           response (fetch url)
-;           ^js stream (j/get response :body)]
-;     {:config config
-;      :stream stream}))
-
 (defn youtube-id->stream [account id]
   (p/let [client (when account
                    (get-authd-innertube account))
@@ -39,16 +30,6 @@
 
 #_:clj-kondo/ignore
 (comment
-  (p/let [id "8FV4gcs-MNA"
-          info (ytdl/getInfo id)
-          fmt (ytdl/chooseFormat
-               (j/get info :formats)
-               #js {:quality "highestaudio"})]
-    (println (-> fmt
-                 (js->clj :keywordize-keys true)
-                 (assoc :url "<url>")
-                 (assoc :s "<s>")
-                 str)))
 
   (p/let [id "fl9rdaEx1gA"
           account @(re-frame.core/subscribe [:account :ytm])

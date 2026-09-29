@@ -1,24 +1,18 @@
 (ns gakki.accounts.ytm.search-suggest
-  (:require [applied-science.js-interop :as j]
-            [promesa.core :as p]
-            ; ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
-            ;                                    generateBody generate-body}]
-            ; ["ytmusic" :rename {YTMUSIC YTMusic}]
-            [gakki.accounts.ytm.util :refer [runs->text
-                                             single-key-child]]))
+  (:require [promesa.core :as p]))
 
-(defn- unpack-suggestion [^js container]
-  (j/let [^:js {:keys [suggestion]} (single-key-child container)
-          text (runs->text suggestion "")]
-    (when text
-      {:query text
-       :formatted (->> (j/get suggestion :runs)
-                       (map (j/fn [^:js {:keys [text bold]}]
-                              (if bold
-                                [:b text]
-                                text))))})))
+; (defn- unpack-suggestion [^js container]
+;   (j/let [^:js {:keys [suggestion]} (single-key-child container)
+;           text (runs->text suggestion "")]
+;     (when text
+;       {:query text
+;        :formatted (->> (j/get suggestion :runs)
+;                        (map (j/fn [^:js {:keys [text bold]}]
+;                               (if bold
+;                                 [:b text]
+;                                 text))))})))
 
-(defn load [^YTMusic client, query]
+(defn load [^YTMusic _client, _query]
   (throw (ex-info "not ready yet" {}))
   #_(p/let [body (-> (generate-body #js {})
                      (j/assoc! :input query))

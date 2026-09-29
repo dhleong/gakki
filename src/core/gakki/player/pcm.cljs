@@ -19,25 +19,25 @@
 (defn create-caching-source [cache-key promise-factory]
   (let [destination-path (path/join cache-dir cache-key)]
     (promised/create
-      (-> (let [source (create-disk-source destination-path)]
-            (p/do!
+     (-> (let [source (create-disk-source destination-path)]
+           (p/do
               ; read-config to ensure it's not only *there* but *valid*
-              (pcm/read-config source)
-              (log/player "opening cached @" destination-path)
+             (pcm/read-config source)
+             (log/player "opening cached @" destination-path)
 
               ; The file seems fine; let's mark it as accessed for cache
               ; management purposes
-              (>evt [:cache/file-accessed destination-path])
-              source))
+             (>evt [:cache/file-accessed destination-path])
+             source))
 
-          (p/catch
-            (fn [e]
-              (log/player "ERROR opening cached @ " destination-path ":" e)
+         (p/catch
+          (fn [e]
+            (log/player "ERROR opening cached @ " destination-path ":" e)
 
               ; probably, we don't have it cached
               ; TODO we could potentially resume a partial download?
-              (p/let [{:keys [stream config]} (with-loading-promise
-                                                :player.pcm/resolve-caching
-                                                (promise-factory))]
-                (log/player "downloading to " destination-path)
-                (caching/create stream config destination-path))))))))
+            (p/let [{:keys [stream config]} (with-loading-promise
+                                              :player.pcm/resolve-caching
+                                              (promise-factory))]
+              (log/player "downloading to " destination-path)
+              (caching/create stream config destination-path))))))))

@@ -1,15 +1,16 @@
 (ns gakki.accounts.ytm.search
-  (:require [applied-science.js-interop :as j]
-            [promesa.core :as p]
+  (:require #_[applied-science.js-interop :as j]
+   [promesa.core :as p]
             ; ["ytmusic/dist/lib/utils" :rename {sendRequest send-request
             ;                                    generateBody generate-body}]
             ; ["ytmusic" :rename {YTMUSIC YTMusic}]
-            [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]))
+            #_[gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]))
 
+#_{:clj-kondo/ignore [:unused-private-var]}
 (def ^:private param-types
   {:uploads "agIYAw%3D%3D"})
 
-(defn- perform-with [^YTMusic client {:keys [params query]}]
+(defn- perform-with [^YTMusic _client {:keys [_params _query]}]
   (throw (ex-info "not supported yet" {}))
   #_(p/let [body (-> (generate-body #js {})
                      (j/assoc! :query query)

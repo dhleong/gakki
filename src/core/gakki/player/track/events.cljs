@@ -24,11 +24,11 @@
                             (- end-timeout 5000))
 
         end-timer (js/setTimeout
-                    #(.emit events "end")
-                    end-timeout)
+                   #(.emit events "end")
+                   end-timeout)
         ending-timer (js/setTimeout
-                       #(.emit events "ending")
-                       ending-timeout) ]
+                      #(.emit events "ending")
+                      ending-timeout)]
     (log "Notifying end of file after " (/ end-timeout 1000) "s"
          "; ending after " (/ ending-timeout 1000) "s"
          "(duration=" (/ (:duration config) 1000) "s"
@@ -47,10 +47,10 @@
                 (clear-timer))
               (assoc old-state :clear-timer
                      (enqueue-end-notification
-                       (.-events eventful-track)
-                       config
-                       eventful-track
-                       current-timestamp-seconds)))))))
+                      (.-events eventful-track)
+                      config
+                      eventful-track
+                      current-timestamp-seconds)))))))
 
 (deftype EventfulAudioTrack [^IAudioTrack base, ^EventEmitter events, state]
   Object
@@ -66,7 +66,7 @@
   (close [_this] (track/close base))
   (read-config [_this] (track/read-config base))
   (seek [this timestamp-seconds]
-    (p/do!
+    (p/do
       (track/seek base timestamp-seconds)
       ; NOTE: clip/current-time doesn't seem to be reliable here for some reason,
       ; so we just pass the exact timestamp to use:
@@ -88,7 +88,7 @@
 
   (play [this]
     (when-not (clip/playing? this)
-      (p/do!
+      (p/do
         (restart-event-timers this)
         (clip/play base))))
 

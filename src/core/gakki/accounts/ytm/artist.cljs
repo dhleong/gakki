@@ -1,24 +1,23 @@
 (ns gakki.accounts.ytm.artist
-  (:require [applied-science.js-interop :as j]
-            [promesa.core :as p]
+  #_(:require [applied-science.js-interop :as j]
+            ; [promesa.core :as p]
             ; ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
             ; ["ytmusic" :rename {YTMUSIC YTMusic}]
-            [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
-            [gakki.accounts.ytm.util :refer [runs->text
-                                             unpack-navigation-endpoint]]
-            [gakki.const :as const]))
+            ; [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
+              #_[gakki.accounts.ytm.util :refer [unpack-navigation-endpoint]]
+              #_[gakki.const :as const]))
 
-(defn- unpack-playlist [header button-key title]
-  (when-let [radio (-> header
-                       (j/get-in [button-key
-                                  :buttonRenderer])
-                       unpack-navigation-endpoint)]
-    (assoc radio
-           :radio/kind (:kind radio)
-           :kind :radio
-           :title title)))
+; (defn- unpack-playlist [header button-key title]
+;   (when-let [radio (-> header
+;                        (j/get-in [button-key
+;                                   :buttonRenderer])
+;                        unpack-navigation-endpoint)]
+;     (assoc radio
+;            :radio/kind (:kind radio)
+;            :kind :radio
+;            :title title)))
 
-(defn load [^YTMusic client id]
+(defn load [^YTMusic _client _id]
   (throw (ex-info "not supported yet" {}))
   #_(p/let [response (send-request (.-cookie client)
                                    #js {:id id

@@ -1,8 +1,8 @@
 (ns gakki.accounts.ytm.upnext
   (:require [applied-science.js-interop :as j]
             [gakki.accounts.ytm.util :as util :refer [runs->text]]
-            [gakki.util.logging :as log :refer [with-timing-promise]]
-            [promesa.core :as p]))
+            #_[gakki.util.logging :as log :refer [with-timing-promise]]
+            #_[promesa.core :as p]))
 
 (defmulti parse-item (fn [container] (first (js/Object.keys container))))
 
@@ -37,32 +37,32 @@
                        (first (js/Object.keys container)))
                   {:container (js->clj container)})))
 
-(defn- parse-items [^js response]
-  (let [raw-root (or (j/get-in response [:contents
-                                         :singleColumnMusicWatchNextResultsRenderer
-                                         :tabbedRenderer
-                                         :watchNextTabbedResultsRenderer
-                                         :tabs
-                                         0
-                                         :tabRenderer
-                                         :content
-                                         :musicQueueRenderer
-                                         :content
-                                         :playlistPanelRenderer])
-                     (j/get-in response [:continuationContents
-                                         :playlistPanelContinuation]))
-        continuations (j/get raw-root :continuations)]
-    {:items (->> (j/get raw-root :contents)
-                 (map parse-item))
-     :continuations continuations}))
+; (defn- parse-items [^js response]
+;   (let [raw-root (or (j/get-in response [:contents
+;                                          :singleColumnMusicWatchNextResultsRenderer
+;                                          :tabbedRenderer
+;                                          :watchNextTabbedResultsRenderer
+;                                          :tabs
+;                                          0
+;                                          :tabRenderer
+;                                          :content
+;                                          :musicQueueRenderer
+;                                          :content
+;                                          :playlistPanelRenderer])
+;                      (j/get-in response [:continuationContents
+;                                          :playlistPanelContinuation]))
+;         continuations (j/get raw-root :continuations)]
+;     {:items (->> (j/get raw-root :contents)
+;                  (map parse-item))
+;      :continuations continuations}))
 
-(defn inflate [base, ^js response]
-  (merge base
-         {:provider :ytm
-          :kind :radio}
-         (parse-items response)))
+; (defn inflate [base, ^js response]
+;   (merge base
+;          {:provider :ytm
+;           :kind :radio}
+;          (parse-items response)))
 
-(defn load [^YTMusic client info]
+(defn load [^YTMusic _client _info]
   (throw (ex-info "TODO: " {}))
   #_(p/let [body (cond-> (generate-body #js {})
                    (:playlist-id info)

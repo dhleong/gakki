@@ -1,9 +1,9 @@
 (ns gakki.accounts.ytm.album
   (:require [applied-science.js-interop :as j]
-            [promesa.core :as p]
+            ; [promesa.core :as p]
             ; ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
             ; ["ytmusic" :rename {YTMUSIC YTMusic}]
-            [gakki.accounts.ytm.playlist :as playlist]))
+            #_[gakki.accounts.ytm.playlist :as playlist]))
 
 (defmulti ^:private apply-mutation (fn [_state mutation]
                                      (j/get mutation :type)))
@@ -32,49 +32,45 @@
               (next mutations))
        state))))
 
-(defn- pick-thumbnail [entity]
-  (when-let [thumb (first (j/get-in entity [:thumbnailDetails :thumbnails]))]
-    (j/get thumb :url)))
+; (defn inflate-track [state track-id]
+;   (let [track-entity (get state track-id)]
+;     {:id (j/get track-entity :videoId)
+;      :title (j/get track-entity :title)
+;      :kind :track
+;      :provider :ytm
+;      :artist (j/get track-entity :artistNames)
+;      :image-url (pick-thumbnail track-entity)}))
 
-(defn inflate-track [state track-id]
-  (let [track-entity (get state track-id)]
-    {:id (j/get track-entity :videoId)
-     :title (j/get track-entity :title)
-     :kind :track
-     :provider :ytm
-     :artist (j/get track-entity :artistNames)
-     :image-url (pick-thumbnail track-entity)}))
+; (defn inflate-album [state album-id]
+;   (let [album-entity (get state album-id)
+;         details-entity (get state (j/get album-entity :details))]
+;     {:id (j/get album-entity :id)
+;      :title (j/get album-entity :title)
+;      :kind :album
+;      :provider :ytm
+;      ::entity album-entity
+;      :description (j/get details-entity :description)
+;      :artist (j/get album-entity :artistDisplayName)
+;      :radio-playlist-id (j/get album-entity :radioAutomixPlaylistId)
+;      :image-url (pick-thumbnail album-entity)
+;      :items (->> (j/get details-entity :tracks)
+;                  (mapv (partial inflate-track state)))}))
 
-(defn inflate-album [state album-id]
-  (let [album-entity (get state album-id)
-        details-entity (get state (j/get album-entity :details))]
-    {:id (j/get album-entity :id)
-     :title (j/get album-entity :title)
-     :kind :album
-     :provider :ytm
-     ::entity album-entity
-     :description (j/get details-entity :description)
-     :artist (j/get album-entity :artistDisplayName)
-     :radio-playlist-id (j/get album-entity :radioAutomixPlaylistId)
-     :image-url (pick-thumbnail album-entity)
-     :items (->> (j/get details-entity :tracks)
-                 (mapv (partial inflate-track state)))}))
+; (defn- inflate-mutations [response]
+;   (when-let [mutations (j/get-in response [:frameworkUpdates
+;                                            :entityBatchUpdate
+;                                            :mutations])]
+;     (let [entities (apply-mutations mutations)
+;           album-id (->> entities :musicAlbumRelease first)]
+;       (when album-id
+;         (inflate-album entities album-id)))))
 
-(defn- inflate-mutations [response]
-  (when-let [mutations (j/get-in response [:frameworkUpdates
-                                           :entityBatchUpdate
-                                           :mutations])]
-    (let [entities (apply-mutations mutations)
-          album-id (->> entities :musicAlbumRelease first)]
-      (when album-id
-        (inflate-album entities album-id)))))
+; (defn- inflate-like-playlist [id response]
+;   (let [like-playlist (playlist/inflate id :album response)]
+;     (when (seq (:items like-playlist))
+;       like-playlist)))
 
-(defn- inflate-like-playlist [id response]
-  (let [like-playlist (playlist/inflate id :album response)]
-    (when (seq (:items like-playlist))
-      like-playlist)))
-
-(defn load [^YTMusic client id]
+(defn load [^YTMusic _client _id]
   (throw (ex-info "not supported yet" {}))
   #_(p/let [response (send-request (.-cookie client)
                                    #js {:id id

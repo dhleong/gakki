@@ -22,17 +22,17 @@
 
   (let [full-config (assoc config :start-time-seconds (or seek-time 0))
         clip (clip/from-stream
-               (seek/nbytes-chunkwise stream (or seek-bytes 0))
-               full-config)]
+              (seek/nbytes-chunkwise stream (or seek-bytes 0))
+              full-config)]
     (log "playing " stream " with " full-config
          "; seek-bytes=" seek-bytes)
     (clip/set-volume clip (:volume current-state 1.0))
     (-> (clip/play clip)
         (p/catch
-          (fn [e]
-            (case (:kind (ex-data e))
-              :warning nil ; ignore
-              (log/error "Error playing clip: " (ex-message e) (ex-data e))))))
+         (fn [e]
+           (case (:kind (ex-data e))
+             :warning nil ; ignore
+             (log/error "Error playing clip: " (ex-message e) (ex-data e))))))
     (assoc current-state :clip clip)))
 
 (defn- swap-close! [state & {:keys [closed?]
@@ -49,19 +49,19 @@
     ; Close this clip (without marking this Track as closed),
     ; seek to where we were, and start again
     (swap-close! (.-state track) :closed? false)
-    (p/do!
+    (p/do
       (seek track seek-time)
       (clip/play track))))
 
 (defn- play! [this clip]
   (-> (clip/play clip)
       (p/catch
-        (fn [e]
-          (case (:kind (ex-data e))
-            :system (do (log/error "SYSTEM error playing clip; possible device change")
-                        (restart-clip! this))
-            :warning nil ; ignore
-            (log/error "Error playing clip: " (ex-message e) (ex-data e)))))))
+       (fn [e]
+         (case (:kind (ex-data e))
+           :system (do (log/error "SYSTEM error playing clip; possible device change")
+                       (restart-clip! this))
+           :warning nil ; ignore
+           (log/error "Error playing clip: " (ex-message e) (ex-data e)))))))
 
 (deftype AudioTrack [id, ^IPCMSource source, state]
   Object
