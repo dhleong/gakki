@@ -1,15 +1,16 @@
 (ns gakki.cli
-  (:require [reagent.core :as r]
-            [re-frame.core :as re-frame]
-            ["ink" :as k]
+  (:require ["ink" :as k]
+            [gakki.cli.fx]
             [gakki.events :as events]
             [gakki.fx]
-            [gakki.cli.fx]
             [gakki.integrations.discord]
-            [gakki.subs]
             [gakki.native :as native]
+            [gakki.subs]
             [gakki.util.logging :as logging]
-            [gakki.views :as views]))
+            [gakki.views :as views]
+            [promesa.core :as p]
+            [re-frame.core :as re-frame]
+            [reagent.core :as r]))
 
 (defonce ^:private ink-instance (atom nil))
 
@@ -17,18 +18,13 @@
   (re-frame/clear-subscription-cache!)
 
   (let [app (r/as-element [views/main])]
-    (when-let [^js instance @ink-instance]
-      ; NOTE: This is a brute-force way to ensure hot-reloads don't
-      ; break reactive rendering (see #1). You would think we could use
-      ;   (.rerender instance app)
-      ; but that doesn't seem to be any different from just running
-      ;   (k/render app)
-      ; again. Clearing and unmounting the old instance works, however,
-      ; and should not have any effect on the production app.
-      (.clear instance)
-      (.unmount instance))
+    (if-let [^js instance @ink-instance]
+      (.rerender instance app)
 
-    (reset! ink-instance (k/render app))))
+      (-> (reset! ink-instance (k/render app))
+          (.waitUntilExit)
+          (p/then (fn []
+                    (js/process.exit)))))))
 
 (defn ^:export init []
   (set! (.-title js/process) "gakki")
