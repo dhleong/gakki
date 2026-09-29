@@ -5,7 +5,10 @@
                 ; cli app:
                 "src/cli"
 
-                "src/test"]
+                "src/test"
+
+                ; Helpers:
+                "src/hooks"]
 
  :dependencies [; core:
                 [reagent "2.0.1"]
@@ -45,7 +48,7 @@
                                   gakki.const/discord-oauth-secret
                                   #shadow/env "GAKKI_DISCORD_OAUTH_SECRET"}}
 
-          :ci-node {:target :node-test
-                    :output-to "target/ci-node.js"}}}
+          :ci-esm {:target :node-esm-test
+                   :output-dir "target/cism"}}}
 
 

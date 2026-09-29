@@ -15,13 +15,13 @@
     "stop": "shadow-cljs stop",
     "build:macos": "(cd macos/gakki && xcodebuild)",
     "build:release": "shadow-cljs release :cli :player",
-    "check": "yarn lint && yarn test",
+    "check": "pnpm lint && pnpm test",
     "lint": "clojure -Sdeps '{:deps {clj-kondo {:mvn/version \"RELEASE\"}}}' -m clj-kondo.main --lint src --config .clj-kondo/config.edn",
     "old:clojure": "clojure -Sdeps '{:deps {antq/antq {:mvn/version \"RELEASE\"}}}' -m antq.core",
-    "old": "yarn old:clojure; yarn outdated",
+    "old": "pnpm old:clojure; pnpm outdated",
     "clean": "rm -rf resources/public/js/* && rm -rf target",
-    "test:node": "shadow-cljs compile ci-node && node target/ci-node.js",
-    "test": "yarn test:node"
+    "test:node": "shadow-cljs compile ci-esm && node target/cism/main.js",
+    "test": "pnpm test:node"
   },
   "keywords": [
     "shadow-cljs",
