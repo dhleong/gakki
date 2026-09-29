@@ -17,7 +17,10 @@
 
 (defn- category-item [{:keys [title selected?]}]
   [:> k/Box {:width :20%
-             :padding-x 1}
+             :flex-grow 1
+             :flex-srhink 1
+             :padding-x 1
+             :overflow-y :hidden}
    ; TODO Could we tint colors based on album art?
    [:> k/Text
     (when selected?

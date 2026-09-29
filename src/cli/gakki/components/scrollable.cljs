@@ -10,7 +10,8 @@
                                per-page
                                items
                                render]
-                        :or {per-page 5}}]
+                        :or {per-page 5}
+                        :as props}]
   (r/with-let [scroll (r/atom 0)
                last-selected (atom nil) ; NOT r/atom, to avoid re-render
                key-fn (or key-fn :id)]
@@ -26,8 +27,12 @@
           items (->> items
                      (drop scroll)
                      (take per-page))]
-      [:> k/Box {:flex-direction flex-direction
-                 :height height}
+      [:> k/Box (merge
+                 (select-keys props [:background-color])
+                 {:flex-direction flex-direction
+                  :flex-grow 1
+                  :flex-shrink 1
+                  :height height})
        (for [item items]
          ^{:key (key-fn item)}
          [render item])])))

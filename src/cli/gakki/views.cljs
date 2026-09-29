@@ -5,6 +5,7 @@
             [gakki.cli.dimen :refer [dimens-tracker]]
             [gakki.cli.input :as input]
             [gakki.cli.nav :refer [global-nav]]
+            [gakki.cli.subs :as cli-subs]
             [gakki.views.auth :as auth]
             [gakki.views.auth.ytm :as auth-ytm]
             [gakki.views.album :as album]
@@ -67,7 +68,10 @@
 
        (or (seq accounts)
            (= "auth" (namespace page)))
-       page-form
+       (let [{:keys [width height]} (<sub [::cli-subs/cli-dimens])]
+         [:> k/Box {:width width
+                    :max-height height}
+          page-form])
 
        :else
        [:f> auth/view])]))
