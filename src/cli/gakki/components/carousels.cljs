@@ -1,14 +1,14 @@
 (ns gakki.components.carousels
   "Renders a sectional/carousel-based UI, like the Home page, or Artists.
    The data is automatically pulled from the `[:carousel/categories]` sub"
-  (:require [archetype.util :refer [<sub >evt]]
-            ["figures" :as figures]
-            ["ink" :as k]
-            [gakki.cli.input :refer [use-input]]
-            [gakki.cli.subs :as subs]
-            [gakki.components.scrollable :refer [horizontal-list
-                                                 vertical-list]]
-            [gakki.theme :as theme]))
+  (:require
+   ["ink" :as k]
+   [archetype.util :refer [<sub >evt]]
+   [gakki.cli.input :refer [use-input]]
+   [gakki.cli.subs :as subs]
+   [gakki.components.figure :refer [figure]]
+   [gakki.components.scrollable :refer [horizontal-list vertical-list]]
+   [gakki.theme :as theme]))
 
 (def ^:private help
   {"j k" "Navigate cursor down / up"
@@ -21,7 +21,7 @@
    ; TODO Could we tint colors based on album art?
    [:> k/Text
     (when selected?
-      figures/pointer)
+      [figure :pointer])
     title]])
 
 (defn- category-row [{:keys [title items selected?]}]
@@ -29,7 +29,7 @@
              :padding-top 1}
    [:> k/Text {:color theme/text-color-on-background}
     (when selected?
-      figures/pointer)
+      [figure :pointer])
     title
     [:> k/Text {:color theme/text-color-disabled}
      " (" (count items) ")"]]
@@ -40,13 +40,13 @@
 
 (defn carousels []
   (use-input
-    {"j" #(>evt [:carousel/navigate-categories :down])
-     "k" #(>evt [:carousel/navigate-categories :up])
-     "h" #(>evt [:carousel/navigate-row :left])
-     "l" #(>evt [:carousel/navigate-row :right])
+   {"j" #(>evt [:carousel/navigate-categories :down])
+    "k" #(>evt [:carousel/navigate-categories :up])
+    "h" #(>evt [:carousel/navigate-row :left])
+    "l" #(>evt [:carousel/navigate-row :right])
 
-     :return #(>evt [:carousel/open-selected])
-     :help help})
+    :return #(>evt [:carousel/open-selected])
+    :help help})
 
   (let [available-height (<sub [::subs/available-height])]
     [vertical-list
@@ -54,5 +54,5 @@
      :follow-selected? true
      :key-fn :title
      :per-page (js/Math.floor
-                 (/ available-height 5))
+                (/ available-height 5))
      :render category-row]))

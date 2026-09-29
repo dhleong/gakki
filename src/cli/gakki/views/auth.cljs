@@ -1,13 +1,13 @@
 (ns gakki.views.auth
-  (:require [archetype.util :refer [<sub >evt]]
-            [reagent.core :as r]
-            ["figures" :as figures]
-            ["ink" :as k]
+  (:require ["ink" :as k]
+            [archetype.util :refer [<sub >evt]]
             [gakki.accounts :as accounts]
             [gakki.accounts.core :as ap]
             [gakki.cli.input :refer [use-input]]
+            [gakki.components.figure :refer [figure]]
             [gakki.components.frame :refer [frame]]
-            [gakki.theme :as theme]))
+            [gakki.theme :as theme]
+            [reagent.core :as r]))
 
 (defn- provider-row [selected-key k provider]
   (let [accounts (<sub [:accounts])
@@ -15,7 +15,7 @@
     [:> k/Box
      (if selected?
        [:> k/Text {:color theme/accent-color}
-        " " figures/pointer " "]
+        " " [figure :pointer] " "]
        [:> k/Text "   "])
 
      [:> k/Text {:color theme/header-color-on-background}
@@ -26,13 +26,12 @@
        [:> k/Text {:color theme/positive-color}
         (ap/describe-account provider info)
         " "
-        figures/tick]
+        [figure :tick]]
 
        [:> k/Text {:color theme/text-color-disabled}
         (if selected?
           "(Press Enter to configure)"
-          "(Not configured)")])
-     ]))
+          "(Not configured)")])]))
 
 (defn- rotate-provider [providers current delta]
   (let [idx (->> providers
@@ -50,16 +49,16 @@
         rotate! (partial rotate-provider providers)
         accounts (<sub [:accounts])]
     (use-input
-      (fn auth-input [k]
-        (case k
+     (fn auth-input [k]
+       (case k
           ; Switch "selected" account:
-          "j" (swap! selected-atom rotate! 1)
-          "k" (swap! selected-atom rotate! -1)
+         "j" (swap! selected-atom rotate! 1)
+         "k" (swap! selected-atom rotate! -1)
 
-          :escape (>evt [:navigate/replace! [:home]])
-          :return (>evt [:navigate/replace! [(keyword "auth" selected-key)]])
+         :escape (>evt [:navigate/replace! [:home]])
+         :return (>evt [:navigate/replace! [(keyword "auth" selected-key)]])
 
-          nil)))
+         nil)))
 
     [frame
      [:> k/Text {:color theme/header-color-on-background}
@@ -83,8 +82,7 @@
         [:> k/Text {:color theme/text-color-disabled}
          "Press "
          [:> k/Text {:color theme/text-color-on-background} "<esc>"]
-         " to return"]])
-     ]))
+         " to return"]])]))
 
 (defn view []
   (r/with-let [selected-atom (r/atom :ytm)

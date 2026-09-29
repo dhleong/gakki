@@ -1,5 +1,5 @@
 (ns gakki.accounts.ytm.playable
-  (:require ["node-fetch" :as fetch]
+  (:require ["node-fetch" :default fetch]
             [applied-science.js-interop :as j]
             [gakki.accounts.ytm.creds :refer [get-authd-innertube]]
             [gakki.accounts.ytm.playback :as playback]

@@ -1,15 +1,15 @@
 (ns gakki.views.album
-  (:require [archetype.util :refer [<sub >evt]]
-            ["figures" :as figures]
-            ["ink" :as k]
-            [reagent.core :as r]
+  (:require ["ink" :as k]
+            [archetype.util :refer [<sub >evt]]
             [gakki.cli.input :refer [use-input]]
+            [gakki.components.figure :refer [figure]]
             [gakki.components.frame :refer [frame]]
             [gakki.components.header :refer [header]]
             [gakki.components.limited-text :refer [limited-text]]
             [gakki.components.scrollable :refer [vertical-list]]
             [gakki.theme :as theme]
-            [gakki.util.functional :refer [length-wrapped]]))
+            [gakki.util.functional :refer [length-wrapped]]
+            [reagent.core :as r]))
 
 (def max-description-length 280)
 (def max-album-title-length 20)
@@ -27,7 +27,7 @@
      (when selected?
        [:> k/Text
         {:color theme/text-color-on-background}
-        figures/pointer])
+        [figure :pointer]])
      [:> k/Text " "])
 
    [:> k/Text (when selected?
@@ -60,7 +60,7 @@
         (if (<= (count desc) max-description-length)
           desc
           (str (subs desc 0 (dec max-description-length))
-               figures/ellipsis)))]
+               [figure :ellipsis])))]
      [:> k/Text " "]]))
 
 (defn view [album-id]
@@ -71,20 +71,20 @@
                   (assoc-in items [selected-index :selected?] true)
                   items)]
       (use-input
-        {"j" #(swap! state update :selected-index (length-wrapped
-                                                    (fnil inc -1)
-                                                    (count items)))
-         "k" #(swap! state update :selected-index (length-wrapped
-                                                    (fnil dec 1)
-                                                    (count items)))
+       {"j" #(swap! state update :selected-index (length-wrapped
+                                                  (fnil inc -1)
+                                                  (count items)))
+        "k" #(swap! state update :selected-index (length-wrapped
+                                                  (fnil dec 1)
+                                                  (count items)))
 
-         :return #(if-let [index (:selected-index @state)]
-                    (>evt [:player/play-items (:items album) index])
-                    (>evt [:player/play-items (:items album)]))
-         :escape #(if @state
-                    (reset! state nil)
-                    (>evt [:navigate/back!]))
-         :help help})
+        :return #(if-let [index (:selected-index @state)]
+                   (>evt [:player/play-items (:items album) index])
+                   (>evt [:player/play-items (:items album)]))
+        :escape #(if @state
+                   (reset! state nil)
+                   (>evt [:navigate/back!]))
+        :help help})
 
       [frame
        [album-header album]
@@ -95,5 +95,4 @@
         :items items
         :follow-selected? true
         :per-page 10
-        :render track-row]
-       ])))
+        :render track-row]])))

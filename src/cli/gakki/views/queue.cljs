@@ -1,16 +1,16 @@
 (ns gakki.views.queue
-  (:require [archetype.util :refer [>evt <sub]]
-            ["figures" :as figures]
-            ["ink" :as k]
-            [reagent.core :as r]
+  (:require ["ink" :as k]
+            [archetype.util :refer [<sub >evt]]
             [gakki.cli.input :refer [use-input]]
             [gakki.cli.subs :as subs]
+            [gakki.components.figure :refer [figure]]
             [gakki.components.frame :refer [frame]]
             [gakki.components.header :refer [header]]
             [gakki.components.limited-text :refer [limited-text]]
             [gakki.components.scrollable :refer [vertical-list]]
             [gakki.theme :as theme]
-            [gakki.util.functional :refer [length-wrapped]]))
+            [gakki.util.functional :refer [length-wrapped]]
+            [reagent.core :as r]))
 
 (def ^:private preferred-max-queue-height 20)
 (def ^:private max-track-length-perc 0.4)
@@ -38,8 +38,8 @@
                           theme/header-color-on-background
                           theme/text-color-on-background)}
       (cond
-        selected? figures/pointer
-        current? "♫"
+        selected? [figure :pointer]
+        current? [figure :music]
         :else " ")
       " "]
 
@@ -53,7 +53,7 @@
      [limited-text {:max-width artist-width}
       (:artist track)]
      [:> k/Text {:color theme/text-color-disabled}
-      " " figures/pointerSmall " "]
+      " " [figure :pointer-small] " "]
 
      [limited-text {:color theme/text-color-disabled
                     :max-width album-width}
@@ -83,29 +83,29 @@
           available-height (<sub [::subs/available-height])
           rendered-height (when available-height
                             (min
-                              (count items)
-                              preferred-max-height
-                              available-height))]
+                             (count items)
+                             preferred-max-height
+                             available-height))]
 
       (use-input
-        {"j" #(swap! selected-index (length-wrapped
-                                      (fnil inc -1)
-                                      (count items)))
-         "k" #(swap! selected-index (length-wrapped
-                                      (fnil dec 1)
-                                      (count items)))
+       {"j" #(swap! selected-index (length-wrapped
+                                    (fnil inc -1)
+                                    (count items)))
+        "k" #(swap! selected-index (length-wrapped
+                                    (fnil dec 1)
+                                    (count items)))
 
-         :escape #(if (nil? @selected-index)
-                    (>evt [:navigate/back!])
-                    (reset! selected-index nil))
+        :escape #(if (nil? @selected-index)
+                   (>evt [:navigate/back!])
+                   (reset! selected-index nil))
 
-         :return #(if-some [index @selected-index]
-                    (on-index-selected index)
+        :return #(if-some [index @selected-index]
+                   (on-index-selected index)
 
-                    (when on-whole-list-selected
-                      (on-whole-list-selected)))
+                   (when on-whole-list-selected
+                     (on-whole-list-selected)))
 
-         :help help})
+        :help help})
 
       [frame
        header
@@ -115,8 +115,7 @@
         :follow-selected? true
         :height rendered-height
         :per-page (or rendered-height 5)
-        :render queue-item
-        ]])))
+        :render queue-item]])))
 
 (defn view []
   (use-input {:help {:header "Queue"}})
