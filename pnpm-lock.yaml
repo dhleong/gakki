@@ -32,8 +32,8 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0
       ffmpeg-static:
-        specifier: ^4.4.0
-        version: 4.4.1
+        specifier: ^5.3.0
+        version: 5.3.0
       figures:
         specifier: ^6.1.0
         version: 6.1.0
@@ -60,7 +60,7 @@ importers:
         version: 1.63.0
       prism-media:
         specifier: ^1.3.1
-        version: 1.3.5(@discordjs/opus@0.9.0)(ffmpeg-static@4.4.1)
+        version: 1.3.5(@discordjs/opus@0.9.0)(ffmpeg-static@5.3.0)
       react:
         specifier: ^19.2.8
         version: 19.3.0
@@ -611,9 +611,9 @@ packages:
   fflate@0.8.3:
     resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
 
-  ffmpeg-static@4.4.1:
-    resolution: {integrity: sha512-gyGTIf5kgmLDmH7Rwj8vMmNK46bjXKKofHS2gY+LUqoTe/iybVuTuvnhJQR2tZHlKlDG7A/BIH7cRa2jWDKgWw==}
-    engines: {node: '>=10'}
+  ffmpeg-static@5.3.0:
+    resolution: {integrity: sha512-H+K6sW6TiIX6VGend0KQwthe+kaceeH/luE8dIZyOP35ik7ahYojDuqlTV1bOrtEwl01sy2HFNGQfi5IDJvotg==}
+    engines: {node: '>=16'}
 
   figures@6.1.0:
     resolution: {integrity: sha512-d+l3qxjSesT4V7v2fh+QnmFnUWv9lSpjarhShNTgBOfA0ttejbQUAlHLitbjkoRiDulW0OPoQPYIGhIC8ohejg==}
@@ -1904,7 +1904,7 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.1.0
 
-  axios-cookiejar-support@1.0.1(@types/tough-cookie@4.0.5)(axios@0.21.4(debug@4.4.3))(tough-cookie@4.1.4):
+  axios-cookiejar-support@1.0.1(@types/tough-cookie@4.0.5)(axios@0.21.4)(tough-cookie@4.1.4):
     dependencies:
       '@types/tough-cookie': 4.0.5
       axios: 0.21.4(debug@4.4.3)
@@ -2412,7 +2412,7 @@ snapshots:
 
   fflate@0.8.3: {}
 
-  ffmpeg-static@4.4.1:
+  ffmpeg-static@5.3.0:
     dependencies:
       '@derhuerst/http-basic': 8.2.4
       env-paths: 2.2.1
@@ -3071,10 +3071,10 @@ snapshots:
       tar-fs: 2.1.5
       tunnel-agent: 0.6.0
 
-  prism-media@1.3.5(@discordjs/opus@0.9.0)(ffmpeg-static@4.4.1):
+  prism-media@1.3.5(@discordjs/opus@0.9.0)(ffmpeg-static@5.3.0):
     optionalDependencies:
       '@discordjs/opus': 0.9.0
-      ffmpeg-static: 4.4.1
+      ffmpeg-static: 5.3.0
 
   process-nextick-args@2.0.1: {}
 
@@ -3673,7 +3673,7 @@ snapshots:
   youtubish@1.5.1(@types/tough-cookie@4.0.5)(puppeteer-core@25.12.0(yauzl@2.10.0)):
     dependencies:
       axios: 0.21.4(debug@4.4.3)
-      axios-cookiejar-support: 1.0.1(@types/tough-cookie@4.0.5)(axios@0.21.4(debug@4.4.3))(tough-cookie@4.1.4)
+      axios-cookiejar-support: 1.0.1(@types/tough-cookie@4.0.5)(axios@0.21.4)(tough-cookie@4.1.4)
       cheerio: 1.2.0
       chrome-paths: 1.0.1
       debug: 4.4.3
