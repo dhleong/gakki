@@ -1,12 +1,14 @@
 (ns gakki.player.clip
   (:require [applied-science.js-interop :as j]
-            ["audify" :refer [RtAudio RtAudioFormat RtAudioErrorType]]
+            ["audify" :default audify :refer [RtAudioFormat RtAudioErrorType]]
             ["events" :refer [EventEmitter]]
             ["stream" :refer [Readable Writable]]
             [gakki.const :as const]
             [gakki.util.logging :as log]
             [gakki.player.stream.resampling :as resampling]
             [gakki.player.util :refer-macros [with-consuming-error]]))
+
+(def ^:private RtAudio (.-RtAudio audify))
 
 (def ^:private error-kinds
   {(.-WARNING RtAudioErrorType) :warning

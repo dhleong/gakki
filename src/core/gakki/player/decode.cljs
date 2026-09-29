@@ -1,10 +1,13 @@
 (ns gakki.player.decode
   (:require [applied-science.js-interop :as j]
-            ["prism-media" :as prism]
+            ["prism-media" :default prism :refer [opus]]
             ["stream" :refer [Readable]]
             [gakki.const :as const]
             [gakki.player.stream.chunking :as chunking]
             [gakki.util.logging :as log]))
+
+(def ^:private FFmpeg (.-FFmpeg prism))
+(def ^:private VorbusWebmDemuxer (j/get-in prism [:vorbis :WebmDemuxer]))
 
 (defn decode-stream
   "Given a config map and an encoded audio stream, return a stream that decodes
@@ -18,16 +21,16 @@
    "
   [{:keys [container codec] :as config} ^Readable stream]
   (let [demuxer (case container
-                  "ogg" (prism/opus.OggDemuxer.)
+                  "ogg" (opus.OggDemuxer.)
                   "webm" (case codec
-                           "opus" (prism/opus.WebmDemuxer.)
-                           "vorbis" (prism/vorbis.WebmDemuxer.))
+                           "opus" (opus.WebmDemuxer.)
+                           "vorbis" (VorbusWebmDemuxer.))
 
                   ; Assume no specific demuxer necessary:
                   nil)
 
         decoder (case codec
-                  "opus" (prism/opus.Decoder.
+                  "opus" (opus.Decoder.
                           #js {:rate (:sample-rate config)
                                :channels (:channels config)
                                :frameSize const/default-frame-size})
@@ -36,7 +39,7 @@
                     ((log/of :player/decode)
                      "No optimized decoder for " codec
                      "; falling back to ffmpeg")
-                    (prism/FFmpeg.
+                    (FFmpeg.
                      (j/lit
                       {:args [:-loglevel "0"
                               :-ac (:channels config)
