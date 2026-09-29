@@ -1,53 +1,39 @@
 (ns gakki.accounts.ytm.artist
-  #_(:require [applied-science.js-interop :as j]
-            ; [promesa.core :as p]
-            ; ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
-            ; ["ytmusic" :rename {YTMUSIC YTMusic}]
-            ; [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
-              #_[gakki.accounts.ytm.util :refer [unpack-navigation-endpoint]]
-              #_[gakki.const :as const]))
+  (:require
+   [applied-science.js-interop :as j]
+   [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
+   [gakki.accounts.ytm.util :refer [unpack-navigation-endpoint]]
+   [promesa.core :as p]))
 
-; (defn- unpack-playlist [header button-key title]
-;   (when-let [radio (-> header
-;                        (j/get-in [button-key
-;                                   :buttonRenderer])
-;                        unpack-navigation-endpoint)]
-;     (assoc radio
-;            :radio/kind (:kind radio)
-;            :kind :radio
-;            :title title)))
+(defn- unpack-playlist [header title]
+  (when-let [radio (unpack-navigation-endpoint header)]
+    (assoc radio
+           :radio/kind (:kind radio)
+           :kind :radio
+           :title title)))
 
-(defn load [^YTMusic _client _id]
-  (throw (ex-info "not supported yet" {}))
-  #_(p/let [response (send-request (.-cookie client)
-                                   #js {:id id
-                                        :type "ARTIST"
-                                        :endpoint "browse"})
-            raw-rows (-> response
-                         (j/get-in [:contents
-                                    :singleColumnBrowseResultsRenderer
-                                    :tabs
-                                    0
-                                    :tabRenderer
-                                    :content
-                                    :sectionListRenderer
-                                    :contents]))
-            header (j/get-in response [:header :musicImmersiveHeaderRenderer])
-            title (-> header
-                      (j/get :title)
-                      (runs->text))]
+(defn load [^js client id]
+  (p/let [artist (j/call-in client [:music :getArtist] id)
+          title (str (j/get-in artist [:header :title]))]
+    #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
+    (def ^:private last-artist artist)
+    {:id id
+     :kind :artist
+     :provider :ytm
+     :title title
+     :description (str (j/get-in artist [:header :description]))
+     :radio (unpack-playlist
+             (j/get-in artist [:header :start_radio_button])
+             (str title " Radio"))
+     :shuffle (unpack-playlist
+               (j/get-in artist [:header :play_button])
+               (str "Shuffle " title))
+     :categories (keep music-shelf->section
+                       (j/get artist :sections))}))
 
-      (when const/debug?
-        #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
-        (def ^:private last-response response))
-
-      {:id id
-       :kind :artist
-       :provider :ytm
-       :title title
-       :description (-> header
-                        (j/get :description)
-                        (runs->text))
-       :radio (unpack-playlist header :startRadioButton (str title " Radio"))
-       :shuffle (unpack-playlist header :playButton (str "Shuffle " title))
-       :categories (keep music-shelf->section raw-rows)}))
+#_{:clj-kondo/ignore [:unresolved-namespace]}
+(comment
+  (p/let [^js yt (gakki.accounts.ytm.creds/account->client
+                  (:ytm @(re-frame.core/subscribe [:accounts])))
+          artist (load yt "UC37hiyVk7XSOY8EmnN_VmPQ")]
+    (println artist)))

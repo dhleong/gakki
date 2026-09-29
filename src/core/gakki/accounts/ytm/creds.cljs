@@ -1,10 +1,8 @@
 (ns gakki.accounts.ytm.creds
   (:require [applied-science.js-interop :as j]
             [promesa.core :as p]
-            ["youtubei.js" :refer [Innertube Platform UniversalCache]]
-            [gakki.util.logging :as log]))
+            ["youtubei.js" :refer [Innertube Platform UniversalCache]]))
 
-(defonce ^:private created-creds (atom nil))
 (defonce ^:private innertube-ref (atom nil))
 
 (j/assoc-in! Platform [.-shim .-eval]
@@ -34,29 +32,5 @@
       {:name (str (j/get selected .-account_name))
        :email (str (j/get selected .-account_byline))})))
 
-(defonce account->creds
-  (fn [_]
-    (throw (ex-info "not supported yet" {}))))
-
-(defn account->cookies [account]
-  (if-some [s (:cookies account)]
-    s
-
-    (p/let [initial? (nil? (get @created-creds account))
-            start (js/Date.now)
-            creds (account->creds account)
-            cookies-obj (.get creds)
-            delta (- (js/Date.now) start)]
-
-      ; logging:
-      (swap! created-creds assoc account true)
-      (if initial?
-        (log/timing :ytm/initial-cookie-fetch delta)
-        (log/timing :ytm/cookie-refresh delta))
-
-      (j/get cookies-obj :cookies))))
-
-(defn account->client [account]
-  (p/let [_cookies (account->cookies account)]
-    ; TODO: This could be a youtubei.js client?
-    (throw (ex-info "not yet supported" {}))))
+; TODO: Unify around a single fn
+(def account->client get-authd-innertube)

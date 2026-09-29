@@ -63,7 +63,7 @@
     (album/load ytm album-id)))
 
 (defn- do-resolve-artist [account artist-id]
-  (p/let [^YTMusic ytm (account->client account)]
+  (p/let [ytm (account->client account)]
     (artist/load ytm artist-id)))
 
 (defn- do-resolve-radio [account radio]
