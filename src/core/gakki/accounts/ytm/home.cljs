@@ -1,9 +1,7 @@
 (ns gakki.accounts.ytm.home
   (:require [applied-science.js-interop :as j]
             [gakki.accounts.ytm.music-shelf :refer [music-shelf->section]]
-            [promesa.core :as p]
-            ; ["ytmusic/dist/lib/utils" :rename {sendRequest send-request}]
-            #_["ytmusic" :rename {YTMUSIC YTMusic}]))
+            [promesa.core :as p]))
 
 (defn inflate [^js response]
   (let [raw-shelves (j/get-in response [:contents

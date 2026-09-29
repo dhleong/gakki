@@ -4,7 +4,6 @@
             [promesa.core :as p]
             ; ["youtubish/dist/creds" :refer [cached OauthCredentialsManager]]
             ["youtubei.js" :refer [Innertube Platform UniversalCache]]
-            ["ytmusic" :rename {YTMUSIC YTMusic}]
             [gakki.util.logging :as log]))
 
 (defonce ^:private created-creds (atom nil))

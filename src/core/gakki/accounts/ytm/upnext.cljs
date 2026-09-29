@@ -2,9 +2,7 @@
   (:require [applied-science.js-interop :as j]
             [gakki.accounts.ytm.util :as util :refer [runs->text]]
             [gakki.util.logging :as log :refer [with-timing-promise]]
-            [promesa.core :as p]
-            #_["ytmusic/dist/lib/utils" :rename {sendRequest send-request
-                                                 generateBody generate-body}]))
+            [promesa.core :as p]))
 
 (defmulti parse-item (fn [container] (first (js/Object.keys container))))
 
