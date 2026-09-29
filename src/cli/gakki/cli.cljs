@@ -5,23 +5,23 @@
             [gakki.fx]
             [gakki.integrations.discord]
             [gakki.native :as native]
+            [gakki.reagent :as reagent]
             [gakki.subs]
             [gakki.util.logging :as logging]
             [gakki.views :as views]
             [promesa.core :as p]
-            [re-frame.core :as re-frame]
-            [reagent.core :as r]))
+            [re-frame.core :as re-frame]))
 
 (defonce ^:private ink-instance (atom nil))
 
 (defn ^:dev/after-load mount-root []
   (re-frame/clear-subscription-cache!)
 
-  (let [app (r/as-element [views/main])]
+  (let [app (reagent/as-root [views/main])]
     (if-let [^js instance @ink-instance]
       (.rerender instance app)
 
-      (-> (reset! ink-instance (k/render app))
+      (-> ^js (reset! ink-instance (k/render app))
           (.waitUntilExit)
           (p/then (fn []
                     (js/process.exit)))))))
