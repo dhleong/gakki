@@ -62,7 +62,8 @@
 ;           :kind :radio}
 ;          (parse-items response)))
 
-(defn load [^YTMusic _client _info]
+(defn load [_client _info]
+  ; (def last-info info)
   (throw (ex-info "TODO: " {}))
   #_(p/let [body (cond-> (generate-body #js {})
                    (:playlist-id info)
