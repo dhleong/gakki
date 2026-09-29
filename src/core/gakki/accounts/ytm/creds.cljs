@@ -126,5 +126,6 @@
       (j/get cookies-obj :cookies))))
 
 (defn account->client [account]
-  (p/let [cookies (account->cookies account)]
-    (YTMusic. cookies)))
+  (p/let [_cookies (account->cookies account)]
+    ; TODO: This could be a youtubei.js client?
+    (throw (ex-info "not yet supported" {}))))

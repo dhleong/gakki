@@ -16,6 +16,4 @@
             (str/join))))))
 
 (defn figure [kind]
-  [:> k/Text (case kind
-               :music "♫"
-               (aget figures (kind->name kind)))])
+  [:> k/Text (aget figures (kind->name kind))])

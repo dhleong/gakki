@@ -39,7 +39,7 @@
                           theme/text-color-on-background)}
       (cond
         selected? [figure :pointer]
-        current? [figure :music]
+        current? [figure :music-note-beamed]
         :else " ")
       " "]
 
