@@ -12,11 +12,8 @@
            :kind :radio
            :title title)))
 
-(defn load [^js client id]
-  (p/let [artist (j/call-in client [:music :getArtist] id)
-          title (str (j/get-in artist [:header :title]))]
-    #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
-    (def ^:private last-artist artist)
+(defn inflate [artist id]
+  (let [title (str (j/get-in artist [:header :title]))]
     {:id id
      :kind :artist
      :provider :ytm
@@ -30,6 +27,12 @@
                (str "Shuffle " title))
      :categories (keep music-shelf->section
                        (j/get artist :sections))}))
+
+(defn load [^js client id]
+  (p/let [artist (j/call-in client [:music :getArtist] id)]
+    #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
+    (def ^:private last-artist artist)
+    (inflate artist id)))
 
 #_{:clj-kondo/ignore [:unresolved-namespace]}
 (comment

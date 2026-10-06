@@ -133,35 +133,57 @@
   [^js item]
   #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
   (def ^:private last-responsive item)
-  (if-let [flex (j/get item .-flex_columns)]
+  (if-let [flex (j/get item :flex_columns)]
     (let [item-endpoint (unpack-navigation-endpoint item)
-          album-name (some-> (j/get-in item [.-album .-name])
+          album-name (some-> (j/get-in item [:album :name])
                              str)
-          artist-name (some-> (or (j/get item .-artist)
-                                  (first (j/get item .-artists)))
-                              (j/get .-name)
+          artist-name (some-> (or (j/get item :artist)
+                                  (first (j/get item :artists)))
+                              (j/get :name)
                               str)]
       (when-some [endpoint (or item-endpoint
-                               (unpack-navigation-endpoint (j/get item .-album))
-                               (unpack-navigation-endpoint (j/get item .-artist)))]
+                               (unpack-navigation-endpoint (j/get item :album))
+                               (unpack-navigation-endpoint (j/get item :artist)))]
         (merge
          endpoint
          {:title (or (when item-endpoint
-                       (str (j/get item .-title)))
+                       (str (j/get item :title)))
                      album-name
                      artist-name)
           :album album-name
           :artist artist-name
           :image-url (-> item
-                         (j/get .-thumbnail)
+                         (j/get :thumbnail)
                          util/pick-thumbnail)
           :duration (some-> item
-                            (j/get-in [.-duration .-seconds]))
+                            (j/get-in [:duration :seconds]))
           :items (keep parse-flex-column-item flex)})))
 
     ; TODO:  support fixed_columns?
     (throw (ex-info "Unexpected musicResponsiveListItemRenderer contents"
                     {:contents item}))))
+
+(defmethod parse-shelf-item :PlaylistPanelVideo
+  [item]
+  (merge
+   (unpack-navigation-endpoint item)
+   {:id (j/get item :video_id)
+    :kind :track
+    :provider :ytm
+    :image-url (util/pick-thumbnail item)
+    :duration (j/get-in item [:duration :seconds])
+    :album (some-> (j/get-in item [:album :name]) str)
+    :artist (some-> (j/get-in item [:artists 0 :name]) str)
+    :title (str (j/get item :title))}))
+
+(defmethod parse-shelf-item :PlaylistPanelVideoWrapper
+  [item]
+  (parse-shelf-item (j/get item :primary)))
+
+(defmethod parse-shelf-item :AutomixPreviewVideo
+  [_item]
+  (log/debug "TODO: AutomixPreviewVideo item")
+  nil)
 
 (defmethod parse-shelf-item :ContinuationItem
   [_]

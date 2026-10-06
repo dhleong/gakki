@@ -33,17 +33,30 @@
 (reg-fx
  :dedup-promised-fx
  (fn [fx]
-   (swap! dedup-promise-state
-          (fn [state fx]
-            (if (get state fx)
-              state
-              (assoc state fx
-                     (let [[fx-name args] fx
-                           handler (get-handler :fx fx-name :required!)]
-                       (when-let [p (handler args)]
-                         (-> p
-                             (p/finally #(swap! dedup-promise-state dissoc fx))))))))
-          fx)))
+   (letfn [(cleanup []
+             (swap! dedup-promise-state dissoc fx))]
+     (swap!
+      dedup-promise-state
+      (fn [state fx]
+        (if (get state fx)
+          state
+
+          (let [[fx-name args] fx
+                handler (get-handler :fx fx-name :required!)]
+            (try
+              (if-some [p (handler args)]
+                (assoc
+                 state
+                 fx
+
+                 (-> p
+                     (p/finally cleanup)))
+
+                state)
+              (catch :default e
+                (log/debug "Error calling fx handler" fx-name e)
+                state)))))
+      fx))))
 
 ; ======= Prefs ===========================================
 

@@ -1,94 +1,58 @@
 (ns gakki.accounts.ytm.upnext
-  (:require [applied-science.js-interop :as j]
-            [gakki.accounts.ytm.util :as util :refer [runs->text]]
-            #_[gakki.util.logging :as log :refer [with-timing-promise]]
-            #_[promesa.core :as p]))
+  (:require
+   [applied-science.js-interop :as j]
+   [gakki.accounts.ytm.music-shelf :refer [parse-shelf-item]]
+   [promesa.core :as p]))
 
-(defmulti parse-item (fn [container] (first (js/Object.keys container))))
+(defn- parse-items [response]
+  {:items (->> (j/get response :contents)
+               (map parse-shelf-item))
+   :continuation (j/get response :continuation)})
 
-(defmethod parse-item "playlistPanelVideoRenderer"
-  [^js container]
-  (j/let [^:js {renderer :playlistPanelVideoRenderer} container]
-    {:id (j/get renderer :videoId)
-     :kind :track
-     :provider :ytm
-     :image-url (util/pick-thumbnail renderer)
-     :duration (some-> (j/get renderer :lengthText)
-                       runs->text
-                       util/->seconds)
-     :album (-> (j/get renderer :longBylineText)
-                util/split-runs-by-dots
-                second)
-     :artist (runs->text (j/get renderer :shortBylineText))
-     :title (runs->text (j/get renderer :title))}))
+(defn inflate [base, ^js response]
+  (merge base
+         {:provider :ytm
+          :kind :radio}
+         (parse-items response)))
 
-(defmethod parse-item "playlistPanelVideoWrapperRenderer"
-  [^js container]
-  (j/let [^:js {{wrapped :primaryRenderer} :playlistPanelVideoWrapperRenderer} container]
-    (parse-item wrapped)))
+(defn- parse-continuation [entity response]
+  (let [panel (j/get response :continuation_contents)]
+    #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
+    (def ^:private last-panel panel)
+    (inflate entity panel)))
 
-(defmethod parse-item :default
-  [^js container]
-  ; Debug helper:
-  #_:clj-kondo/ignore
-  (def failed-container container)
+(defn load-continuation [client entity continuation]
+  (p/let [resp (j/call-in
+                client [:session :actions :execute]
+                "/next"
+                (cond->
+                 #js {:client "YTMUSIC"
+                      :continuation continuation
+                      :parse true}
+                  (:playlist-id entity)
+                  (j/assoc! :playlistId (:playlist-id entity))
 
-  (throw (ex-info (str "No multimethod for ytm.upnext/parse-item: "
-                       (first (js/Object.keys container)))
-                  {:container (js->clj container)})))
+                  (= :track (:radio/kind entity))
+                  (j/assoc! :videoId (:id entity))
 
-; (defn- parse-items [^js response]
-;   (let [raw-root (or (j/get-in response [:contents
-;                                          :singleColumnMusicWatchNextResultsRenderer
-;                                          :tabbedRenderer
-;                                          :watchNextTabbedResultsRenderer
-;                                          :tabs
-;                                          0
-;                                          :tabRenderer
-;                                          :content
-;                                          :musicQueueRenderer
-;                                          :content
-;                                          :playlistPanelRenderer])
-;                      (j/get-in response [:continuationContents
-;                                          :playlistPanelContinuation]))
-;         continuations (j/get raw-root :continuations)]
-;     {:items (->> (j/get raw-root :contents)
-;                  (map parse-item))
-;      :continuations continuations}))
+                  (:params entity)
+                  (j/assoc! :params (:params entity))))]
 
-; (defn inflate [base, ^js response]
-;   (merge base
-;          {:provider :ytm
-;           :kind :radio}
-;          (parse-items response)))
+    #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
+    (def ^:private last-resp resp)
+    (parse-continuation entity resp)))
 
-(defn load [_client _info]
-  ; (def last-info info)
-  (throw (ex-info "TODO: " {}))
-  #_(p/let [body (cond-> (generate-body #js {})
-                   (:playlist-id info)
-                   (j/assoc! :playlistId (:playlist-id info))
+(defn load [client {:keys [id] :as info}]
+  (p/let [upnext (j/call-in client [:music :getUpNext] id)]
+    #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
+    (def ^:private last-upnext upnext)
+    (inflate info upnext)))
 
-                   (= :track (:radio/kind info))
-                   (j/assoc! :videoId (:id info))
-
-                   (:params info)
-                   (j/assoc! :params (:params info))
-
-                   (:continuation info)
-                   (j/assoc! :continuation (:continuation info))
-
-                   (:index info)
-                   (j/assoc! :index (:index info))
-
-                   (:click-tracking-params info)
-                   (j/assoc-in! [:clickTracking :clickTrackingParams]
-                                (:click-tracking-params info)))
-            response (->> (send-request (.-cookie client)
-                                        (j/lit
-                                         {:endpoint "next"
-                                          :body body}))
-                          (with-timing-promise :ytm/upnext-load))]
-      (-> info
-          (inflate response)
-          (dissoc :continuation :index :click-tracking-params))))
+#_{:clj-kondo/ignore [:unresolved-namespace]}
+(comment
+  (-> (p/let [client
+              (gakki.accounts.ytm.creds/account->client
+               (:ytm @(re-frame.core/subscribe [:accounts])))
+              result (load-continuation client {} (.-continuation last-upnext))]
+        (println (js/JSON.stringify result nil 2)))
+      (p/handle println)))

@@ -23,6 +23,12 @@
    :after  (fn check-pagination-after [context]
              (let [db (rf/get-effect context :db ::not-found)
                    {queue :items :keys [entity index]} (get-in db [:player :queue])]
+               (log/debug "Checking pagination "
+                          {:db? (= db ::not-found)
+                           :not-in-range? (< index
+                                             (- (count queue)
+                                                paginate-distance))
+                           :acct? (some? (:accounts db))})
                (cond
                  (= db ::not-found)
                  context

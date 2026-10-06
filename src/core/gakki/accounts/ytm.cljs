@@ -23,25 +23,27 @@
     #_(p/let [^YTMusic ytm (account->client account)]
         (home/load ytm))))
 
-(defn- do-paginate [account entity index]
-  (when-let [continuations (first (:continuations entity))]
-    ((log/of :ytm) "Paginate" (:kind entity) (:id entity) "@" continuations "...")
+(defn- do-paginate [account entity _index]
+  (when-let [continuation (:continuation entity)]
+    ((log/of :ytm) "Paginate" (:kind entity) (:id entity) "@" continuation "...")
     (p/let [^YTMusic ytm (account->client account)
-            up-next (upnext/load
+            up-next (upnext/load-continuation
                      ytm
-                     (assoc entity
-                            :id (if (= :track (:radio/kind entity))
-                                  (get-in entity [:items index :id])
-                                  (:id entity))
-                            :continuation (j/get-in
-                                           continuations
-                                           [:nextRadioContinuationData
-                                            :continuation])
-                            :click-tracking-params (j/get-in
-                                                    continuations
-                                                    [:nextRadioContinuationData
-                                                     :clickTrackingParams])
-                            :index index))]
+                     entity
+                     continuation
+                     #_(assoc entity
+                              :id (if (= :track (:radio/kind entity))
+                                    (get-in entity [:items index :id])
+                                    (:id entity))
+                              :continuation (j/get-in
+                                             continuations
+                                             [:nextRadioContinuationData
+                                              :continuation])
+                              :click-tracking-params (j/get-in
+                                                      continuations
+                                                      [:nextRadioContinuationData
+                                                       :clickTrackingParams])
+                              :index index))]
 
       {:entity (-> entity
                    (update :items into (:items up-next))
