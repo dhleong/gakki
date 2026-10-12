@@ -36,14 +36,14 @@
         (remove-watch source-state-atom [id :still-current-partial?])
 
         (pipe-temp-into
-          id source-state-atom
-          destination-stream
-          :path (if completed?
+         id source-state-atom
+         destination-stream
+         :path (if completed?
                   ; switch to the full file:
-                  (str/replace path #"\.progress$" "")
-                  path)
-          :offset new-offset
-          :end? completed?))
+                 (str/replace path #"\.progress$" "")
+                 path)
+         :offset new-offset
+         :end? completed?))
 
       ; wait patiently for more bytes to be written to the file
       (do
@@ -71,9 +71,9 @@
                                   " reached end of stream @" new-offset
                                   " ...")
                              (restart-pipe
-                               id source-state-atom destination-stream
-                               :path path
-                               :new-offset new-offset)))
+                              id source-state-atom destination-stream
+                              :path path
+                              :new-offset new-offset)))
         handle-error (if end?
                        identity
 
@@ -83,9 +83,9 @@
                            (do (log "Partial pipe #" id
                                     "hit ENOENT; the download may have completed?")
                                (restart-pipe
-                                 id source-state-atom destination-stream
-                                 :path path
-                                 :new-offset offset))
+                                id source-state-atom destination-stream
+                                :path path
+                                :new-offset offset))
 
                            (throw e))))
 
@@ -93,9 +93,9 @@
 
         cleanup (fn []
                   (.off input-stream "end" handle-file-end)
-                     (.off input-stream "error" handle-error)
-                     (.unpipe input-stream destination-stream)
-                     (remove-watch source-state-atom [id :still-current-partial?]))]
+                  (.off input-stream "error" handle-error)
+                  (.unpipe input-stream destination-stream)
+                  (remove-watch source-state-atom [id :still-current-partial?]))]
 
     ; If a new stream is opened, we should clean up
     (add-watch source-state-atom [id :still-current-partial?]
@@ -107,9 +107,9 @@
                      (log "Partial pipe #" id " is switching to the complete file")
                      (cleanup)
                      (restart-pipe
-                       id source-state-atom destination-stream
-                       :path path
-                       :new-offset new-offset))
+                      id source-state-atom destination-stream
+                      :path path
+                      :new-offset new-offset))
 
                    ; We're no longer the current partial stream:
                    (not= id (:current-partial-stream new-state))
@@ -138,7 +138,7 @@
     (let [current-state @state]
       (if (:disk current-state)
         (pcm/seekable-duration
-          (:disk current-state))
+         (:disk current-state))
 
         (pcm/bytes-to-duration-with config (:decoded-bytes current-state)))))
 
@@ -170,7 +170,7 @@
         (do
           (swap! state dissoc :current-partial-stream)
           (pcm/open-read-stream
-            (:disk current-state)))
+           (:disk current-state)))
 
         ; If we haven't yet provided the in-progress-decode stream, do that
         (:in-progress-decode current-state)
@@ -186,17 +186,17 @@
                                                   :current-partial-stream inc)
               stream (PassThrough.)]
           (pipe-temp-into
-            id
-            state
-            stream
-            :path tmp-path)
+           id
+           state
+           stream
+           :path tmp-path)
           (decode-stream config stream))))))
 
 (defn- complete-download [tmp-path destination-path]
   (-> (fs/rename tmp-path destination-path)
       (p/catch
-        (fn [err]
-          (log/error "Unable to 'complete' download:" err)))))
+       (fn [err]
+         (log/error "Unable to 'complete' download:" err)))))
 
 (defn create [^Readable stream, config destination-path]
   (let [tmp-path (str destination-path ".progress")
@@ -208,12 +208,17 @@
 
     (doto stream
       (.on "end" (fn []
-                   (log/debug "Completed download of " destination-path)
-                   (-> (complete-download tmp-path destination-path)
-                       (p/then (fn []
-                                 (>evt [:cache/download-completed destination-path])
-                                 (swap! state assoc
-                                        :disk (disk/create destination-path))))))))
+                   (if (> (:bytes-written @state) 0)
+                     (do
+                       (log/debug "Completed download of " destination-path)
+                       (-> (complete-download tmp-path destination-path)
+                           (p/then (fn []
+                                     (>evt [:cache/download-completed destination-path])
+                                     (swap! state assoc
+                                            :disk (disk/create destination-path))))))
+
+                     ; TODO: ?
+                     (log/error "Zero bytes download for " destination-path)))))
 
     ; TODO can we cancel the download if the user skips past the song?
     ; This might look like a (dispose) method on the Source
@@ -224,4 +229,4 @@
                (counting/nbytes-atom-inc state :decoded-bytes)))
 
     (->CachingPCMSource
-      config destination-path tmp-path state)))
+     config destination-path tmp-path state)))
