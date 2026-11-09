@@ -69,7 +69,10 @@
                                 (p/let [path (path/join root-path %)
                                         stat (fs/stat path)]
                                   [path stat])))
-                       p/all)]
+                       p/all)
+
+            ; Sanity check: only look at regular files
+            stats (filter #(.isFile ^js (second %)) stats)]
       ((log/of :cache) "Initializing... " root-path)
       (let [{:keys [promises]} (swap! state initialize-state-with-stats stats)]
         (swap! state dissoc :promises)
@@ -97,7 +100,13 @@
 
 (defn- on-evict-file [path]
   ((log/of :cache) "Evicting" path "...")
-  (fs/rm path))
+  ; NOTE: We attach the error handler *immediately*; p/all does not
+  ; necessarily do so, which can result in an unhandled rejection (and
+  ; a crash) if the rm fails
+  (-> (fs/rm path)
+      (p/catch (fn [e]
+                 (when-not (= "ENOENT" (j/get e :code))
+                   (log/error "Failed to evict" path e))))))
 
 ; ======= Public interface ================================
 

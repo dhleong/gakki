@@ -110,13 +110,16 @@
 
 (defn with-timing-promise [event promise-obj]
   (let [start (js/Date.now)]
+    ; NOTE: Returning (p/rejected err) from p/handle results in a rejection
+    ; whose *reason* is the rejected promise (and the original error may
+    ; be reported as unhandled), so we use then/catch instead
     (-> promise-obj
-        (p/handle (fn [result err]
-                    (timing event (- (js/Date.now) start)
-                            (when err [" ERROR"]))
-                    (if err
-                      (p/rejected err)
-                      (p/resolved result)))))))
+        (p/then (fn [result]
+                  (timing event (- (js/Date.now) start))
+                  result))
+        (p/catch (fn [err]
+                   (timing event (- (js/Date.now) start) [" ERROR"])
+                   (throw err))))))
 
 ; ======= stdout patching =================================
 
