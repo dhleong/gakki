@@ -40,7 +40,8 @@
                              :keep-native-requires true
                              :keep-as-require #{"ansi-escapes"}}
                 :devtools
-                {:ignore-warnings true}
+                {:ignore-warnings true
+                 :runtime :node}
 
                 :closure-defines {gakki.const/discord-app-id
                                   #shadow/env "GAKKI_DISCORD_APP_ID"
