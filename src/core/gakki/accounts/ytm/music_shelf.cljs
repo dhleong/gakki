@@ -132,21 +132,37 @@
 (defmethod parse-shelf-item :MusicResponsiveListItem
   [^js item]
   #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
-  (def ^:private last-responsive item)
+  ; (def ^:private last-responsive item)
+  (def ^:private item item)
   (if-let [flex (j/get item :flex_columns)]
     (let [item-endpoint (unpack-navigation-endpoint item)
+          flex-items (keep parse-flex-column-item flex)
+          video? (= "video" (j/get item :item_type))
           album-name (some-> (j/get-in item [:album :name])
                              str)
-          artist-name (some-> (or (j/get item :artist)
-                                  (first (j/get item :artists)))
-                              (j/get :name)
-                              str)]
+          artist-name (or
+                       (some-> (or (j/get item :artist)
+                                   (first (j/get item :artists))
+                                   (first (j/get item :authors)))
+                               (j/get :name)
+                               str)
+                       (when video?
+                         (:title (second flex-items))))]
+
       (when-some [endpoint (or item-endpoint
                                (unpack-navigation-endpoint (j/get item :album))
-                               (unpack-navigation-endpoint (j/get item :artist)))]
+                               (unpack-navigation-endpoint (j/get item :artist))
+
+                               (when video?
+                                 ; TODO: Should we just always build our endpoint object from the
+                                 ; extracted ID and such?
+                                 {:id (j/get item :id)
+                                  :provider :ytm
+                                  :kind :track}))]
+
         (merge
          endpoint
-         {:title (or (when item-endpoint
+         {:title (or (when (or item-endpoint video?)
                        (str (j/get item :title)))
                      album-name
                      artist-name)
@@ -157,7 +173,7 @@
                          util/pick-thumbnail)
           :duration (some-> item
                             (j/get-in [:duration :seconds]))
-          :items (keep parse-flex-column-item flex)})))
+          :items flex-items})))
 
     ; TODO:  support fixed_columns?
     (throw (ex-info "Unexpected musicResponsiveListItemRenderer contents"

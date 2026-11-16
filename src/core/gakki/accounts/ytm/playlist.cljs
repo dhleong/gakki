@@ -8,6 +8,9 @@
 (defn inflate [id kind ^js playlist]
   #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
   (def ^:private last-playlist playlist)
+  #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
+  (def ^:private last-playlist-id id)
+
   {:id id
    :provider :ytm
    :kind kind
@@ -22,3 +25,8 @@
 (defn load-innertube [^js client, id]
   (p/let [playlist (j/call-in client [.-music .-getPlaylist] id)]
     (inflate id :playlist playlist)))
+
+#_{:clj-kondo/ignore [:unresolved-namespace]}
+(comment
+
+  (swap! re-frame.db/app-db update :playlist dissoc last-playlist-id))
