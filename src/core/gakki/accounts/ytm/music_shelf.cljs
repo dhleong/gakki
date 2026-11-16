@@ -137,7 +137,8 @@
   (if-let [flex (j/get item :flex_columns)]
     (let [item-endpoint (unpack-navigation-endpoint item)
           flex-items (keep parse-flex-column-item flex)
-          video? (= "video" (j/get item :item_type))
+          video? (and (= "video" (j/get item :item_type))
+                      (j/get item :id))
           album-name (some-> (j/get-in item [:album :name])
                              str)
           artist-name (or
