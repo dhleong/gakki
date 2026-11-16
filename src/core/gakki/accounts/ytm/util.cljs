@@ -60,10 +60,6 @@
 (defn split-string-by-dots [s]
   (str/split s #"  •  "))
 
-(defn split-runs-by-dots [runs]
-  (-> (runs->text runs)
-      (split-string-by-dots)))
-
 (defn- unpack-endpoint-page-kind [root]
   (let [raw-kind (j/get-in root [:browseEndpointContextSupportedConfigs
                                  :browseEndpointContextMusicConfig
@@ -96,20 +92,21 @@
 (defn- unpack-innertube-endpoint [^js endpoint]
   #_{:clj-kondo/ignore [:inline-def :unused-private-var]}
   (def ^:private last-endpoint endpoint)
-  (let [request (.buildRequest (.-command endpoint))
-        watch-id (j/get request .-videoId)
-        playlist-id (j/get request .-playlistId)
+  (let [request (j/call-in endpoint [:command :buildRequest])
+        watch-id (j/get request :videoId)
+        playlist-id (j/get request :playlistId)
         id (or watch-id
                playlist-id
                ; TODO ?
-               (j/get-in endpoint [.-payload .-browseId]))]
+               (j/get-in endpoint [:payload :browseId])
+               (j/get request [:browseId]))]
     (when (some? id)
       {:id id
        :playlist-id playlist-id
-       :params (j/get request .-params)
+       :params (j/get request :params)
        :provider :ytm
        :kind (or (unpack-endpoint-page-kind
-                  (j/get endpoint .-payload))
+                  (j/get endpoint :payload))
                  (cond
                    playlist-id :playlist
                    watch-id :track

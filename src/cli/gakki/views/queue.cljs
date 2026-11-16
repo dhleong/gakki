@@ -52,12 +52,15 @@
 
      [limited-text {:max-width artist-width}
       (:artist track)]
-     [:> k/Text {:color theme/text-color-disabled}
-      " " [figure :pointer-small] " "]
 
-     [limited-text {:color theme/text-color-disabled
-                    :max-width album-width}
-      (:album track)]]))
+     (when-let [album (:album track)]
+       [:<>
+        [:> k/Text {:color theme/text-color-disabled}
+         " " [figure :pointer-small] " "]
+
+        [limited-text {:color theme/text-color-disabled
+                       :max-width album-width}
+         album]])]))
 
 (defn- queue-header [queue]
   (let [duration (<sub [:queue/duration-display])]
